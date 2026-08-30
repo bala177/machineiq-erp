@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+.next-dev/
+build/
+
+# Environment files
+.env
+*.env.local
+.env.*
+!.env.example
+!**/.env.example
+MachineIQ-Deployment-Info.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+
+# TypeScript build cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Playwright test artifacts
+frontend/playwright-report/
+frontend/playwright-results/
+test-results/
+
+# Claude Code local data
+.claude/
+.codex
+
+# Superpowers / tool-generated
+.superpowers/
+.playwright-mcp/
+docs/superpowers/
+
+# Git worktrees
+.worktrees/

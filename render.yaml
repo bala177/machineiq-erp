@@ -1,0 +1,92 @@
+# ─── Render Blueprint for MachineIQ ────────────────────────────────
+# One-click deploy: https://render.com/docs/blueprint-spec
+#
+# This file provisions:
+#   1. machineiq-postgres — managed PostgreSQL 16
+#   2. machineiq-api      — NestJS backend
+#   3. machineiq-web      — Next.js frontend
+#
+# Custom domain: www.machineiq.tech (+ apex machineiq.tech redirecting to
+# it) is wired up on machineiq-web below. The API stays on its default
+# machineiq-api.onrender.com URL — that's fine, it's never user-facing.
+# Add a `domains:` block here too (and rebuild the frontend with new
+# NEXT_PUBLIC_API_URL/NEXT_PUBLIC_SOCKET_URL values) if you want a
+# branded API URL like api.machineiq.tech later.
+#
+# Cost note: both services are on the `free` plan to keep this at $0/mo
+# during development. Free services spin down after 15 min idle, so the
+# first request after a quiet period is slow (cold start), and an idle
+# Socket.IO connection drops when the service sleeps and has to
+# reconnect on wake. Fine for occasional demos; switch `plan:` to
+# `starter` ($7/mo per service) if the client needs always-on access.
+#
+# The Blueprint provisions PostgreSQL and generates the backend JWT secret.
+
+databases:
+  - name: machineiq-postgres
+    plan: free
+    region: oregon
+    postgresMajorVersion: "16"
+    databaseName: machineiq
+    user: machineiq
+    ipAllowList: []
+
+services:
+  # ─── Backend API ───────────────────────────────────────────────
+  - type: web
+    name: machineiq-api
+    runtime: node
+    plan: free                # $0/mo — sleeps after 15 min idle, see note above
+    region: oregon           # keep the API and PostgreSQL in the same region
+    branch: main
+    rootDir: backend
+    # --include=dev is required because NODE_ENV=production (set below) makes
+    # npm skip devDependencies otherwise — and @nestjs/cli (the
+    # `nest` build command) lives there. Without it: "sh: nest: not found".
+    buildCommand: npm ci --legacy-peer-deps --include=dev && npm run build
+    startCommand: npm run db:migration:run && npm run start:prod
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: machineiq-postgres
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "false"
+      - key: JWT_EXPIRATION
+        value: 8h
+      - key: CORS_ORIGIN
+        value: https://www.machineiq.tech,https://machineiq.tech,https://machineiq-web.onrender.com
+      - key: JWT_SECRET
+        generateValue: true   # Render generates a strong random value once
+
+  # ─── Frontend Web ──────────────────────────────────────────────
+  - type: web
+    name: machineiq-web
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    rootDir: frontend
+    # Same NODE_ENV/devDependencies issue as the backend — next build needs
+    # typescript/tailwind/postcss, which are devDependencies too.
+    buildCommand: npm ci --legacy-peer-deps --include=dev && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://machineiq-api.onrender.com/api
+      - key: NEXT_PUBLIC_SOCKET_URL
+        value: https://machineiq-api.onrender.com
+    domains:
+      - www.machineiq.tech
+      - machineiq.tech

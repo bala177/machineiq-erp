@@ -1,0 +1,26 @@
+{
+  "name": "machineiq",
+  "version": "2.1.0-rc.1",
+  "private": true,
+  "description": "OEM Machine Execution Platform",
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "dev": "bash scripts/dev.sh",
+    "seed": "bash scripts/seed.sh",
+    "seed:opportunity": "bash scripts/seed-opportunity.sh",
+    "build": "bash scripts/build.sh",
+    "clean": "bash scripts/clean.sh",
+    "logs": "bash scripts/logs.sh",
+    "stop": "bash scripts/stop.sh",
+    "restart": "bash scripts/restart.sh",
+    "restart:win": "bash scripts/restart.sh",
+    "start:logs": "bash scripts/start-and-logs.sh",
+    "reset-db": "bash scripts/reset-db.sh",
+    "reset-db:demo": "bash scripts/reset-db.sh --demo",
+    "backend:dev": "npm --prefix backend run start:dev",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "backend:build": "npm --prefix backend run build",
+    "frontend:build": "npm --prefix frontend run build",
+    "release:check": "bash scripts/release-check.sh"
+  }
+}

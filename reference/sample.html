@@ -1,0 +1,2555 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MEP — Machine Execution Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f0eeea;
+        --s: #fff;
+        --s2: #f7f6f4;
+        --s3: #efede9;
+        --b1: rgba(0, 0, 0, 0.07);
+        --b2: rgba(0, 0, 0, 0.13);
+        --b3: rgba(0, 0, 0, 0.22);
+        --t1: #18170f;
+        --t2: #5a5950;
+        --t3: #9c9b95;
+        --blu: #1a5fb4;
+        --blu-l: #deeaf8;
+        --blu-t: #1a5fb4;
+        --grn: #207a55;
+        --grn-l: #ddf0e5;
+        --grn-t: #207a55;
+        --amb: #c47d0a;
+        --amb-l: #fef0d0;
+        --amb-t: #c47d0a;
+        --red: #c0392b;
+        --red-l: #fde8e6;
+        --red-t: #c0392b;
+        --pur: #5e4db2;
+        --pur-l: #ede9fb;
+        --pur-t: #5e4db2;
+        --tel: #0b7285;
+        --tel-l: #d8f5f8;
+        --tel-t: #0b7285;
+        --cor: #9c3b23;
+        --cor-l: #fbeadf;
+        --cor-t: #9c3b23;
+        --nav-h: 60px;
+        --hdr-h: 54px;
+        --sb-w: 220px;
+        --safe: env(safe-area-inset-bottom, 0px);
+        --ff: 'DM Sans', system-ui, sans-serif;
+        --fm: 'DM Mono', monospace;
+        --r: 10px;
+        --rs: 6px;
+        --rp: 99px;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        height: 100%;
+        background: var(--bg);
+        font-family: var(--ff);
+        font-size: 14px;
+        color: var(--t1);
+      }
+
+      /* ── SHELL ── */
+      #shell {
+        display: flex;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      /* sidebar (desktop) */
+      #sidebar {
+        width: var(--sb-w);
+        flex-shrink: 0;
+        background: var(--s);
+        border-right: 0.5px solid var(--b1);
+        display: none;
+        flex-direction: column;
+      }
+      #sidebar .sb-brand {
+        padding: 18px 16px 14px;
+        border-bottom: 0.5px solid var(--b1);
+      }
+      #sidebar .logo {
+        width: 30px;
+        height: 30px;
+        background: var(--blu);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #sidebar .sb-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-top: 8px;
+        letter-spacing: -0.3px;
+      }
+      #sidebar .sb-sub {
+        font-size: 11px;
+        color: var(--t3);
+        margin-top: 1px;
+      }
+      .sb-section {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--t3);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 16px 16px 6px;
+      }
+      .sb-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 12px;
+        margin: 1px 6px;
+        border-radius: var(--rs);
+        cursor: pointer;
+        color: var(--t2);
+        font-size: 13px;
+        font-weight: 500;
+        border: none;
+        background: none;
+        width: calc(100% - 12px);
+        text-align: left;
+      }
+      .sb-item:hover {
+        background: var(--s2);
+      }
+      .sb-item.on {
+        background: var(--blu-l);
+        color: var(--blu-t);
+      }
+      .sb-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--red);
+        margin-left: auto;
+      }
+      .sb-footer {
+        margin-top: auto;
+        padding: 12px 16px;
+        border-top: 0.5px solid var(--b1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .sb-user {
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .sb-role {
+        font-size: 10px;
+        color: var(--t3);
+      }
+
+      /* main area */
+      #main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      /* header */
+      .hdr {
+        height: var(--hdr-h);
+        background: var(--s);
+        border-bottom: 0.5px solid var(--b1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        flex-shrink: 0;
+      }
+      .hdr-l {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .mob-logo {
+        width: 28px;
+        height: 28px;
+        background: var(--blu);
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .hdr-title {
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.3px;
+      }
+      .hdr-sub {
+        font-size: 11px;
+        color: var(--t3);
+        margin-top: 1px;
+      }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--s2);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--t2);
+        flex-shrink: 0;
+        transition: background 0.12s;
+      }
+      .icon-btn:hover {
+        background: var(--s3);
+      }
+      .hdr-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      /* scroll */
+      .scroll {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        background: var(--bg);
+      }
+
+      /* bottom nav (mobile/tablet) */
+      .bnav {
+        height: var(--nav-h);
+        background: var(--s);
+        border-top: 0.5px solid var(--b1);
+        display: flex;
+        align-items: stretch;
+        padding-bottom: var(--safe);
+        flex-shrink: 0;
+      }
+      .ni {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: var(--t3);
+        transition: color 0.15s;
+        position: relative;
+        padding-bottom: 2px;
+      }
+      .ni.on {
+        color: var(--blu);
+      }
+      .ni-lbl {
+        font-size: 10px;
+        font-weight: 500;
+      }
+      .ni-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--red);
+        position: absolute;
+        top: 7px;
+        right: calc(50% - 14px);
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (min-width: 768px) {
+        .bnav {
+          display: none;
+        }
+        #sidebar {
+          display: flex;
+        }
+      }
+      @media (min-width: 768px) and (max-width: 1023px) {
+        #sidebar {
+          width: 60px;
+        }
+        .sb-item span,
+        .sb-section,
+        .sb-title,
+        .sb-sub,
+        .sb-dot,
+        .sb-user,
+        .sb-role {
+          display: none;
+        }
+        .sb-item {
+          justify-content: center;
+          padding: 10px;
+          margin: 2px 6px;
+          width: calc(100% - 12px);
+        }
+        #sidebar .sb-brand {
+          padding: 14px;
+          display: flex;
+          justify-content: center;
+        }
+        .sb-footer {
+          justify-content: center;
+          padding: 12px 6px;
+        }
+      }
+      @media (min-width: 1280px) {
+        .kgrid {
+          grid-template-columns: repeat(4, 1fr) !important;
+        }
+        .card-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      /* ── VIEWS ── */
+      .view {
+        display: none;
+      }
+      .view.on {
+        display: block;
+      }
+
+      /* ── SECTION LABEL ── */
+      .slbl {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--t3);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 16px 16px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .slbl-btn {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--blu);
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+
+      /* ── KPI ── */
+      .kgrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 16px 16px 4px;
+      }
+      @media (min-width: 640px) {
+        .kgrid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+      .kpi {
+        background: var(--s);
+        border-radius: var(--r);
+        padding: 14px;
+      }
+      .kpi-l {
+        font-size: 11px;
+        color: var(--t2);
+        margin-bottom: 5px;
+      }
+      .kpi-v {
+        font-size: 28px;
+        font-weight: 600;
+        font-family: var(--fm);
+        line-height: 1;
+      }
+      .kpi-s {
+        font-size: 10px;
+        color: var(--t3);
+        margin-top: 3px;
+      }
+
+      /* ── CARD ── */
+      .card {
+        background: var(--s);
+        border-radius: var(--r);
+        margin: 0 16px;
+        overflow: hidden;
+      }
+      .card + .card {
+        margin-top: 10px;
+      }
+      .card-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 0 16px;
+      }
+      @media (min-width: 640px) {
+        .card-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      /* ── LIST ITEM ── */
+      .li {
+        padding: 13px 16px;
+        border-bottom: 0.5px solid var(--b1);
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .li:active,
+      .li:hover {
+        background: var(--s2);
+      }
+      .li:last-child {
+        border-bottom: none;
+      }
+      .li-r {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 5px;
+      }
+      .li-r:last-child {
+        margin-bottom: 0;
+      }
+      .li-title {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .li-sub {
+        font-size: 12px;
+        color: var(--t2);
+      }
+      .li-meta {
+        font-size: 11px;
+        color: var(--t3);
+      }
+
+      /* ── BADGES ── */
+      .bx {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 8px;
+        border-radius: var(--rp);
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .b-blu {
+        background: var(--blu-l);
+        color: var(--blu-t);
+      }
+      .b-grn {
+        background: var(--grn-l);
+        color: var(--grn-t);
+      }
+      .b-amb {
+        background: var(--amb-l);
+        color: var(--amb-t);
+      }
+      .b-red {
+        background: var(--red-l);
+        color: var(--red-t);
+      }
+      .b-pur {
+        background: var(--pur-l);
+        color: var(--pur-t);
+      }
+      .b-tel {
+        background: var(--tel-l);
+        color: var(--tel-t);
+      }
+      .b-cor {
+        background: var(--cor-l);
+        color: var(--cor-t);
+      }
+      .b-gray {
+        background: var(--s3);
+        color: var(--t2);
+      }
+
+      /* ── PROGRESS ── */
+      .prog {
+        height: 4px;
+        background: var(--s3);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 7px;
+      }
+      .pf {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s;
+      }
+      .pg {
+        background: var(--grn);
+      }
+      .pa {
+        background: var(--amb);
+      }
+      .pr {
+        background: var(--red);
+      }
+
+      /* ── AVATARS ── */
+      .av {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .av-sm {
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
+      }
+      .av-lg {
+        width: 36px;
+        height: 36px;
+        font-size: 12px;
+      }
+      .av0 {
+        background: var(--blu-l);
+        color: var(--blu-t);
+      }
+      .av1 {
+        background: var(--grn-l);
+        color: var(--grn-t);
+      }
+      .av2 {
+        background: var(--amb-l);
+        color: var(--amb-t);
+      }
+      .av3 {
+        background: var(--pur-l);
+        color: var(--pur-t);
+      }
+      .av4 {
+        background: var(--cor-l);
+        color: var(--cor-t);
+      }
+      .av5 {
+        background: var(--tel-l);
+        color: var(--tel-t);
+      }
+
+      /* ── ALERT ── */
+      .alert {
+        border-radius: var(--rs);
+        padding: 12px;
+        margin: 0 16px;
+      }
+      .alert + .alert {
+        margin-top: 8px;
+      }
+      .alert-r {
+        background: var(--red-l);
+        border-left: 3px solid var(--red);
+      }
+      .alert-a {
+        background: var(--amb-l);
+        border-left: 3px solid var(--amb);
+      }
+      .alert-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--red-t);
+      }
+      .alert-a .alert-title {
+        color: var(--amb-t);
+      }
+      .alert-body {
+        font-size: 11px;
+        color: #8b2a1e;
+        margin-top: 3px;
+        line-height: 1.5;
+      }
+      .alert-a .alert-body {
+        color: var(--amb-t);
+      }
+
+      /* ── STAGE TRACK ── */
+      .stages {
+        display: flex;
+        padding: 10px 16px;
+        gap: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+        background: var(--s);
+        border-bottom: 0.5px solid var(--b1);
+      }
+      .stages::-webkit-scrollbar {
+        display: none;
+      }
+      .stg {
+        padding: 4px 10px;
+        border-radius: var(--rp);
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .stg-d {
+        background: var(--grn-l);
+        color: var(--grn-t);
+      }
+      .stg-n {
+        background: var(--blu);
+        color: #fff;
+      }
+      .stg-t {
+        background: var(--bg);
+        color: var(--t3);
+      }
+      .stg-ln {
+        width: 10px;
+        height: 1.5px;
+        align-self: center;
+        flex-shrink: 0;
+      }
+      .stg-ld {
+        background: var(--grn);
+      }
+      .stg-lt {
+        background: var(--b2);
+      }
+
+      /* ── TABS ── */
+      .tabs {
+        display: flex;
+        padding: 0 16px;
+        border-bottom: 0.5px solid var(--b1);
+        background: var(--s);
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar {
+        display: none;
+      }
+      .tab {
+        padding: 10px 12px;
+        font-size: 13px;
+        color: var(--t3);
+        cursor: pointer;
+        border: none;
+        background: none;
+        white-space: nowrap;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -0.5px;
+        flex-shrink: 0;
+        font-family: var(--ff);
+        font-weight: 500;
+      }
+      .tab.on {
+        color: var(--blu);
+        border-bottom-color: var(--blu);
+      }
+
+      /* ── CHIPS ── */
+      .chips {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .chips::-webkit-scrollbar {
+        display: none;
+      }
+      .chip {
+        padding: 6px 13px;
+        border-radius: var(--rp);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        cursor: pointer;
+        background: var(--s);
+        border: 1.5px solid var(--b2);
+        color: var(--t2);
+        transition: all 0.12s;
+      }
+      .chip.on {
+        background: var(--blu);
+        color: #fff;
+        border-color: var(--blu);
+      }
+
+      /* ── TREE ── */
+      .tn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 16px;
+        border-bottom: 0.5px solid var(--b1);
+        background: var(--s);
+        cursor: pointer;
+        transition: background 0.1s;
+      }
+      .tn:hover,
+      .tn:active {
+        background: var(--s2);
+      }
+      .tn.blk {
+        background: var(--red-l);
+      }
+      .tn-lbl {
+        flex: 1;
+        font-size: 13px;
+      }
+      .tn-meta {
+        font-size: 11px;
+        color: var(--t3);
+      }
+      .caret {
+        font-size: 10px;
+        color: var(--t3);
+        width: 12px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .add-c {
+        font-size: 11px;
+        color: var(--blu);
+        padding: 2px 8px;
+        border-radius: var(--rp);
+        border: 1px solid var(--blu);
+        background: none;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-family: var(--ff);
+      }
+      .add-c:hover {
+        background: var(--blu-l);
+      }
+
+      /* ── FAB ── */
+      .fab {
+        position: fixed;
+        bottom: calc(var(--nav-h) + 14px + var(--safe));
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--blu);
+        color: #fff;
+        border: none;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(26, 95, 180, 0.38);
+        z-index: 30;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s;
+      }
+      .fab:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 24px rgba(26, 95, 180, 0.46);
+      }
+      .fab:active {
+        transform: scale(0.95);
+      }
+      @media (min-width: 768px) {
+        .fab {
+          bottom: 20px;
+          right: 24px;
+        }
+      }
+
+      /* ── SHEET ── */
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0);
+        z-index: 40;
+        display: none;
+        transition: background 0.25s;
+      }
+      .backdrop.on {
+        display: block;
+        background: rgba(0, 0, 0, 0.42);
+      }
+      .sheet {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%) translateY(100%);
+        width: 100%;
+        max-width: 560px;
+        background: var(--s);
+        border-radius: 20px 20px 0 0;
+        z-index: 50;
+        transition: transform 0.28s cubic-bezier(0.32, 0, 0.67, 0);
+        max-height: 90dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      .sheet.on {
+        transform: translateX(-50%) translateY(0);
+      }
+      @media (min-width: 768px) {
+        .sheet {
+          border-radius: 16px;
+          bottom: auto;
+          top: 50%;
+          transform: translateX(-50%) translateY(-50%) scale(0.96);
+          max-height: 80dvh;
+          box-shadow: 0 16px 60px rgba(0, 0, 0, 0.25);
+        }
+        .sheet.on {
+          transform: translateX(-50%) translateY(-50%) scale(1);
+        }
+        .sheet-handle {
+          display: none !important;
+        }
+      }
+      .sheet-handle {
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--b2);
+        margin: 10px auto 0;
+        flex-shrink: 0;
+      }
+      .sh-hdr {
+        padding: 14px 20px 12px;
+        border-bottom: 0.5px solid var(--b1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+      }
+      .sh-title {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .sh-body {
+        padding: 16px 20px;
+        overflow-y: auto;
+        flex: 1;
+      }
+      .sh-foot {
+        padding: 12px 20px calc(12px + var(--safe));
+        border-top: 0.5px solid var(--b1);
+        flex-shrink: 0;
+      }
+      @media (min-width: 768px) {
+        .sh-foot {
+          padding-bottom: 16px;
+        }
+      }
+
+      /* ── FORM ── */
+      .field {
+        margin-bottom: 15px;
+      }
+      .fl {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--t2);
+        margin-bottom: 5px;
+        display: block;
+      }
+      .field input,
+      .field textarea,
+      .field select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: var(--rs);
+        border: 1.5px solid var(--b2);
+        background: var(--s2);
+        font-size: 14px;
+        font-family: var(--ff);
+        color: var(--t1);
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .field input:focus,
+      .field textarea:focus,
+      .field select:focus {
+        border-color: var(--blu);
+        background: var(--s);
+      }
+      .field textarea {
+        resize: none;
+        min-height: 72px;
+        line-height: 1.5;
+      }
+      .field select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg width='10' height='7' viewBox='0 0 10 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239c9b95' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 11px center;
+      }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .btn {
+        flex: 1;
+        padding: 12px;
+        border-radius: var(--rs);
+        border: none;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: var(--ff);
+        transition: opacity 0.1s;
+      }
+      .btn:active {
+        opacity: 0.8;
+      }
+      .btn-p {
+        background: var(--blu);
+        color: #fff;
+      }
+      .btn-s {
+        background: var(--s2);
+        color: var(--t1);
+        border: 0.5px solid var(--b2);
+      }
+      .btn-d {
+        background: var(--red-l);
+        color: var(--red-t);
+      }
+
+      /* ── SEG ── */
+      .seg {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .so {
+        padding: 6px 12px;
+        border-radius: var(--rp);
+        border: 1.5px solid var(--b2);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        color: var(--t2);
+        background: var(--s);
+        transition: all 0.12s;
+        font-family: var(--ff);
+      }
+      .so.on {
+        border-color: var(--blu);
+        background: var(--blu-l);
+        color: var(--blu);
+      }
+
+      /* ── EMPTY ── */
+      .empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 52px 24px;
+        gap: 12px;
+      }
+      .ei {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: var(--s);
+        border: 0.5px solid var(--b2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .et {
+        font-size: 15px;
+        font-weight: 500;
+      }
+      .es {
+        font-size: 13px;
+        color: var(--t3);
+        line-height: 1.6;
+        max-width: 300px;
+      }
+      .eb {
+        padding: 9px 20px;
+        border-radius: var(--rp);
+        background: var(--blu);
+        color: #fff;
+        border: none;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: var(--ff);
+      }
+
+      /* ── MISC ── */
+      .sp {
+        height: 24px;
+      }
+      .mono {
+        font-family: var(--fm);
+        font-size: 11px;
+      }
+      .ll {
+        background: var(--red-l);
+        color: var(--red-t);
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: var(--fm);
+      }
+      .divider {
+        height: 0.5px;
+        background: var(--b1);
+        margin: 0 16px;
+      }
+      .info-box {
+        background: var(--blu-l);
+        border-radius: var(--rs);
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        font-size: 12px;
+        color: var(--blu-t);
+      }
+      .warn-box {
+        background: var(--amb-l);
+        border-radius: var(--rs);
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        font-size: 12px;
+        color: var(--amb-t);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="shell">
+      <!-- ── SIDEBAR (tablet/desktop) ── -->
+      <aside id="sidebar">
+        <div class="sb-brand">
+          <div class="logo">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="2" width="5" height="5" rx="1" fill="white" opacity=".9" />
+              <rect x="9" y="2" width="5" height="5" rx="1" fill="white" opacity=".6" />
+              <rect x="2" y="9" width="5" height="5" rx="1" fill="white" opacity=".6" />
+              <rect x="9" y="9" width="5" height="5" rx="1" fill="white" opacity=".3" />
+            </svg>
+          </div>
+          <div class="sb-title">MEP</div>
+          <div class="sb-sub">Execution Platform</div>
+        </div>
+        <div class="sb-section">Main</div>
+        <button class="sb-item on" id="SB_overview" onclick="goView('overview')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="1" y="1" width="6" height="6" rx="1.5" />
+            <rect x="9" y="1" width="6" height="6" rx="1.5" />
+            <rect x="1" y="9" width="6" height="6" rx="1.5" />
+            <rect x="9" y="9" width="6" height="6" rx="1.5" />
+          </svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="sb-item" id="SB_opps" onclick="goView('opps')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <path d="M8 1.5L2 5v6l6 3.5 6-3.5V5z" />
+            <path d="M8 1.5v8M2 5l6 3 6-3" />
+          </svg>
+          <span>Pipeline</span>
+        </button>
+        <button class="sb-item" id="SB_projects" onclick="goView('projects')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <rect x="2" y="4" width="12" height="10" rx="1.5" />
+            <path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+            <path d="M5 9h6M5 11.5h4" />
+          </svg>
+          <span>Projects</span>
+        </button>
+        <button class="sb-item" id="SB_tasks" onclick="goView('tasks')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <rect x="2" y="2" width="12" height="12" rx="1.5" />
+            <path d="M5 8l2.5 2.5L11 6" />
+          </svg>
+          <span>All Tasks</span>
+          <div class="sb-dot" id="SB_taskDot" style="display: none"></div>
+        </button>
+        <div class="sb-section">Ops</div>
+        <button class="sb-item" id="SB_proc" onclick="goView('proc')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+            <path d="M2 2h2l2 7h7l1.5-5H6" />
+            <circle cx="7" cy="13" r="1" fill="currentColor" stroke="none" />
+            <circle cx="11.5" cy="13" r="1" fill="currentColor" stroke="none" />
+          </svg>
+          <span>Procurement</span>
+        </button>
+        <div class="sb-footer">
+          <div class="av av-lg av0">MH</div>
+          <div>
+            <div class="sb-user">Marcus H.</div>
+            <div class="sb-role">Project Manager</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── MAIN ── -->
+      <div id="main">
+        <!-- Header -->
+        <div class="hdr" id="G_hdr">
+          <div class="hdr-l">
+            <div class="mob-logo" id="MOB_LOGO">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="5" height="5" rx="1" fill="white" opacity=".9" />
+                <rect x="9" y="2" width="5" height="5" rx="1" fill="white" opacity=".6" />
+                <rect x="2" y="9" width="5" height="5" rx="1" fill="white" opacity=".6" />
+                <rect x="9" y="9" width="5" height="5" rx="1" fill="white" opacity=".3" />
+              </svg>
+            </div>
+            <div>
+              <div class="hdr-title" id="G_title">Dashboard</div>
+              <div class="hdr-sub" id="G_sub"></div>
+            </div>
+          </div>
+          <div class="hdr-actions">
+            <button class="icon-btn" id="G_hdrBtn" onclick="hdrAction()">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                <circle cx="9" cy="5.5" r="1.5" fill="currentColor" stroke="none" />
+                <circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none" />
+                <circle cx="9" cy="12.5" r="1.5" fill="currentColor" stroke="none" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scroll -->
+        <div class="scroll" id="G_scroll">
+          <div class="view on" id="V_overview"><div id="R_overview"></div></div>
+          <div class="view" id="V_opps"><div id="R_opps"></div></div>
+          <div class="view" id="V_oppdet"><div id="R_oppdet"></div></div>
+          <div class="view" id="V_projects"><div id="R_projects"></div></div>
+          <div class="view" id="V_projdet"><div id="R_projdet"></div></div>
+          <div class="view" id="V_tasks"><div id="R_tasks"></div></div>
+          <div class="view" id="V_proc"><div id="R_proc"></div></div>
+        </div>
+
+        <!-- Bottom nav (mobile) -->
+        <nav class="bnav">
+          <button class="ni on" id="N_overview" onclick="goView('overview')">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <rect x="2" y="2" width="7" height="7" rx="2" />
+              <rect x="11" y="2" width="7" height="7" rx="2" />
+              <rect x="2" y="11" width="7" height="7" rx="2" />
+              <rect x="11" y="11" width="7" height="7" rx="2" />
+            </svg>
+            <span class="ni-lbl">Overview</span>
+          </button>
+          <button class="ni" id="N_opps" onclick="goView('opps')">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M10 2L3 6v8l7 4 7-4V6z" />
+              <path d="M10 2v10M3 6l7 4 7-4" />
+            </svg>
+            <span class="ni-lbl">Pipeline</span>
+          </button>
+          <button class="ni" id="N_projects" onclick="goView('projects')">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <rect x="3" y="5" width="14" height="12" rx="2" />
+              <path d="M7 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+            </svg>
+            <span class="ni-lbl">Projects</span>
+          </button>
+          <button class="ni" id="N_tasks" onclick="goView('tasks')">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <rect x="3" y="3" width="14" height="14" rx="2" />
+              <path d="M7 10l2.5 2.5L13 8" />
+            </svg>
+            <span class="ni-lbl">Tasks</span>
+            <div class="ni-dot" id="N_taskDot" style="display: none"></div>
+          </button>
+          <button class="ni" id="N_proc" onclick="goView('proc')">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M3 3h3l2.5 9h9L19 6H7" />
+              <circle cx="9" cy="17" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="16" cy="17" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+            <span class="ni-lbl">Procure</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" id="G_fab" style="display: none" onclick="fabAction()">+</button>
+
+    <!-- Backdrop + Sheet -->
+    <div class="backdrop" id="BACKDROP" onclick="closeSheet()"></div>
+    <div class="sheet" id="SHEET">
+      <div class="sheet-handle"></div>
+      <div class="sh-hdr">
+        <div class="sh-title" id="SH_title"></div>
+        <button class="icon-btn" onclick="closeSheet()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13" /></svg>
+        </button>
+      </div>
+      <div class="sh-body" id="SH_body"></div>
+      <div class="sh-foot" id="SH_foot"></div>
+    </div>
+
+    <script>
+      // ═══════════════════════════════════════════════
+      //  CONSTANTS
+      // ═══════════════════════════════════════════════
+      const STAGES = ['Intake', 'Feasibility', 'Kickoff', 'Engineering', 'Procurement', 'Build', 'Testing', 'Delivery'];
+      const OPP_ST = ['New', 'Feasibility', 'Approved', 'Converted'];
+      const TASK_ST = ['Not Started', 'In Progress', 'Under Review', 'Blocked', 'Completed'];
+      const PRIOS = ['Low', 'Medium', 'High', 'Critical'];
+      const DEPTS = ['Mechanical', 'Electrical', 'Controls', 'Procurement', 'Management'];
+      const PROC_ST = ['Not Ready', 'Pending Release', 'Ready', 'Ordered', 'Received'];
+      const RISKS = ['Low', 'Medium', 'High', 'Critical'];
+      const HEALTH = ['Healthy', 'Watch', 'At Risk'];
+      const NODE_T = ['Machine', 'Module', 'Subassembly'];
+      const AVC = ['av0', 'av1', 'av2', 'av3', 'av4', 'av5'];
+
+      // ═══════════════════════════════════════════════
+      //  SEED DATA
+      // ═══════════════════════════════════════════════
+      const SEED = {
+        _oppId: 10,
+        _projId: 10,
+        _nodeId: 100,
+        _taskId: 200,
+        _procId: 300,
+        _decId: 400,
+        opps: [
+          { id: 1, title: 'High-Speed Bottle Labeling MK3', customer: 'BrewTech AG', machineType: 'Labeling System', axes: 6, delivery: 'Q4 2025', createdBy: 'Sarah Chen', requirements: '600 bpm sustained throughput, IP65 wash-down rated, 24V safety per EN-ISO 13849 PLd, quick-change label roll.', status: 'Converted', createdAt: '2024-09-15' },
+          { id: 2, title: 'Flexible Cartoning Line V2', customer: 'AutoPack Ltd', machineType: 'Cartoner', axes: 4, delivery: 'Q1 2026', createdBy: 'Sarah Chen', requirements: '4-axis pick & place, multi-format capability, 200 cartons/min.', status: 'Converted', createdAt: '2024-10-01' },
+          { id: 3, title: 'Integrated Bottling Cell', customer: 'FlexFill GmbH', machineType: 'Filling System', axes: 8, delivery: 'Q3 2025', createdBy: 'Sarah Chen', requirements: '8-axis, 1200 bph, CIP-capable, volumetric dosing, servo-driven filling heads.', status: 'Converted', createdAt: '2024-08-20' },
+          { id: 4, title: 'Layer Palletizer MK2', customer: 'Verpack Systems', machineType: 'Palletizer', axes: 3, delivery: 'Q2 2025', createdBy: 'Felix König', requirements: 'Layer palletizing, mixed SKU support, collaborative robot integration.', status: 'Converted', createdAt: '2024-07-10' },
+          { id: 5, title: 'Automated Assembly Station', customer: 'Techvolt Industries', machineType: 'Robot Cell', axes: 6, delivery: 'Q2 2026', createdBy: 'Felix König', requirements: '6-axis robot cell with vision guidance, force-torque sensing, error-proofing.', status: 'Feasibility', createdAt: '2025-01-15' },
+          { id: 6, title: 'Servo Press Line Extension', customer: 'MetalCo AG', machineType: 'Press System', axes: 2, delivery: 'Q3 2026', createdBy: 'Sarah Chen', requirements: '2-axis force control, 100 kN, precision positioning ±0.01mm.', status: 'New', createdAt: '2025-03-10' },
+        ],
+        projects: [
+          {
+            id: 1,
+            title: 'BrewTech Labeling MK3',
+            customer: 'BrewTech AG',
+            machineType: 'Labeling System',
+            axes: 6,
+            delivery: '20 Dec 2025',
+            pm: 'M. Hoffmann',
+            stage: 'Engineering',
+            health: 'Watch',
+            oppId: 1,
+            kickoffDate: '2024-10-03',
+            kickoffNotes: 'Kickoff held with BrewTech AG (R. Fischer attending). Scope confirmed: 6-axis servo, 600 bpm sustained, IP65 wash-down, 24V safety EN-ISO 13849 PLd. Key risk: long-lead servo drives (14 weeks). Customer to provide final load specs by 15 Nov 2024.',
+            milestones: [
+              { id: 'm1', title: 'Concept Freeze', date: '2024-11-15', status: 'Done' },
+              { id: 'm2', title: 'Design Release', date: '2025-12-20', status: 'Pending' },
+              { id: 'm3', title: 'BOM to Procurement', date: '2026-01-10', status: 'Pending' },
+              { id: 'm4', title: 'Build Start', date: '2026-02-01', status: 'Pending' },
+            ],
+            nodes: [
+              { id: 1, type: 'Machine', label: 'BTL-MK3 Labeling Unit', parentId: null },
+              { id: 2, type: 'Module', label: 'Drive System', parentId: 1 },
+              { id: 3, type: 'Subassembly', label: 'Servo Drive Train', parentId: 2 },
+              { id: 4, type: 'Subassembly', label: 'Gearbox Selection', parentId: 2 },
+              { id: 5, type: 'Module', label: 'Label Application Head', parentId: 1 },
+              { id: 6, type: 'Subassembly', label: 'Applicator Mechanism', parentId: 5 },
+              { id: 7, type: 'Subassembly', label: 'Web Tension Control', parentId: 5 },
+              { id: 8, type: 'Module', label: 'Control Cabinet', parentId: 1 },
+              { id: 9, type: 'Subassembly', label: 'Safety System', parentId: 8 },
+            ],
+            tasks: [
+              { id: 't1', nodeId: 3, title: 'Servo sizing calculation', owner: 'T. Walsh', dept: 'Electrical', priority: 'Medium', due: '2024-11-10', status: 'Completed' },
+              { id: 't2', nodeId: 3, title: 'Drive selection & specification', owner: 'T. Walsh', dept: 'Electrical', priority: 'High', due: '2025-04-10', status: 'In Progress' },
+              { id: 't3', nodeId: 3, title: 'Drive wiring schematic', owner: 'T. Walsh', dept: 'Electrical', priority: 'High', due: '2025-04-12', status: 'Blocked' },
+              { id: 't4', nodeId: 4, title: 'Torque & ratio analysis', owner: 'L. Müller', dept: 'Mechanical', priority: 'Medium', due: '2024-11-05', status: 'Completed' },
+              { id: 't5', nodeId: 6, title: 'Concept design — Applicator', owner: 'L. Müller', dept: 'Mechanical', priority: 'High', due: '2025-03-20', status: 'Under Review' },
+              { id: 't6', nodeId: 6, title: 'FEA stress analysis', owner: 'L. Müller', dept: 'Mechanical', priority: 'Critical', due: '2025-04-10', status: 'Blocked' },
+              { id: 't7', nodeId: 7, title: 'Web tension control spec', owner: 'L. Müller', dept: 'Mechanical', priority: 'Medium', due: '2025-04-25', status: 'In Progress' },
+              { id: 't8', nodeId: 9, title: 'I/O list definition', owner: 'A. Pereira', dept: 'Controls', priority: 'High', due: '2025-01-15', status: 'Completed' },
+              { id: 't9', nodeId: 9, title: 'PLC program structure', owner: 'A. Pereira', dept: 'Controls', priority: 'Medium', due: '2025-04-30', status: 'In Progress' },
+              { id: 't10', nodeId: 9, title: 'HMI screen layout', owner: 'A. Pereira', dept: 'Controls', priority: 'Low', due: '2025-05-15', status: 'Not Started' },
+            ],
+            procurement: [
+              { id: 'p1', title: 'Servo Drives — IndraDrive Cs ×6', supplier: 'Bosch Rexroth', qty: 6, leadWeeks: 14, status: 'Pending Release', risk: 'Critical' },
+              { id: 'p2', title: 'Servo Motors — Siemens 1FK7 ×6', supplier: 'Siemens AG', qty: 6, leadWeeks: 12, status: 'Pending Release', risk: 'High' },
+              { id: 'p3', title: 'Planetary Gearboxes ×2', supplier: 'Neugart GmbH', qty: 2, leadWeeks: 6, status: 'Ready', risk: 'Medium' },
+              { id: 'p4', title: 'Safety Relays — Pilz PNOZ ×4', supplier: 'Pilz GmbH', qty: 4, leadWeeks: 3, status: 'Not Ready', risk: 'Low' },
+              { id: 'p5', title: 'PLC — Siemens S7-1500 ×1', supplier: 'Siemens AG', qty: 1, leadWeeks: 4, status: 'Pending Release', risk: 'Medium' },
+              { id: 'p6', title: 'IP65 Control Cabinet — Rittal HD ×1', supplier: 'Rittal GmbH', qty: 1, leadWeeks: 8, status: 'Not Ready', risk: 'High' },
+            ],
+            decisions: [
+              { id: 'd1', title: 'Servo platform: Bosch Rexroth IndraDrive Cs selected', rationale: 'IndraDrive Cs preferred over Siemens S120 due to better EcoStruxure integration and existing service agreement with BrewTech.', by: 'M. Hoffmann', date: '2024-11-12' },
+              { id: 'd2', title: 'Safety category: EN-ISO 13849 PLd confirmed', rationale: 'Customer requirement confirmed at kickoff. Dual-channel 24V safety circuit required throughout the machine.', by: 'A. Pereira', date: '2024-10-03' },
+              { id: 'd3', title: 'Enclosure rating: IP65 wash-down (Rittal HD series)', rationale: 'Food-grade beverage environment. IP65 minimum confirmed by BrewTech facilities team at kickoff.', by: 'L. Müller', date: '2024-10-03' },
+            ],
+            createdAt: '2024-10-03',
+          },
+          {
+            id: 2,
+            title: 'AutoPack Cartoner V2',
+            customer: 'AutoPack Ltd',
+            machineType: 'Cartoner',
+            axes: 4,
+            delivery: '15 Mar 2026',
+            pm: 'J. Schmidt',
+            stage: 'Engineering',
+            health: 'Healthy',
+            oppId: 2,
+            kickoffDate: '2024-10-20',
+            kickoffNotes: '4-axis pick & place cartoner. Multi-format tooling required. No IP rating specified — clean dry environment. Vision system for carton inspection included.',
+            milestones: [
+              { id: 'm5', title: 'Concept Freeze', date: '2024-12-01', status: 'Done' },
+              { id: 'm6', title: 'Design Release', date: '2025-06-01', status: 'Pending' },
+            ],
+            nodes: [
+              { id: 10, type: 'Machine', label: 'APC-V2 Cartoner', parentId: null },
+              { id: 11, type: 'Module', label: 'Pick & Place Unit', parentId: 10 },
+              { id: 12, type: 'Subassembly', label: 'Robot Arm Integration', parentId: 11 },
+              { id: 13, type: 'Module', label: 'Vision System', parentId: 10 },
+              { id: 14, type: 'Subassembly', label: 'Camera & Lighting', parentId: 13 },
+            ],
+            tasks: [
+              { id: 't11', nodeId: 12, title: 'Robot cell layout drawing', owner: 'L. Müller', dept: 'Mechanical', priority: 'High', due: '2025-05-01', status: 'In Progress' },
+              { id: 't12', nodeId: 12, title: 'Gripper design', owner: 'L. Müller', dept: 'Mechanical', priority: 'High', due: '2025-05-15', status: 'Not Started' },
+              { id: 't13', nodeId: 14, title: 'Camera selection & spec', owner: 'T. Walsh', dept: 'Electrical', priority: 'Medium', due: '2025-04-30', status: 'In Progress' },
+              { id: 't14', nodeId: 14, title: 'Safety functional spec', owner: 'A. Pereira', dept: 'Controls', priority: 'High', due: '2025-05-10', status: 'Not Started' },
+            ],
+            procurement: [
+              { id: 'p7', title: 'SICK Safety Scanners ×2', supplier: 'SICK AG', qty: 2, leadWeeks: 4, status: 'Ready', risk: 'Low' },
+              { id: 'p8', title: 'Cognex Vision System ×1', supplier: 'Cognex Corp', qty: 1, leadWeeks: 8, status: 'Not Ready', risk: 'Medium' },
+            ],
+            decisions: [{ id: 'd4', title: 'Robot platform: Fanuc LR Mate selected', rationale: 'Compact footprint fits layout envelope. Existing maintenance familiarity at AutoPack site.', by: 'J. Schmidt', date: '2024-11-05' }],
+            createdAt: '2024-10-20',
+          },
+          {
+            id: 3,
+            title: 'FlexFill Bottling Cell',
+            customer: 'FlexFill GmbH',
+            machineType: 'Filling System',
+            axes: 8,
+            delivery: '30 Sep 2025',
+            pm: 'R. Berg',
+            stage: 'Procurement',
+            health: 'At Risk',
+            oppId: 3,
+            kickoffDate: '2024-09-01',
+            kickoffNotes: '8-axis servo filling cell. CIP-capable, all wetted parts 316L stainless. Volumetric servo dosing. Long-lead linear actuators identified as critical path.',
+            milestones: [
+              { id: 'm7', title: 'Design Release', date: '2025-01-15', status: 'Done' },
+              { id: 'm8', title: 'BOM to Procurement', date: '2025-02-01', status: 'Done' },
+              { id: 'm9', title: 'Build Start', date: '2025-08-01', status: 'Pending' },
+            ],
+            nodes: [
+              { id: 20, type: 'Machine', label: 'FFC-1200 Bottling Cell', parentId: null },
+              { id: 21, type: 'Module', label: 'Filling Station', parentId: 20 },
+              { id: 22, type: 'Subassembly', label: 'Dosing System', parentId: 21 },
+              { id: 23, type: 'Module', label: 'Conveyor System', parentId: 20 },
+              { id: 24, type: 'Subassembly', label: 'Linear Transfer', parentId: 23 },
+            ],
+            tasks: [
+              { id: 't15', nodeId: 22, title: 'Dosing valve selection', owner: 'R. Berg', dept: 'Mechanical', priority: 'High', due: '2025-01-10', status: 'Completed' },
+              { id: 't16', nodeId: 22, title: 'CIP circuit design', owner: 'R. Berg', dept: 'Mechanical', priority: 'High', due: '2025-02-01', status: 'Completed' },
+              { id: 't17', nodeId: 24, title: 'I/O list review with customer', owner: 'A. Pereira', dept: 'Controls', priority: 'High', due: '2025-04-08', status: 'In Progress' },
+              { id: 't18', nodeId: 24, title: 'Linear actuator integration', owner: 'R. Berg', dept: 'Mechanical', priority: 'Critical', due: '2025-04-05', status: 'Blocked' },
+            ],
+            procurement: [
+              { id: 'p9', title: 'Linear Actuators — Bosch Rexroth ×4', supplier: 'Bosch Rexroth', qty: 4, leadWeeks: 14, status: 'Not Ready', risk: 'Critical' },
+              { id: 'p10', title: 'Dosing Valves — Bürkert ×8', supplier: 'Bürkert GmbH', qty: 8, leadWeeks: 6, status: 'Ordered', risk: 'Medium' },
+              { id: 'p11', title: '316L Stainless Fittings', supplier: 'Swagelok', qty: 1, leadWeeks: 3, status: 'Received', risk: 'Low' },
+            ],
+            decisions: [{ id: 'd5', title: 'Linear actuators: Bosch Rexroth EMC series', rationale: 'Stainless housing meets IP69K. Integrated force sensing for fill-level confirmation.', by: 'R. Berg', date: '2025-01-08' }],
+            createdAt: '2024-09-01',
+          },
+          {
+            id: 4,
+            title: 'Verpack Palletizer MK2',
+            customer: 'Verpack Systems',
+            machineType: 'Palletizer',
+            axes: 3,
+            delivery: '30 Apr 2025',
+            pm: 'M. Hoffmann',
+            stage: 'Testing',
+            health: 'Healthy',
+            oppId: 4,
+            kickoffDate: '2024-07-15',
+            kickoffNotes: 'Layer palletizer with collaborative robot. Mixed SKU support, barcode verification per layer. Project on track.',
+            milestones: [
+              { id: 'm10', title: 'Design Release', date: '2024-09-01', status: 'Done' },
+              { id: 'm11', title: 'Build Complete', date: '2025-03-01', status: 'Done' },
+              { id: 'm12', title: 'FAT', date: '2025-04-15', status: 'Pending' },
+              { id: 'm13', title: 'Delivery', date: '2025-04-30', status: 'Pending' },
+            ],
+            nodes: [
+              { id: 30, type: 'Machine', label: 'VPK-MK2 Palletizer', parentId: null },
+              { id: 31, type: 'Module', label: 'Cobot Arm', parentId: 30 },
+              { id: 32, type: 'Subassembly', label: 'End-Effector', parentId: 31 },
+              { id: 33, type: 'Module', label: 'Conveyor Infeed', parentId: 30 },
+              { id: 34, type: 'Subassembly', label: 'Layer Formation', parentId: 33 },
+            ],
+            tasks: [
+              { id: 't19', nodeId: 32, title: 'End-effector design & build', owner: 'L. Müller', dept: 'Mechanical', priority: 'High', due: '2025-02-15', status: 'Completed' },
+              { id: 't20', nodeId: 34, title: 'Layer formation logic', owner: 'A. Pereira', dept: 'Controls', priority: 'High', due: '2025-02-28', status: 'Completed' },
+              { id: 't21', nodeId: 32, title: 'FAT test protocol', owner: 'M. Hoffmann', dept: 'Management', priority: 'High', due: '2025-04-15', status: 'In Progress' },
+            ],
+            procurement: [
+              { id: 'p12', title: 'UR10e Cobot ×1', supplier: 'Universal Robots', qty: 1, leadWeeks: 8, status: 'Received', risk: 'Low' },
+              { id: 'p13', title: 'Vacuum Gripper Kit ×1', supplier: 'Piab AB', qty: 1, leadWeeks: 4, status: 'Received', risk: 'Low' },
+            ],
+            decisions: [{ id: 'd6', title: 'Cobot: Universal Robots UR10e selected', rationale: 'Payload and reach match layer pattern requirements. Existing UR programming expertise on team.', by: 'M. Hoffmann', date: '2024-07-20' }],
+            createdAt: '2024-07-15',
+          },
+        ],
+      };
+
+      // ═══════════════════════════════════════════════
+      //  STATE
+      // ═══════════════════════════════════════════════
+      let S;
+      function initState() {
+        try {
+          const saved = localStorage.getItem('mep3_s');
+          if (saved) {
+            S = JSON.parse(saved);
+            return;
+          }
+        } catch (e) {}
+        S = JSON.parse(JSON.stringify(SEED));
+      }
+      function save() {
+        try {
+          localStorage.setItem('mep3_s', JSON.stringify(S));
+        } catch (e) {}
+      }
+      function resetToSeed() {
+        if (confirm('Reset to demo data? All your changes will be lost.')) {
+          localStorage.removeItem('mep3_s');
+          initState();
+          renderAll();
+        }
+      }
+
+      initState();
+
+      let UI = { view: 'overview', prev: null, oppDetId: null, projDetId: null, projTab: 'overview', taskFilter: 'All', procFilter: 'All' };
+
+      // ═══════════════════════════════════════════════
+      //  NAVIGATION
+      // ═══════════════════════════════════════════════
+      const ALL_VIEWS = ['overview', 'opps', 'oppdet', 'projects', 'projdet', 'tasks', 'proc'];
+      const NAV_IDS = ['overview', 'opps', 'projects', 'tasks', 'proc'];
+
+      function goView(v, opts = {}) {
+        UI.prev = UI.view;
+        UI.view = v;
+        ALL_VIEWS.forEach((id) => {
+          document.getElementById('V_' + id).classList.toggle('on', id === v);
+        });
+        NAV_IDS.forEach((n) => {
+          const mob = document.getElementById('N_' + n);
+          const sb = document.getElementById('SB_' + n);
+          const active = n === v || (v === 'oppdet' && n === 'opps') || (v === 'projdet' && n === 'projects');
+          if (mob) mob.classList.toggle('on', active);
+          if (sb) sb.classList.toggle('on', active);
+        });
+        if (opts.oppId !== undefined) UI.oppDetId = opts.oppId;
+        if (opts.projId !== undefined) {
+          UI.projDetId = opts.projId;
+          UI.projTab = opts.tab || 'overview';
+        }
+        document.getElementById('G_scroll').scrollTop = 0;
+        renderAll();
+        updateFab();
+      }
+
+      function hdrAction() {
+        if (UI.view === 'oppdet') goView('opps');
+        else if (UI.view === 'projdet') goView('projects');
+        else openSheet('Settings', `<div style="font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:16px;">MEP — Machine Execution Platform<br>All data stored locally in your browser.</div><button class="btn btn-d" onclick="resetToSeed();closeSheet()">Reset to Demo Data</button>`, `<div class="btn-row"><button class="btn btn-p" onclick="closeSheet()">Close</button></div>`);
+      }
+
+      // ═══════════════════════════════════════════════
+      //  HELPERS
+      // ═══════════════════════════════════════════════
+      function uid() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      }
+      function avCls(name) {
+        const h = [...String(name || '')].reduce((a, c) => a + c.charCodeAt(0), 0);
+        return AVC[h % AVC.length];
+      }
+      function ini(name) {
+        return (name || '?')
+          .split(' ')
+          .map((w) => w[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
+      }
+      function av(name, sz = '') {
+        return `<div class="av ${avCls(name)} ${sz}">${ini(name)}</div>`;
+      }
+      function bx(t, c) {
+        return `<span class="bx ${c}">${t}</span>`;
+      }
+      function oppBadge(s) {
+        return bx(s, { New: 'b-pur', Feasibility: 'b-amb', Approved: 'b-blu', Converted: 'b-tel' }[s] || 'b-gray');
+      }
+      function taskBadge(s) {
+        return bx(s, { 'Not Started': 'b-gray', 'In Progress': 'b-blu', 'Under Review': 'b-pur', Blocked: 'b-red', Completed: 'b-tel' }[s] || 'b-gray');
+      }
+      function prioBadge(p) {
+        return bx(p, { Low: 'b-gray', Medium: 'b-amb', High: 'b-cor', Critical: 'b-red' }[p] || 'b-gray');
+      }
+      function healthBadge(h) {
+        return bx(h, { Healthy: 'b-grn', Watch: 'b-amb', 'At Risk': 'b-cor' }[h] || 'b-gray');
+      }
+      function stageBadge(s) {
+        return bx(s, 'b-pur');
+      }
+      function procBadge(s) {
+        return bx(s, { 'Not Ready': 'b-red', 'Pending Release': 'b-amb', Ready: 'b-grn', Ordered: 'b-blu', Received: 'b-tel' }[s] || 'b-gray');
+      }
+      function riskBadge(r) {
+        return bx(r, { Low: 'b-gray', Medium: 'b-amb', High: 'b-cor', Critical: 'b-red' }[r] || 'b-gray');
+      }
+      function nodeBadge(t) {
+        return bx(t, { Machine: 'b-blu', Module: 'b-pur', Subassembly: 'b-gray' }[t] || 'b-gray');
+      }
+      function progCls(h) {
+        return h === 'Healthy' ? 'pg' : h === 'Watch' ? 'pa' : 'pr';
+      }
+      function projPct(p) {
+        const t = (p.tasks || []).length;
+        if (!t) return 0;
+        return Math.round(((p.tasks || []).filter((x) => x.status === 'Completed').length / t) * 100);
+      }
+      function fmtDate(d) {
+        if (!d) return '';
+        try {
+          return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+        } catch {
+          return d;
+        }
+      }
+
+      // ═══════════════════════════════════════════════
+      //  RENDER HEADER
+      // ═══════════════════════════════════════════════
+      function renderHeader() {
+        const isDetail = UI.view === 'oppdet' || UI.view === 'projdet';
+        const titles = { overview: 'Dashboard', opps: 'Pipeline', oppdet: 'Opportunity', projects: 'Projects', projdet: 'Project', tasks: 'All Tasks', proc: 'Procurement' };
+        document.getElementById('G_title').textContent = titles[UI.view] || 'MEP';
+        let sub = '';
+        if (UI.view === 'overview') sub = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        else if (UI.view === 'opps') sub = `${S.opps.length} requests`;
+        else if (UI.view === 'oppdet') {
+          const o = S.opps.find((x) => x.id === UI.oppDetId);
+          sub = o ? o.customer : '';
+        } else if (UI.view === 'projects') sub = `${S.projects.length} active`;
+        else if (UI.view === 'projdet') {
+          const p = S.projects.find((x) => x.id === UI.projDetId);
+          sub = p ? `${p.customer} · ${p.health || 'Healthy'}` : '';
+          document.getElementById('G_title').textContent = p ? p.title : 'Project';
+        } else if (UI.view === 'tasks') {
+          const bl = S.projects.flatMap((p) => (p.tasks || []).filter((t) => t.status === 'Blocked'));
+          sub = `${S.projects.flatMap((p) => p.tasks || []).length} tasks · ${bl.length} blocked`;
+        } else if (UI.view === 'proc') sub = `Cross-project`;
+        document.getElementById('G_sub').textContent = sub;
+        document.getElementById('MOB_LOGO').style.display = isDetail ? 'none' : 'flex';
+        document.getElementById('G_hdrBtn').innerHTML = isDetail
+          ? `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 9H3M8 4l-5 5 5 5"/></svg>`
+          : `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="5.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="12.5" r="1.5" fill="currentColor" stroke="none"/></svg>`;
+      }
+
+      function updateTaskDot() {
+        const has = S.projects.flatMap((p) => (p.tasks || []).filter((t) => t.status === 'Blocked')).length > 0;
+        ['N_taskDot', 'SB_taskDot'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = has ? '' : 'none';
+        });
+      }
+
+      // ═══════════════════════════════════════════════
+      //  FAB
+      // ═══════════════════════════════════════════════
+      const FAB_MAP = { opps: () => openOppForm(), projects: null, overview: null, tasks: null, proc: null, oppdet: null, projdet: null };
+      let fabFn = null;
+      function updateFab() {
+        const f = document.getElementById('G_fab');
+        fabFn = FAB_MAP[UI.view] || null;
+        // Also show in projdet based on tab
+        if (UI.view === 'projdet') {
+          const p = S.projects.find((x) => x.id === UI.projDetId);
+          if (p) {
+            if (UI.projTab === 'mbs') fabFn = () => openNodeForm(p.id, null, 'Machine');
+            else if (UI.projTab === 'procurement') fabFn = () => openProcForm(p.id);
+            else if (UI.projTab === 'decisions') fabFn = () => openDecForm(p.id);
+            else if (UI.projTab === 'tasks')
+              fabFn = () => {
+                /* handled inline */
+              };
+          }
+        }
+        f.style.display = fabFn ? 'flex' : 'none';
+      }
+      function fabAction() {
+        if (fabFn) fabFn();
+      }
+
+      // ═══════════════════════════════════════════════
+      //  OVERVIEW
+      // ═══════════════════════════════════════════════
+      function renderOverview() {
+        const el = document.getElementById('R_overview');
+        const blocked = S.projects.flatMap((p) => (p.tasks || []).filter((t) => t.status === 'Blocked'));
+        const overdue = S.projects.flatMap((p) => (p.tasks || []).filter((t) => t.due && new Date(t.due) < new Date() && t.status !== 'Completed'));
+        const llRisk = S.projects.flatMap((p) => (p.procurement || []).filter((x) => x.leadWeeks >= 12 && x.status !== 'Ordered' && x.status !== 'Received'));
+
+        let h = `<div class="kgrid">
+    <div class="kpi"><div class="kpi-l">Active Projects</div><div class="kpi-v">${S.projects.length}</div><div class="kpi-s">${S.projects.filter((p) => p.health === 'Healthy').length} healthy</div></div>
+    <div class="kpi"><div class="kpi-l">Overdue Tasks</div><div class="kpi-v" style="color:var(--red-t)">${overdue.length}</div><div class="kpi-s">${overdue.length ? '+' + overdue.length + ' this week' : 'All on time'}</div></div>
+    <div class="kpi"><div class="kpi-l">Active Blockers</div><div class="kpi-v" style="color:var(--amb-t)">${blocked.length}</div><div class="kpi-s">${blocked.filter((t) => t.priority === 'Critical').length} critical</div></div>
+    <div class="kpi"><div class="kpi-l">Long-Lead Risk</div><div class="kpi-v" style="color:var(--cor-t)">${llRisk.length}</div><div class="kpi-s">≥12 wks unordered</div></div>
+  </div>`;
+
+        if (S.projects.length) {
+          h += `<div class="slbl"><span>PROJECT HEALTH</span></div>`;
+          // Desktop: show as grid
+          h += `<div class="card-grid">`;
+          S.projects.forEach((p) => {
+            const pct = projPct(p);
+            const bl = (p.tasks || []).filter((t) => t.status === 'Blocked').length;
+            h += `<div class="card" style="margin:0;" onclick="openProj(${p.id})">
+        <div class="li" style="cursor:pointer;">
+          <div class="li-r"><div class="li-title">${p.title}</div>${healthBadge(p.health || 'Healthy')}</div>
+          <div class="li-r"><span class="li-meta mono">${p.customer}</span>${stageBadge(p.stage || 'Intake')}</div>
+          <div class="prog"><div class="pf ${progCls(p.health || 'Healthy')}" style="width:${pct}%"></div></div>
+          <div class="li-r" style="margin-top:5px;">
+            <span class="li-meta">${pct}% complete · ${p.pm || '—'} · ${fmtDate(p.delivery) || '—'}</span>
+            ${bl ? `<span style="font-size:11px;color:var(--red-t);font-weight:500;">${bl} blocked</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+          });
+          h += `</div>`;
+        }
+
+        if (blocked.length || overdue.length) {
+          h += `<div class="slbl"><span>OVERDUE & BLOCKED</span></div>`;
+          [...blocked, ...overdue.filter((t) => !blocked.find((b) => b.id === t.id))].slice(0, 4).forEach((t) => {
+            const proj = S.projects.find((p) => (p.tasks || []).find((x) => x.id === t.id));
+            const isBlocked = t.status === 'Blocked';
+            h += `<div class="${isBlocked ? 'alert alert-r' : 'alert alert-a'}" style="margin-bottom:8px;" onclick="goView('tasks')">
+        <div class="alert-title">${t.title}</div>
+        <div class="alert-body">${proj ? proj.title : ''} · ${t.owner || '—'}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">${taskBadge(t.status)}${prioBadge(t.priority || 'Medium')}</div>
+      </div>`;
+          });
+        }
+        h += `<div class="sp"></div>`;
+        el.innerHTML = h;
+      }
+
+      // ═══════════════════════════════════════════════
+      //  OPPORTUNITIES
+      // ═══════════════════════════════════════════════
+      function renderOpps() {
+        const el = document.getElementById('R_opps');
+        if (!S.opps.length) {
+          el.innerHTML = emptyState('Pipeline', 'No opportunities yet', 'Capture machine requests from sales. Each opportunity flows through feasibility → approval → project conversion.', '+ New Request', 'openOppForm()');
+          return;
+        }
+        const groups = { New: [], Feasibility: [], Approved: [], Converted: [] };
+        S.opps.forEach((o) => (groups[o.status] || []).push(o));
+        let h = '';
+        ['New', 'Feasibility', 'Approved', 'Converted'].forEach((g) => {
+          if (!groups[g].length) return;
+          h += `<div class="slbl"><span>${g.toUpperCase()}</span><button class="slbl-btn" onclick="openOppForm()">+</button></div><div class="card">`;
+          groups[g].forEach((o) => {
+            h += `<div class="li" onclick="goView('oppdet',{oppId:${o.id}})">
+        <div class="li-r"><div class="li-title">${o.title}</div>${oppBadge(o.status)}</div>
+        <div class="li-r"><span class="li-sub">${o.customer}</span><span class="li-meta">${o.machineType || ''} · ${o.axes || '?'} axes</span></div>
+        <div class="li-meta">Delivery: ${o.delivery || 'TBD'} · ${o.createdBy || '—'}</div>
+      </div>`;
+          });
+          h += `</div>`;
+        });
+        h += `<div class="sp"></div>`;
+        el.innerHTML = h;
+      }
+
+      // ═══════════════════════════════════════════════
+      //  OPP DETAIL
+      // ═══════════════════════════════════════════════
+      function renderOppDet() {
+        const el = document.getElementById('R_oppdet');
+        const o = S.opps.find((x) => x.id === UI.oppDetId);
+        if (!o) {
+          el.innerHTML = '';
+          return;
+        }
+        const proj = S.projects.find((p) => p.oppId === o.id);
+        let h = `<div class="slbl"><span>OVERVIEW</span></div>
+  <div class="card">
+    <div class="li" style="cursor:default;">
+      <div class="li-r"><div class="li-title" style="font-size:16px;">${o.title}</div>${oppBadge(o.status)}</div>
+      <div class="li-sub" style="margin-top:2px;">${o.customer}</div>
+    </div>
+  </div>
+  <div class="slbl"><span>DETAILS</span></div>
+  <div class="card"><div class="li" style="cursor:default;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><div class="li-meta">Machine Type</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.machineType || '—'}</div></div>
+      <div><div class="li-meta">Axes</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.axes || '—'}</div></div>
+      <div><div class="li-meta">Target Delivery</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.delivery || '—'}</div></div>
+      <div><div class="li-meta">Sales Rep</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.createdBy || '—'}</div></div>
+    </div>
+  </div></div>`;
+        if (o.requirements) h += `<div class="slbl"><span>REQUIREMENTS</span></div><div class="card"><div class="li" style="cursor:default;"><div class="li-sub" style="line-height:1.65;">${o.requirements}</div></div></div>`;
+
+        if (proj) {
+          h += `<div class="slbl"><span>LINKED PROJECT</span></div>
+    <div class="card"><div class="li" onclick="openProj(${proj.id})">
+      <div class="li-r"><div class="li-title">${proj.title}</div>${healthBadge(proj.health || 'Healthy')}</div>
+      <div class="li-meta">${proj.stage} · PM: ${proj.pm}</div>
+    </div></div>`;
+        } else {
+          h += `<div class="slbl"><span>WORKFLOW ACTIONS</span></div><div class="card">`;
+          if (o.status === 'New') h += `<div class="li" onclick="advOpp(${o.id},'Feasibility')"><div class="li-r"><div class="li-title">Start Feasibility Review</div><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--blu)" stroke-width="1.5" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div><div class="li-meta">Move to technical feasibility stage</div></div>`;
+          if (o.status === 'Feasibility') h += `<div class="li" onclick="advOpp(${o.id},'Approved')"><div class="li-r"><div class="li-title">Approve Opportunity</div><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--grn)" stroke-width="1.5" stroke-linecap="round"><path d="M3 8l3.5 3.5L13 4"/></svg></div><div class="li-meta">Mark as approved — ready to convert</div></div>`;
+          if (o.status !== 'New')
+            h += `<div class="li" onclick="openConvertForm(${o.id})"><div class="li-r"><div class="li-title" style="color:var(--blu);">Convert to Project</div><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--blu)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="5" width="12" height="9" rx="1.5"/><path d="M6 5V4a2 2 0 0 1 4 0v1"/></svg></div><div class="li-meta">Assign PM, log kickoff, begin engineering</div></div>`;
+          h += `</div>`;
+        }
+
+        h += `<div class="slbl"><span>EDIT</span></div><div class="card">
+    <div class="li" onclick="openOppEdit(${o.id})"><div class="li-title">Edit Opportunity</div></div>
+    <div class="li" onclick="delOpp(${o.id})"><div class="li-title" style="color:var(--red-t)">Delete</div></div>
+  </div><div class="sp"></div>`;
+        el.innerHTML = h;
+      }
+
+      function advOpp(id, s) {
+        const o = S.opps.find((x) => x.id === id);
+        if (o) {
+          o.status = s;
+          save();
+          renderAll();
+        }
+      }
+
+      // ═══════════════════════════════════════════════
+      //  PROJECTS
+      // ═══════════════════════════════════════════════
+      function renderProjects() {
+        const el = document.getElementById('R_projects');
+        if (!S.projects.length) {
+          el.innerHTML = emptyState('Projects', 'No projects yet', 'Create an opportunity in Pipeline and convert it to a project.', 'Go to Pipeline →', 'goView("opps")');
+          return;
+        }
+        let h = `<div class="slbl"><span>ACTIVE PROJECTS</span></div><div class="card-grid">`;
+        S.projects.forEach((p) => {
+          const pct = projPct(p);
+          const bl = (p.tasks || []).filter((t) => t.status === 'Blocked').length;
+          h += `<div class="card" style="margin:0;" onclick="openProj(${p.id})">
+      <div class="li" style="cursor:pointer;">
+        <div class="li-r"><div class="li-title">${p.title}</div>${healthBadge(p.health || 'Healthy')}</div>
+        <div class="li-r"><span class="li-meta">${p.customer}</span>${stageBadge(p.stage || 'Intake')}</div>
+        <div class="prog"><div class="pf ${progCls(p.health || 'Healthy')}" style="width:${pct}%"></div></div>
+        <div class="li-r" style="margin-top:5px;"><span class="li-meta">${pct}% · ${p.pm || '—'} · ${fmtDate(p.delivery) || '—'}</span>${bl ? `<span style="font-size:11px;color:var(--red-t);font-weight:500;">${bl} blocked</span>` : ''}</div>
+      </div>
+    </div>`;
+        });
+        h += `</div><div class="sp"></div>`;
+        el.innerHTML = h;
+      }
+
+      function openProj(id) {
+        goView('projdet', { projId: id, tab: 'overview' });
+      }
+
+      // ═══════════════════════════════════════════════
+      //  PROJECT DETAIL
+      // ═══════════════════════════════════════════════
+      function renderProjDet() {
+        const el = document.getElementById('R_projdet');
+        const p = S.projects.find((x) => x.id === UI.projDetId);
+        if (!p) {
+          el.innerHTML = '';
+          return;
+        }
+        const si = STAGES.indexOf(p.stage || 'Intake');
+        let stgH = `<div class="stages">`;
+        STAGES.forEach((s, i) => {
+          const cls = i < si ? 'stg-d' : i === si ? 'stg-n' : 'stg-t';
+          stgH += `<div class="stg ${cls}">${s}${i < si ? ' ✓' : ''}</div>`;
+          if (i < STAGES.length - 1) stgH += `<div class="stg-ln ${i < si ? 'stg-ld' : 'stg-lt'}"></div>`;
+        });
+        stgH += `</div>`;
+        const tabLabels = ['Overview', 'MBS Tree', 'Tasks', 'Procurement', 'Decisions'];
+        const tabKeys = ['overview', 'mbs', 'tasks', 'procurement', 'decisions'];
+        let tabH = `<div class="tabs">`;
+        tabKeys.forEach((k, i) => {
+          tabH += `<button class="tab ${UI.projTab === k ? 'on' : ''}" onclick="setProjTab('${k}')">${tabLabels[i]}</button>`;
+        });
+        tabH += `</div>`;
+        let content = '';
+        if (UI.projTab === 'overview') content = renderPOv(p);
+        else if (UI.projTab === 'mbs') content = renderMBS(p);
+        else if (UI.projTab === 'tasks') content = renderPTasks(p);
+        else if (UI.projTab === 'procurement') content = renderPProc(p);
+        else if (UI.projTab === 'decisions') content = renderPDecs(p);
+        el.innerHTML = stgH + tabH + content;
+      }
+
+      function setProjTab(t) {
+        UI.projTab = t;
+        renderProjDet();
+        updateFab();
+      }
+
+      function renderPOv(p) {
+        const bl = (p.tasks || []).filter((t) => t.status === 'Blocked');
+        let h = `<div class="slbl"><span>PROJECT HEALTH</span></div>
+  <div style="padding:0 16px 12px;"><div class="seg">`;
+        HEALTH.forEach((hv) => {
+          h += `<div class="so ${(p.health || 'Healthy') === hv ? 'on' : ''}" onclick="setHealth(${p.id},'${hv}')">${hv}</div>`;
+        });
+        h += `</div></div>`;
+        h += `<div class="slbl"><span>DETAILS</span><button class="slbl-btn" onclick="openProjEdit(${p.id})">Edit</button></div>
+  <div class="card"><div class="li" style="cursor:default;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><div class="li-meta">Customer</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${p.customer}</div></div>
+      <div><div class="li-meta">Project Manager</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${p.pm || '—'}</div></div>
+      <div><div class="li-meta">Delivery Target</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${p.delivery || '—'}</div></div>
+      <div><div class="li-meta">Stage</div><div style="margin-top:2px;">${stageBadge(p.stage || 'Intake')}</div></div>
+    </div>
+  </div></div>`;
+        // Stage advance
+        const si = STAGES.indexOf(p.stage || 'Intake');
+        if (si < STAGES.length - 1) {
+          h += `<div style="padding:10px 16px;"><button style="width:100%;padding:11px;border-radius:var(--rs);background:var(--grn-l);color:var(--grn-t);border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);" onclick="advanceStage(${p.id})">Advance to ${STAGES[si + 1]} →</button></div>`;
+        }
+        if (p.kickoffNotes) h += `<div class="slbl"><span>KICKOFF NOTES</span></div><div class="card"><div class="li" style="cursor:default;"><div class="li-meta" style="margin-bottom:5px;">${fmtDate(p.kickoffDate)}</div><div class="li-sub" style="line-height:1.65;">${p.kickoffNotes}</div></div></div>`;
+
+        h += `<div class="slbl"><span>MILESTONES</span><button class="slbl-btn" onclick="openMilestoneForm(${p.id})">+ Add</button></div>`;
+        if ((p.milestones || []).length) {
+          h += `<div class="card">`;
+          p.milestones.forEach((m, i) => {
+            const done = m.status === 'Done';
+            h += `<div class="li" onclick="toggleMilestone(${p.id},${i})">
+        <div class="li-r">
+          <div style="display:flex;align-items:center;gap:9px;">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="${done ? 'var(--grn)' : 'var(--b2)'}" stroke-width="1.5"/>${done ? '<path d="M5.5 9.5l2.5 2.5L13 6.5" stroke="var(--grn)" stroke-width="1.5" stroke-linecap="round"/>' : ''}</svg>
+            <span class="li-sub" style="${done ? 'text-decoration:line-through;color:var(--t3);' : ''}">${m.title}</span>
+          </div>
+          <span class="mono" style="color:${done ? 'var(--t3)' : 'var(--t2)'};">${fmtDate(m.date)}</span>
+        </div>
+      </div>`;
+          });
+          h += `</div>`;
+        } else {
+          h += `<div class="card"><div class="li" style="cursor:default;text-align:center;"><div class="li-meta">No milestones. Add key dates like Design Release, Build Start.</div></div></div>`;
+        }
+
+        if (bl.length) {
+          h += `<div class="slbl"><span>ACTIVE BLOCKERS</span></div>`;
+          bl.forEach((t) => {
+            h += `<div class="alert alert-r" style="margin-bottom:8px;">
+        <div class="alert-title">${t.title}</div>
+        <div class="alert-body">Owner: ${t.owner || '—'} · ${t.dept || '—'}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;">${prioBadge(t.priority || 'Medium')}</div>
+      </div>`;
+          });
+        }
+
+        h += `<div class="slbl"><span>DANGER ZONE</span></div>
+  <div class="card"><div class="li" onclick="delProj(${p.id})"><div class="li-title" style="color:var(--red-t);">Delete Project</div></div></div><div class="sp"></div>`;
+        return h;
+      }
+
+      function setHealth(pid, h) {
+        const p = S.projects.find((x) => x.id === pid);
+        if (p) {
+          p.health = h;
+          save();
+          renderProjDet();
+          renderAll();
+        }
+      }
+      function advanceStage(pid) {
+        const p = S.projects.find((x) => x.id === pid);
+        if (!p) return;
+        const si = STAGES.indexOf(p.stage || 'Intake');
+        if (si < STAGES.length - 1) {
+          p.stage = STAGES[si + 1];
+          save();
+          renderAll();
+          renderProjDet();
+        }
+      }
+      function toggleMilestone(pid, idx) {
+        const p = S.projects.find((x) => x.id === pid);
+        if (!p || !p.milestones[idx]) return;
+        p.milestones[idx].status = p.milestones[idx].status === 'Done' ? 'Pending' : 'Done';
+        save();
+        renderProjDet();
+      }
+
+      // MBS TREE
+      function renderMBS(p) {
+        const nodes = p.nodes || [],
+          tasks = p.tasks || [];
+        function renderNode(node, depth) {
+          const indent = 16 + depth * 16;
+          const children = nodes.filter((n) => n.parentId === node.id);
+          const isLeaf = node.type === 'Subassembly';
+          const ntasks = tasks.filter((t) => t.nodeId === node.id);
+          const blocked = ntasks.some((t) => t.status === 'Blocked');
+          const done = ntasks.length && ntasks.every((t) => t.status === 'Completed');
+          let h = `<div class="tn ${blocked ? 'blk' : ''}" style="padding-left:${indent}px;" onclick="void(0)">
+      <span class="caret">${children.length || isLeaf ? '▼' : '▶'}</span>
+      ${nodeBadge(node.type)}
+      <span class="tn-lbl" style="font-weight:${node.type === 'Machine' ? 600 : 400};">${node.label}</span>
+      ${done ? `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--grn-l)"/><path d="M4 7l2 2 4-4" stroke="var(--grn)" stroke-width="1.5" stroke-linecap="round"/></svg>` : ''}`;
+          if (node.type !== 'Subassembly') {
+            const ct = node.type === 'Machine' ? 'Module' : 'Subassembly';
+            h += `<button class="add-c" onclick="event.stopPropagation();openNodeForm(${p.id},${node.id},'${ct}')">+ ${ct}</button>`;
+          } else {
+            h += `<button class="add-c" onclick="event.stopPropagation();openTaskForm(${p.id},${node.id})">+ Task</button>`;
+          }
+          h += `</div>`;
+          if (isLeaf && ntasks.length) {
+            ntasks.forEach((t) => {
+              h += `<div class="tn ${t.status === 'Blocked' ? 'blk' : ''}" style="padding-left:${indent + 16}px;" onclick="openTaskEdit(${p.id},'${t.id}')">
+          <span class="caret" style="opacity:0;width:12px;">·</span>
+          ${taskBadge(t.status)}
+          <span class="tn-lbl" style="font-size:12px;">${t.title}</span>
+          ${t.owner ? av(t.owner, 'av-sm') : ''}
+          ${t.due && new Date(t.due) < new Date() && t.status !== 'Completed' ? `<span style="font-size:10px;color:var(--red-t);">⚠</span>` : ''}
+        </div>`;
+            });
+          }
+          children.forEach((c) => (h += renderNode(c, depth + 1)));
+          return h;
+        }
+        const roots = nodes.filter((n) => !n.parentId);
+        if (!roots.length)
+          return `<div class="empty" style="padding:40px 24px;">
+    <div class="ei"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blu)" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="8" width="8" height="8" rx="1.5"/><rect x="13" y="4" width="8" height="5" rx="1.5"/><rect x="13" y="14" width="8" height="5" rx="1.5"/></svg></div>
+    <div class="et">Build your machine structure</div>
+    <div class="es">Add the root Machine node, then Modules and Subassemblies. Tasks attach to Subassemblies.</div>
+    <button class="eb" onclick="openNodeForm(${p.id},null,'Machine')">+ Add Machine</button>
+  </div>`;
+        let h = `<div style="background:var(--s);">`;
+        roots.forEach((r) => (h += renderNode(r, 0)));
+        h += `</div><div style="padding:12px 16px;"><button style="width:100%;padding:10px;border-radius:var(--rs);border:.5px solid var(--blu);background:var(--blu-l);color:var(--blu-t);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);" onclick="openNodeForm(${p.id},null,'Machine')">+ Add Machine Node</button></div><div class="sp"></div>`;
+        return h;
+      }
+
+      // PROJECT TASKS
+      function renderPTasks(p) {
+        const tasks = p.tasks || [];
+        if (!tasks.length)
+          return `<div class="empty" style="padding:40px 24px;">
+    <div class="ei"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blu)" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg></div>
+    <div class="et">No tasks yet</div>
+    <div class="es">Add tasks from the MBS Tree tab. Select a Subassembly and tap "+ Task".</div>
+  </div>`;
+        let h = `<div class="chips" id="ptchips">
+    ${['All', 'Blocked', 'In Progress', 'Not Started', 'Completed'].map((f) => `<div class="chip ${f === 'All' ? 'on' : ''}" onclick="filterPT(this,'${f}',${p.id})">${f}</div>`).join('')}
+  </div>
+  <div style="padding:0 16px;display:flex;justify-content:flex-end;margin-bottom:6px;"><button style="font-size:12px;color:var(--blu);background:none;border:none;cursor:pointer;font-family:var(--ff);" onclick="openTaskForm(${p.id},null)">+ Add Task</button></div>
+  <div class="card" style="margin:0 16px;" id="ptlist">`;
+        tasks.forEach((t) => {
+          const isBlocked = t.status === 'Blocked';
+          const isOverdue = t.due && new Date(t.due) < new Date() && t.status !== 'Completed';
+          h += taskRow(t, p.id, isBlocked, isOverdue);
+        });
+        h += `</div><div class="sp"></div>`;
+        return h;
+      }
+
+      function taskRow(t, pid, isBlocked, isOverdue) {
+        return `<div class="li" style="${isBlocked ? 'background:var(--red-l);' : isOverdue ? 'background:var(--amb-l);' : ''}" onclick="openTaskEdit(${pid},'${t.id}')">
+    <div class="li-r">${taskBadge(t.status)}${prioBadge(t.priority || 'Medium')}</div>
+    <div class="li-title" style="font-size:13px;">${t.title}</div>
+    <div class="li-r">
+      <span class="li-meta">${t.owner || 'Unassigned'} · ${t.dept || '—'}</span>
+      <span class="li-meta mono" style="${isOverdue ? 'color:var(--red-t);' : ''}">${fmtDate(t.due) || 'No date'}${isOverdue ? ' ⚠' : ''}</span>
+    </div>
+  </div>`;
+      }
+
+      function filterPT(el, f, pid) {
+        el.closest('.chips')
+          .querySelectorAll('.chip')
+          .forEach((c) => c.classList.remove('on'));
+        el.classList.add('on');
+        const p = S.projects.find((x) => x.id === pid);
+        if (!p) return;
+        const tasks = (p.tasks || []).filter((t) => f === 'All' || t.status === f);
+        const list = document.getElementById('ptlist');
+        if (!list) return;
+        list.innerHTML = tasks.map((t) => taskRow(t, pid, t.status === 'Blocked', t.due && new Date(t.due) < new Date() && t.status !== 'Completed')).join('') || `<div class="li" style="cursor:default;text-align:center;"><div class="li-meta">No ${f.toLowerCase()} tasks.</div></div>`;
+      }
+
+      // PROJECT PROCUREMENT
+      function renderPProc(p) {
+        const items = p.procurement || [];
+        const ll = items.filter((x) => x.leadWeeks >= 12 && x.status !== 'Ordered' && x.status !== 'Received');
+        let h = '';
+        if (ll.length) {
+          h += `<div class="slbl"><span>LONG-LEAD RISK</span></div>`;
+          ll.forEach((item) => {
+            h += `<div class="alert alert-r" style="margin-bottom:8px;"><div class="alert-title">${item.title}</div><div class="alert-body">${item.supplier || '—'} · ×${item.qty || 1}</div><div style="display:flex;gap:6px;margin-top:8px;"><span class="ll">${item.leadWeeks} wks</span>${riskBadge(item.risk || 'High')}</div></div>`;
+          });
+        }
+        if (!items.length) {
+          h += emptyState('Procurement', 'No items yet', 'Track components, suppliers, and lead times. Flag long-lead items early.', '+ Add Item', `openProcForm(${p.id})`);
+          return h;
+        }
+        h += `<div class="slbl"><span>ALL COMPONENTS</span></div><div class="card">`;
+        items.forEach((item) => {
+          h += `<div class="li" onclick="openProcEdit(${p.id},'${item.id}')">
+      <div class="li-r"><div class="li-title" style="font-size:13px;">${item.title}</div>${item.leadWeeks >= 12 ? `<span class="ll">${item.leadWeeks}wk</span>` : ''}</div>
+      <div class="li-r"><span class="li-meta">${item.supplier || '—'} · ×${item.qty || 1}</span>${procBadge(item.status || 'Not Ready')}</div>
+      <div>${riskBadge(item.risk || 'Low')}</div>
+    </div>`;
+        });
+        h += `</div><div style="padding:12px 16px;"><button style="width:100%;padding:10px;border-radius:var(--rs);border:.5px solid var(--blu);background:var(--blu-l);color:var(--blu-t);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);" onclick="openProcForm(${p.id})">+ Add Component</button></div><div class="sp"></div>`;
+        return h;
+      }
+
+      // PROJECT DECISIONS
+      function renderPDecs(p) {
+        const decs = p.decisions || [];
+        if (!decs.length) return emptyState('Decisions', 'No decisions logged', 'Document key technical and commercial decisions with rationale for full traceability.', '+ Log Decision', `openDecForm(${p.id})`) + `<div class="sp"></div>`;
+        let h = `<div class="slbl"><span>DECISION LOG</span></div><div class="card">`;
+        decs.forEach((d) => {
+          h += `<div class="li" style="cursor:default;">
+      <div class="li-r">
+        <div style="display:flex;align-items:center;gap:8px;">${av(d.by, 'av-sm')}<span class="li-sub" style="font-weight:500;">${d.by}</span></div>
+        <span class="mono" style="color:var(--t3);">${fmtDate(d.date)}</span>
+      </div>
+      <div class="li-title" style="font-size:13px;margin-bottom:4px;">${d.title}</div>
+      <div class="li-meta" style="line-height:1.55;">${d.rationale || ''}</div>
+    </div>`;
+        });
+        h += `</div><div style="padding:12px 16px;"><button style="width:100%;padding:10px;border-radius:var(--rs);border:.5px solid var(--blu);background:var(--blu-l);color:var(--blu-t);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);" onclick="openDecForm(${p.id})">+ Log Decision</button></div><div class="sp"></div>`;
+        return h;
+      }
+
+      // ═══════════════════════════════════════════════
+      //  ALL TASKS
+      // ═══════════════════════════════════════════════
+      function renderTasks() {
+        const el = document.getElementById('R_tasks');
+        const all = S.projects.flatMap((p) => (p.tasks || []).map((t) => ({ ...t, _proj: p })));
+        if (!all.length) {
+          el.innerHTML = emptyState('Tasks', 'No tasks yet', 'Tasks are created inside projects via the MBS Tree.', 'Go to Projects →', 'goView("projects")');
+          return;
+        }
+        const f = UI.taskFilter || 'All';
+        const filtered = f === 'All' ? all : all.filter((t) => t.status === f);
+        let h = `<div class="chips">
+    ${['All', 'Blocked', 'In Progress', 'Not Started', 'Completed'].map((ff) => `<div class="chip ${f === ff ? 'on' : ''}" onclick="setTF('${ff}')">${ff}</div>`).join('')}
+  </div>
+  <div style="padding:0 16px;font-size:11px;color:var(--t3);margin-bottom:8px;">${filtered.length} task${filtered.length !== 1 ? 's' : ''} · ${all.filter((t) => t.status === 'Blocked').length} blocked</div>`;
+        if (filtered.length) {
+          h += `<div class="card" style="margin:0 16px;">`;
+          filtered.forEach((t) => {
+            const isBlocked = t.status === 'Blocked';
+            const isOverdue = t.due && new Date(t.due) < new Date() && t.status !== 'Completed';
+            h += `<div class="li" style="${isBlocked ? 'background:var(--red-l);' : isOverdue ? 'background:var(--amb-l);' : ''}" onclick="openTaskEdit(${t._proj.id},'${t.id}')">
+        <div class="li-r">${taskBadge(t.status)}${prioBadge(t.priority || 'Medium')}</div>
+        <div class="li-title" style="font-size:13px;">${t.title}</div>
+        <div class="li-r">
+          <span class="li-meta">${t._proj.title} · ${t.owner || '—'}</span>
+          <span class="li-meta mono" style="${isOverdue ? 'color:var(--red-t);' : ''}">${fmtDate(t.due) || '—'}${isOverdue ? ' ⚠' : ''}</span>
+        </div>
+      </div>`;
+          });
+          h += `</div>`;
+        } else {
+          h += `<div class="card" style="margin:0 16px;"><div class="li" style="cursor:default;text-align:center;"><div class="li-meta">No ${f.toLowerCase()} tasks.</div></div></div>`;
+        }
+        h += `<div class="sp"></div>`;
+        el.innerHTML = h;
+      }
+      function setTF(f) {
+        UI.taskFilter = f;
+        renderTasks();
+      }
+
+      // ═══════════════════════════════════════════════
+      //  PROCUREMENT DASHBOARD
+      // ═══════════════════════════════════════════════
+      function renderProc() {
+        const el = document.getElementById('R_proc');
+        const all = S.projects.flatMap((p) => (p.procurement || []).map((x) => ({ ...x, _proj: p })));
+        const notReady = all.filter((x) => x.status === 'Not Ready');
+        const pending = all.filter((x) => x.status === 'Pending Release');
+        const ready = all.filter((x) => x.status === 'Ready');
+        const ordered = all.filter((x) => x.status === 'Ordered');
+        const ll = all.filter((x) => x.leadWeeks >= 12 && x.status !== 'Ordered' && x.status !== 'Received');
+
+        let h = `<div class="kgrid">
+    <div class="kpi"><div class="kpi-l">Not Ready</div><div class="kpi-v" style="color:var(--red-t)">${notReady.length}</div><div class="kpi-s">Designs unreleased</div></div>
+    <div class="kpi"><div class="kpi-l">Pending Release</div><div class="kpi-v" style="color:var(--amb-t)">${pending.length}</div><div class="kpi-s">Awaiting sign-off</div></div>
+    <div class="kpi"><div class="kpi-l">Ready to Order</div><div class="kpi-v" style="color:var(--grn-t)">${ready.length}</div><div class="kpi-s">Order now</div></div>
+    <div class="kpi"><div class="kpi-l">Long-Lead Risk</div><div class="kpi-v" style="color:var(--cor-t)">${ll.length}</div><div class="kpi-s">≥12 wks unordered</div></div>
+  </div>`;
+
+        if (ll.length) {
+          h += `<div class="slbl"><span>LONG-LEAD RISK</span></div>`;
+          ll.forEach((item) => {
+            h += `<div class="alert alert-r" style="margin-bottom:8px;">
+        <div class="alert-title">${item.title}</div>
+        <div class="alert-body">${item._proj.title} · ${item.supplier || '—'}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;"><span class="ll">${item.leadWeeks} wks</span>${riskBadge(item.risk || 'High')}${procBadge(item.status)}</div>
+      </div>`;
+          });
+        }
+
+        h += `<div class="slbl"><span>ALL ITEMS</span></div><div class="card" style="margin:0 16px;">`;
+        if (!all.length) {
+          h += `<div class="li" style="cursor:default;text-align:center;"><div class="li-meta">No procurement items yet. Add them inside a project.</div></div>`;
+        }
+        all.forEach((item) => {
+          h += `<div class="li" onclick="openProj(${item._proj.id});setProjTab('procurement')">
+      <div class="li-r"><div class="li-title" style="font-size:13px;">${item.title}</div>${item.leadWeeks >= 12 ? `<span class="ll">${item.leadWeeks}wk</span>` : ''}</div>
+      <div class="li-r"><span class="li-meta">${item._proj.title} · ${item.supplier || '—'}</span>${procBadge(item.status || 'Not Ready')}</div>
+    </div>`;
+        });
+        h += `</div><div class="sp"></div>`;
+        el.innerHTML = h;
+      }
+
+      // ═══════════════════════════════════════════════
+      //  SHEETS / FORMS
+      // ═══════════════════════════════════════════════
+      let _onSubmit = null;
+      function openSheet(title, body, foot, onSubmit) {
+        document.getElementById('SH_title').textContent = title;
+        document.getElementById('SH_body').innerHTML = body;
+        document.getElementById('SH_foot').innerHTML = foot || `<div class="btn-row"><button class="btn btn-s" onclick="closeSheet()">Cancel</button><button class="btn btn-p" onclick="_onSubmit&&_onSubmit()">Save</button></div>`;
+        document.getElementById('SHEET').classList.add('on');
+        document.getElementById('BACKDROP').classList.add('on');
+        _onSubmit = onSubmit;
+      }
+      function closeSheet() {
+        document.getElementById('SHEET').classList.remove('on');
+        document.getElementById('BACKDROP').classList.remove('on');
+        _onSubmit = null;
+      }
+      function fv(id) {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+      }
+      function sel(id, opts, cur) {
+        return `<select id="${id}">${opts.map((o) => `<option ${o === cur ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+      }
+
+      // OPP FORM
+      function openOppForm() {
+        openSheet(
+          'New Machine Request',
+          `<div class="field"><label class="fl">Request Title *</label><input id="f_ti" placeholder="e.g. High-Speed Labeling System MK3"></div>
+   <div class="field"><label class="fl">Customer *</label><input id="f_cu" placeholder="e.g. BrewTech AG"></div>
+   <div class="field"><label class="fl">Machine Type</label><input id="f_mt" placeholder="e.g. Labeling System"></div>
+   <div class="field"><label class="fl">Number of Axes</label><input id="f_ax" type="number" min="1" placeholder="e.g. 6"></div>
+   <div class="field"><label class="fl">Target Delivery</label><input id="f_de" placeholder="e.g. Q4 2025"></div>
+   <div class="field"><label class="fl">Sales Representative</label><input id="f_cr" placeholder="Your name"></div>
+   <div class="field"><label class="fl">Key Requirements</label><textarea id="f_req" placeholder="IP65, 600 bpm, EN-ISO 13849 PLd..."></textarea></div>`,
+          null,
+          () => {
+            const ti = fv('f_ti'),
+              cu = fv('f_cu');
+            if (!ti || !cu) {
+              alert('Title and customer required.');
+              return;
+            }
+            S.opps.push({ id: S._oppId++, title: ti, customer: cu, machineType: fv('f_mt'), axes: fv('f_ax'), delivery: fv('f_de'), createdBy: fv('f_cr'), requirements: fv('f_req'), status: 'New', createdAt: new Date().toISOString().split('T')[0] });
+            save();
+            closeSheet();
+            renderAll();
+          },
+        );
+      }
+
+      function openOppEdit(id) {
+        const o = S.opps.find((x) => x.id === id);
+        if (!o) return;
+        openSheet(
+          'Edit Opportunity',
+          `<div class="field"><label class="fl">Title</label><input id="f_ti" value="${o.title}"></div>
+   <div class="field"><label class="fl">Customer</label><input id="f_cu" value="${o.customer}"></div>
+   <div class="field"><label class="fl">Machine Type</label><input id="f_mt" value="${o.machineType || ''}"></div>
+   <div class="field"><label class="fl">Axes</label><input id="f_ax" type="number" value="${o.axes || ''}"></div>
+   <div class="field"><label class="fl">Delivery</label><input id="f_de" value="${o.delivery || ''}"></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st', OPP_ST, o.status)}</div>
+   <div class="field"><label class="fl">Requirements</label><textarea id="f_req">${o.requirements || ''}</textarea></div>`,
+          null,
+          () => {
+            o.title = fv('f_ti') || o.title;
+            o.customer = fv('f_cu') || o.customer;
+            o.machineType = fv('f_mt');
+            o.axes = fv('f_ax');
+            o.delivery = fv('f_de');
+            o.status = fv('f_st') || o.status;
+            o.requirements = fv('f_req');
+            save();
+            closeSheet();
+            renderAll();
+          },
+        );
+      }
+
+      // CONVERT
+      function openConvertForm(oid) {
+        const o = S.opps.find((x) => x.id === oid);
+        if (!o) return;
+        openSheet(
+          'Convert to Project',
+          `<div class="info-box">Converting: <strong>${o.title}</strong></div>
+   <div class="field"><label class="fl">Project Title *</label><input id="f_pt" value="${o.title}"></div>
+   <div class="field"><label class="fl">Project Manager *</label><input id="f_pm" placeholder="PM name"></div>
+   <div class="field"><label class="fl">Kickoff Date</label><input id="f_kd" type="date"></div>
+   <div class="field"><label class="fl">Kickoff Notes / Scope Summary</label><textarea id="f_kn" placeholder="Attendees, scope confirmed, key risks, decisions made at kickoff..."></textarea></div>`,
+          null,
+          () => {
+            const pt = fv('f_pt'),
+              pm = fv('f_pm');
+            if (!pt || !pm) {
+              alert('Title and PM required.');
+              return;
+            }
+            const p = {
+              id: S._projId++,
+              title: pt,
+              customer: o.customer,
+              machineType: o.machineType,
+              axes: o.axes,
+              delivery: o.delivery,
+              pm,
+              kickoffDate: fv('f_kd'),
+              kickoffNotes: fv('f_kn'),
+              stage: 'Intake',
+              health: 'Healthy',
+              oppId: o.id,
+              nodes: [],
+              tasks: [],
+              procurement: [],
+              decisions: [],
+              milestones: [],
+              createdAt: new Date().toISOString().split('T')[0],
+            };
+            S.projects.push(p);
+            o.status = 'Converted';
+            save();
+            closeSheet();
+            goView('projdet', { projId: p.id, tab: 'overview' });
+          },
+        );
+      }
+
+      // PROJECT EDIT
+      function openProjEdit(pid) {
+        const p = S.projects.find((x) => x.id === pid);
+        if (!p) return;
+        openSheet(
+          'Edit Project',
+          `<div class="field"><label class="fl">Title</label><input id="f_pt" value="${p.title}"></div>
+   <div class="field"><label class="fl">Customer</label><input id="f_cu" value="${p.customer}"></div>
+   <div class="field"><label class="fl">Project Manager</label><input id="f_pm" value="${p.pm || ''}"></div>
+   <div class="field"><label class="fl">Delivery Target</label><input id="f_de" value="${p.delivery || ''}"></div>
+   <div class="field"><label class="fl">Stage</label>${sel('f_st', STAGES, p.stage || 'Intake')}</div>
+   <div class="field"><label class="fl">Kickoff Notes</label><textarea id="f_kn">${p.kickoffNotes || ''}</textarea></div>`,
+          null,
+          () => {
+            p.title = fv('f_pt') || p.title;
+            p.customer = fv('f_cu') || p.customer;
+            p.pm = fv('f_pm');
+            p.delivery = fv('f_de');
+            p.stage = fv('f_st') || p.stage;
+            p.kickoffNotes = fv('f_kn');
+            save();
+            closeSheet();
+            renderAll();
+          },
+        );
+      }
+
+      // NODE FORM
+      function openNodeForm(pid, parentId, type) {
+        const p = S.projects.find((x) => x.id === pid);
+        const parent = parentId ? (p.nodes || []).find((n) => n.id === parentId) : null;
+        openSheet(
+          `Add ${type}`,
+          `${parent ? `<div class="info-box">Under: <strong>${parent.label}</strong></div>` : ''}
+   <div class="field"><label class="fl">${type} Name *</label><input id="f_nl" placeholder="${type === 'Machine' ? 'e.g. BTL-MK3 Labeling Unit' : type === 'Module' ? 'e.g. Drive System' : 'e.g. Servo Drive Train'}"></div>
+   <div style="font-size:12px;color:var(--t3);padding:8px 0;">${type === 'Subassembly' ? 'Tasks attach here.' : type === 'Module' ? 'Add Subassemblies inside.' : 'Top-level machine node.'}</div>`,
+          null,
+          () => {
+            const label = fv('f_nl');
+            if (!label) {
+              alert('Name required.');
+              return;
+            }
+            if (!p.nodes) p.nodes = [];
+            p.nodes.push({ id: S._nodeId++, type, label, parentId: parentId || null });
+            save();
+            closeSheet();
+            renderProjDet();
+          },
+        );
+      }
+
+      // TASK FORM
+      function openTaskForm(pid, nodeId) {
+        const p = S.projects.find((x) => x.id === pid);
+        const node = nodeId ? (p.nodes || []).find((n) => n.id === nodeId) : null;
+        openSheet(
+          'Add Task',
+          `${node ? `<div class="info-box">Subassembly: <strong>${node.label}</strong></div>` : ''}
+   <div class="field"><label class="fl">Task Title *</label><input id="f_tt" placeholder="e.g. Servo sizing calculation"></div>
+   <div class="field"><label class="fl">Owner</label><input id="f_ow" placeholder="Engineer name"></div>
+   <div class="field"><label class="fl">Department</label>${sel('f_dp', [''].concat(DEPTS), '')}</div>
+   <div class="field"><label class="fl">Priority</label>${sel('f_pr', PRIOS, 'Medium')}</div>
+   <div class="field"><label class="fl">Due Date</label><input id="f_du" type="date"></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st', TASK_ST, 'Not Started')}</div>`,
+          null,
+          () => {
+            const title = fv('f_tt');
+            if (!title) {
+              alert('Title required.');
+              return;
+            }
+            if (!p.tasks) p.tasks = [];
+            p.tasks.push({ id: uid(), nodeId: nodeId || null, title, owner: fv('f_ow'), dept: fv('f_dp'), priority: fv('f_pr') || 'Medium', due: fv('f_du'), status: fv('f_st') || 'Not Started' });
+            save();
+            closeSheet();
+            renderAll();
+            if (UI.view === 'projdet') renderProjDet();
+          },
+        );
+      }
+
+      // TASK EDIT
+      function openTaskEdit(pid, tid) {
+        const p = S.projects.find((x) => x.id === pid);
+        const t = (p.tasks || []).find((x) => x.id === tid);
+        if (!t) return;
+        openSheet(
+          'Edit Task',
+          `<div class="field"><label class="fl">Title</label><input id="f_tt" value="${t.title.replace(/"/g, '&quot;')}"></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st', TASK_ST, t.status)}</div>
+   <div class="field"><label class="fl">Priority</label>${sel('f_pr', PRIOS, t.priority || 'Medium')}</div>
+   <div class="field"><label class="fl">Owner</label><input id="f_ow" value="${t.owner || ''}"></div>
+   <div class="field"><label class="fl">Department</label>${sel('f_dp', [''].concat(DEPTS), t.dept || '')}</div>
+   <div class="field"><label class="fl">Due Date</label><input id="f_du" type="date" value="${t.due || ''}"></div>`,
+          `<div class="btn-row"><button class="btn btn-d" onclick="delTask(${pid},'${tid}')">Delete</button><button class="btn btn-s" onclick="closeSheet()">Cancel</button><button class="btn btn-p" onclick="_onSubmit&&_onSubmit()">Save</button></div>`,
+          () => {
+            t.title = fv('f_tt') || t.title;
+            t.status = fv('f_st') || t.status;
+            t.priority = fv('f_pr') || t.priority;
+            t.owner = fv('f_ow');
+            t.dept = fv('f_dp');
+            t.due = fv('f_du');
+            save();
+            closeSheet();
+            renderAll();
+            if (UI.view === 'projdet') renderProjDet();
+          },
+        );
+      }
+
+      // PROCUREMENT FORM
+      function openProcForm(pid) {
+        openSheet(
+          'Add Component',
+          `<div class="field"><label class="fl">Component Name *</label><input id="f_pn" placeholder="e.g. Servo Drives IndraDrive Cs ×6"></div>
+   <div class="field"><label class="fl">Supplier</label><input id="f_su" placeholder="e.g. Bosch Rexroth"></div>
+   <div class="field"><label class="fl">Quantity</label><input id="f_qt" type="number" min="1" placeholder="1"></div>
+   <div class="field"><label class="fl">Lead Time (weeks)</label><input id="f_lw" type="number" min="0" placeholder="e.g. 14"><div style="font-size:11px;color:var(--t3);margin-top:3px;">Items ≥12 weeks will be flagged as long-lead risk.</div></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st', PROC_ST, 'Not Ready')}</div>
+   <div class="field"><label class="fl">Risk Level</label>${sel('f_ri', RISKS, 'Medium')}</div>`,
+          null,
+          () => {
+            const pn = fv('f_pn');
+            if (!pn) {
+              alert('Component name required.');
+              return;
+            }
+            const p = S.projects.find((x) => x.id === pid);
+            if (!p.procurement) p.procurement = [];
+            p.procurement.push({ id: uid(), title: pn, supplier: fv('f_su'), qty: parseInt(fv('f_qt')) || 1, leadWeeks: parseInt(fv('f_lw')) || 0, status: fv('f_st') || 'Not Ready', risk: fv('f_ri') || 'Medium' });
+            save();
+            closeSheet();
+            renderProjDet();
+            renderProc();
+          },
+        );
+      }
+
+      function openProcEdit(pid, itemId) {
+        const p = S.projects.find((x) => x.id === pid);
+        const item = (p.procurement || []).find((x) => x.id === itemId);
+        if (!item) return;
+        openSheet(
+          'Edit Component',
+          `<div class="field"><label class="fl">Name</label><input id="f_pn" value="${item.title}"></div>
+   <div class="field"><label class="fl">Supplier</label><input id="f_su" value="${item.supplier || ''}"></div>
+   <div class="field"><label class="fl">Quantity</label><input id="f_qt" type="number" value="${item.qty || 1}"></div>
+   <div class="field"><label class="fl">Lead Time (weeks)</label><input id="f_lw" type="number" value="${item.leadWeeks || 0}"></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st', PROC_ST, item.status)}</div>
+   <div class="field"><label class="fl">Risk</label>${sel('f_ri', RISKS, item.risk || 'Medium')}</div>`,
+          `<div class="btn-row"><button class="btn btn-d" onclick="delProc(${pid},'${itemId}')">Delete</button><button class="btn btn-s" onclick="closeSheet()">Cancel</button><button class="btn btn-p" onclick="_onSubmit&&_onSubmit()">Save</button></div>`,
+          () => {
+            item.title = fv('f_pn') || item.title;
+            item.supplier = fv('f_su');
+            item.qty = parseInt(fv('f_qt')) || item.qty;
+            item.leadWeeks = parseInt(fv('f_lw')) || 0;
+            item.status = fv('f_st') || item.status;
+            item.risk = fv('f_ri') || item.risk;
+            save();
+            closeSheet();
+            renderProjDet();
+            renderProc();
+          },
+        );
+      }
+
+      // DECISION FORM
+      function openDecForm(pid) {
+        const today = new Date().toISOString().split('T')[0];
+        openSheet(
+          'Log Decision',
+          `<div class="field"><label class="fl">Decision *</label><input id="f_dt" placeholder="e.g. Servo platform: Bosch Rexroth IndraDrive Cs selected"></div>
+   <div class="field"><label class="fl">Rationale</label><textarea id="f_dr" placeholder="Why was this decided? What alternatives were evaluated?"></textarea></div>
+   <div class="field"><label class="fl">Decision By *</label><input id="f_db" placeholder="Name"></div>
+   <div class="field"><label class="fl">Date</label><input id="f_dd" type="date" value="${today}"></div>`,
+          null,
+          () => {
+            const dt = fv('f_dt'),
+              db = fv('f_db');
+            if (!dt || !db) {
+              alert('Decision and name required.');
+              return;
+            }
+            const p = S.projects.find((x) => x.id === pid);
+            if (!p.decisions) p.decisions = [];
+            p.decisions.unshift({ id: uid(), title: dt, rationale: fv('f_dr'), by: db, date: fv('f_dd') || today });
+            save();
+            closeSheet();
+            renderProjDet();
+          },
+        );
+      }
+
+      // MILESTONE FORM
+      function openMilestoneForm(pid) {
+        openSheet(
+          'Add Milestone',
+          `<div class="field"><label class="fl">Milestone *</label><input id="f_mt" placeholder="e.g. Design Release, Build Start, FAT"></div>
+   <div class="field"><label class="fl">Target Date</label><input id="f_md" type="date"></div>`,
+          null,
+          () => {
+            const mt = fv('f_mt');
+            if (!mt) {
+              alert('Name required.');
+              return;
+            }
+            const p = S.projects.find((x) => x.id === pid);
+            if (!p.milestones) p.milestones = [];
+            p.milestones.push({ id: uid(), title: mt, date: fv('f_md'), status: 'Pending' });
+            save();
+            closeSheet();
+            renderProjDet();
+          },
+        );
+      }
+
+      // DELETES
+      function delOpp(id) {
+        if (!confirm('Delete this opportunity?')) return;
+        S.opps = S.opps.filter((x) => x.id !== id);
+        save();
+        goView('opps');
+      }
+      function delProj(id) {
+        if (!confirm('Delete project and all data?')) return;
+        S.projects = S.projects.filter((x) => x.id !== id);
+        save();
+        goView('projects');
+      }
+      function delTask(pid, tid) {
+        const p = S.projects.find((x) => x.id === pid);
+        if (!p) return;
+        p.tasks = (p.tasks || []).filter((t) => t.id !== tid);
+        save();
+        closeSheet();
+        renderAll();
+        if (UI.view === 'projdet') renderProjDet();
+      }
+      function delProc(pid, itemId) {
+        const p = S.projects.find((x) => x.id === pid);
+        if (!p) return;
+        p.procurement = (p.procurement || []).filter((x) => x.id !== itemId);
+        save();
+        closeSheet();
+        renderProjDet();
+        renderProc();
+      }
+
+      // EMPTY STATE
+      function emptyState(icon, title, sub, btnLabel, btnAction) {
+        return `<div class="empty"><div class="ei"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blu)" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg></div><div class="et">${title}</div><div class="es">${sub}</div><button class="eb" onclick="${btnAction}">${btnLabel}</button></div>`;
+      }
+
+      // ═══════════════════════════════════════════════
+      //  RENDER ALL
+      // ═══════════════════════════════════════════════
+      function renderAll() {
+        renderHeader();
+        renderOverview();
+        renderOpps();
+        renderOppDet();
+        renderProjects();
+        renderProjDet();
+        renderTasks();
+        renderProc();
+        updateTaskDot();
+      }
+
+      renderAll();
+    </script>
+  </body>
+</html>

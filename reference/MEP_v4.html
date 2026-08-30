@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MEP — Machine Execution Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0eeea;--s:#fff;--s2:#f7f6f4;--s3:#efede9;
+  --b1:rgba(0,0,0,.07);--b2:rgba(0,0,0,.13);
+  --t1:#18170f;--t2:#5a5950;--t3:#9c9b95;
+  --blu:#1a5fb4;--blu-l:#deeaf8;--blu-t:#1a5fb4;
+  --grn:#207a55;--grn-l:#ddf0e5;--grn-t:#207a55;
+  --amb:#c47d0a;--amb-l:#fef0d0;--amb-t:#c47d0a;
+  --red:#c0392b;--red-l:#fde8e6;--red-t:#c0392b;
+  --pur:#5e4db2;--pur-l:#ede9fb;--pur-t:#5e4db2;
+  --tel:#0b7285;--tel-l:#d8f5f8;--tel-t:#0b7285;
+  --cor:#9c3b23;--cor-l:#fbeadf;--cor-t:#9c3b23;
+  --nav-h:60px;--hdr-h:54px;--sb-w:224px;
+  --safe:env(safe-area-inset-bottom,0px);
+  --ff:'DM Sans',system-ui,sans-serif;--fm:'DM Mono',monospace;
+  --r:10px;--rs:6px;--rp:99px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:var(--ff);font-size:14px;color:var(--t1);}
+
+/* SHELL */
+#shell{display:flex;height:100dvh;overflow:hidden;}
+
+/* SIDEBAR */
+#sidebar{width:var(--sb-w);flex-shrink:0;background:var(--s);border-right:.5px solid var(--b1);display:none;flex-direction:column;}
+.sb-brand{padding:18px 16px 14px;border-bottom:.5px solid var(--b1);}
+.sb-logo{width:30px;height:30px;background:var(--blu);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.sb-name{font-size:15px;font-weight:600;margin-top:8px;letter-spacing:-.3px;}
+.sb-sub{font-size:11px;color:var(--t3);margin-top:1px;}
+.sb-sec{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;padding:16px 16px 6px;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 6px;border-radius:var(--rs);cursor:pointer;color:var(--t2);font-size:13px;font-weight:500;border:none;background:none;width:calc(100% - 12px);text-align:left;font-family:var(--ff);}
+.sb-item:hover{background:var(--s2);}
+.sb-item.on{background:var(--blu-l);color:var(--blu-t);}
+.sb-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:var(--rp);}
+.sb-footer{margin-top:auto;padding:12px 16px;border-top:.5px solid var(--b1);display:flex;align-items:center;gap:8px;}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.hdr{height:var(--hdr-h);background:var(--s);border-bottom:.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;}
+.hdr-l{display:flex;align-items:center;gap:10px;}
+.mob-logo{width:28px;height:28px;background:var(--blu);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hdr-title{font-size:15px;font-weight:600;letter-spacing:-.3px;}
+.hdr-sub{font-size:11px;color:var(--t3);margin-top:1px;}
+.icon-btn{width:34px;height:34px;border-radius:50%;background:var(--s2);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);flex-shrink:0;}
+.icon-btn:hover{background:var(--s3);}
+
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg);}
+
+/* BOTTOM NAV */
+.bnav{height:var(--nav-h);background:var(--s);border-top:.5px solid var(--b1);display:flex;align-items:stretch;padding-bottom:var(--safe);flex-shrink:0;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--t3);transition:color .15s;position:relative;padding-bottom:2px;font-family:var(--ff);}
+.ni.on{color:var(--blu);}
+.ni-lbl{font-size:10px;font-weight:500;}
+.ni-dot{width:5px;height:5px;border-radius:50%;background:var(--red);position:absolute;top:7px;right:calc(50% - 14px);}
+
+/* RESPONSIVE */
+@media(min-width:768px){.bnav{display:none;}#sidebar{display:flex;}}
+@media(min-width:768px) and (max-width:1023px){
+  #sidebar{width:60px;}
+  .sb-item span,.sb-sec,.sb-name,.sb-sub,.sb-badge,.sb-footer .sb-uname,.sb-footer .sb-urole{display:none;}
+  .sb-item{justify-content:center;padding:10px;margin:2px 6px;width:calc(100% - 12px);}
+  .sb-brand{padding:14px;display:flex;justify-content:center;}
+  .sb-footer{justify-content:center;padding:12px 6px;}
+}
+@media(min-width:1280px){.kgrid{grid-template-columns:repeat(4,1fr)!important;}.card-grid{grid-template-columns:1fr 1fr;}}
+
+/* VIEWS */
+.view{display:none;}.view.on{display:block;}
+
+/* SECTION LABEL */
+.slbl{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;padding:16px 16px 8px;display:flex;align-items:center;justify-content:space-between;}
+.slbl-btn{font-size:12px;font-weight:500;color:var(--blu);background:none;border:none;cursor:pointer;text-transform:none;letter-spacing:0;font-family:var(--ff);}
+
+/* KPI */
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 16px 4px;}
+@media(min-width:640px){.kgrid{grid-template-columns:repeat(4,1fr);}}
+.kpi{background:var(--s);border-radius:var(--r);padding:14px;}
+.kpi-l{font-size:11px;color:var(--t2);margin-bottom:5px;}
+.kpi-v{font-size:26px;font-weight:600;font-family:var(--fm);line-height:1;}
+.kpi-s{font-size:10px;color:var(--t3);margin-top:3px;}
+
+/* CARD */
+.card{background:var(--s);border-radius:var(--r);margin:0 16px;overflow:hidden;}
+.card+.card{margin-top:10px;}
+.card-grid{display:grid;grid-template-columns:1fr;gap:10px;padding:0 16px;}
+@media(min-width:640px){.card-grid{grid-template-columns:1fr 1fr;}}
+
+/* LIST ITEM */
+.li{padding:13px 16px;border-bottom:.5px solid var(--b1);cursor:pointer;transition:background .1s;}
+.li:hover,.li:active{background:var(--s2);}
+.li:last-child{border-bottom:none;}
+.li-r{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.li-r:last-child{margin-bottom:0;}
+.li-title{font-size:14px;font-weight:500;}
+.li-sub{font-size:12px;color:var(--t2);}
+.li-meta{font-size:11px;color:var(--t3);}
+
+/* MODULE CARD in MBS */
+.mod-card{background:var(--s);border-left:3px solid var(--b2);margin:0;cursor:pointer;transition:background .1s;}
+.mod-card:hover{background:var(--s2);}
+.mod-card.mc-grn{border-left-color:var(--grn);}
+.mod-card.mc-amb{border-left-color:var(--amb);}
+.mod-card.mc-red{border-left-color:var(--red);}
+.mod-card.mc-blu{border-left-color:var(--blu);}
+.mod-card.mc-tel{border-left-color:var(--tel);}
+.mod-header{padding:11px 14px 11px 12px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid var(--b1);}
+.mod-info{padding:8px 14px 10px 12px;}
+.mod-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px;}
+
+/* BADGES */
+.bx{display:inline-flex;align-items:center;padding:3px 8px;border-radius:var(--rp);font-size:11px;font-weight:500;white-space:nowrap;}
+.b-blu{background:var(--blu-l);color:var(--blu-t);}
+.b-grn{background:var(--grn-l);color:var(--grn-t);}
+.b-amb{background:var(--amb-l);color:var(--amb-t);}
+.b-red{background:var(--red-l);color:var(--red-t);}
+.b-pur{background:var(--pur-l);color:var(--pur-t);}
+.b-tel{background:var(--tel-l);color:var(--tel-t);}
+.b-cor{background:var(--cor-l);color:var(--cor-t);}
+.b-gray{background:var(--s3);color:var(--t2);}
+
+/* PROGRESS */
+.prog{height:4px;background:var(--s3);border-radius:2px;overflow:hidden;margin-top:7px;}
+.pf{height:100%;border-radius:2px;transition:width .3s;}
+.pg{background:var(--grn);}.pa{background:var(--amb);}.pr{background:var(--red);}
+
+/* AVATARS */
+.av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+.av-sm{width:22px;height:22px;font-size:9px;}
+.av-lg{width:36px;height:36px;font-size:13px;}
+.av0{background:var(--blu-l);color:var(--blu-t);}
+.av1{background:var(--grn-l);color:var(--grn-t);}
+.av2{background:var(--amb-l);color:var(--amb-t);}
+.av3{background:var(--pur-l);color:var(--pur-t);}
+.av4{background:var(--cor-l);color:var(--cor-t);}
+.av5{background:var(--tel-l);color:var(--tel-t);}
+
+/* ALERT */
+.alert{border-radius:var(--rs);padding:12px;margin:0 16px;}
+.alert+.alert{margin-top:8px;}
+.alert-r{background:var(--red-l);border-left:3px solid var(--red);}
+.alert-a{background:var(--amb-l);border-left:3px solid var(--amb);}
+.alert-g{background:var(--grn-l);border-left:3px solid var(--grn);}
+.alert-title{font-size:12px;font-weight:600;color:var(--red-t);}
+.alert-a .alert-title{color:var(--amb-t);}
+.alert-g .alert-title{color:var(--grn-t);}
+.alert-body{font-size:11px;color:#8b2a1e;margin-top:3px;line-height:1.5;}
+.alert-a .alert-body{color:var(--amb-t);}
+.alert-g .alert-body{color:var(--grn-t);}
+
+/* STAGE TRACK */
+.stages{display:flex;padding:10px 16px;gap:0;overflow-x:auto;scrollbar-width:none;background:var(--s);border-bottom:.5px solid var(--b1);}
+.stages::-webkit-scrollbar{display:none;}
+.stg{padding:4px 10px;border-radius:var(--rp);font-size:11px;font-weight:500;white-space:nowrap;flex-shrink:0;}
+.stg-d{background:var(--grn-l);color:var(--grn-t);}
+.stg-n{background:var(--blu);color:#fff;}
+.stg-t{background:var(--bg);color:var(--t3);}
+.stg-ln{width:10px;height:1.5px;align-self:center;flex-shrink:0;}
+.stg-ld{background:var(--grn);}.stg-lt{background:var(--b2);}
+
+/* TABS */
+.tabs{display:flex;padding:0 16px;border-bottom:.5px solid var(--b1);background:var(--s);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:10px 12px;font-size:13px;color:var(--t3);cursor:pointer;border:none;background:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-.5px;flex-shrink:0;font-family:var(--ff);font-weight:500;}
+.tab.on{color:var(--blu);border-bottom-color:var(--blu);}
+
+/* CHIPS */
+.chips{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{padding:6px 13px;border-radius:var(--rp);font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;background:var(--s);border:1.5px solid var(--b2);color:var(--t2);transition:all .12s;}
+.chip.on{background:var(--blu);color:#fff;border-color:var(--blu);}
+
+/* TREE */
+.tn{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:.5px solid var(--b1);background:var(--s);cursor:pointer;transition:background .1s;}
+.tn:hover,.tn:active{background:var(--s2);}
+.tn.blk{background:var(--red-l);}
+.tn-lbl{flex:1;font-size:13px;}
+.caret{font-size:10px;color:var(--t3);width:12px;text-align:center;flex-shrink:0;}
+.add-c{font-size:11px;color:var(--blu);padding:2px 8px;border-radius:var(--rp);border:1px solid var(--blu);background:none;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:var(--ff);}
+
+/* RELEASE BUTTON */
+.release-btn{width:100%;padding:12px;border-radius:var(--rs);border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--ff);display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .1s;}
+.release-btn.ready{background:var(--grn);color:#fff;}
+.release-btn.locked{background:var(--grn-l);color:var(--grn-t);cursor:default;opacity:.7;}
+.release-btn.blocked{background:var(--s2);color:var(--t3);cursor:not-allowed;}
+
+/* DELIVERABLE CHECK */
+.deliv{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:.5px solid var(--b1);cursor:pointer;transition:background .1s;}
+.deliv:hover{background:var(--s2);}
+.deliv:last-child{border-bottom:none;}
+.deliv-check{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--b2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.deliv-check.done{background:var(--grn);border-color:var(--grn);}
+.deliv-lbl{flex:1;font-size:13px;}
+.deliv-lbl.done{text-decoration:line-through;color:var(--t3);}
+
+/* COMPONENT TABLE */
+.comp-row{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:.5px solid var(--b1);cursor:pointer;transition:background .1s;}
+.comp-row:hover{background:var(--s2);}
+.comp-row:last-child{border-bottom:none;}
+.comp-row.ll-risk{background:var(--red-l);}
+.comp-col-name{flex:1;min-width:0;}
+.comp-col-qty{width:36px;text-align:right;font-family:var(--fm);font-size:12px;flex-shrink:0;}
+.comp-col-lead{width:48px;text-align:right;font-family:var(--fm);font-size:11px;flex-shrink:0;}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(var(--nav-h) + 14px + var(--safe));right:20px;width:50px;height:50px;border-radius:50%;background:var(--blu);color:#fff;border:none;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(26,95,180,.38);z-index:30;transition:transform .1s;}
+.fab:hover{transform:scale(1.05);}
+.fab:active{transform:scale(.95);}
+@media(min-width:768px){.fab{bottom:20px;right:24px;}}
+
+/* SHEET */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:40;display:none;transition:background .25s;}
+.backdrop.on{display:block;background:rgba(0,0,0,.42);}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:560px;background:var(--s);border-radius:20px 20px 0 0;z-index:50;transition:transform .28s cubic-bezier(.32,0,.67,0);max-height:90dvh;min-height:160px;display:flex;flex-direction:column;}
+.sheet.on{transform:translateX(-50%) translateY(0);}
+@media(min-width:768px){
+  .sheet{border-radius:16px;bottom:auto;top:50%;transform:translateX(-50%) translateY(-50%) scale(.96);max-height:82dvh;box-shadow:0 16px 60px rgba(0,0,0,.25);}
+  .sheet.on{transform:translateX(-50%) translateY(-50%) scale(1);}
+  .sh-handle{display:none!important;}
+}
+.sh-handle{width:36px;height:4px;border-radius:2px;background:var(--b2);margin:10px auto 0;flex-shrink:0;}
+.sh-hdr{padding:14px 20px 12px;border-bottom:.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.sh-title{font-size:16px;font-weight:600;}
+.sh-body{padding:16px 20px;overflow-y:auto;flex:1;}
+.sh-foot{padding:12px 20px calc(12px + var(--safe));border-top:.5px solid var(--b1);flex-shrink:0;}
+@media(min-width:768px){.sh-foot{padding-bottom:16px;}}
+
+/* FORM */
+.field{margin-bottom:14px;}
+.fl{font-size:12px;font-weight:500;color:var(--t2);margin-bottom:5px;display:block;}
+.field input,.field textarea,.field select{width:100%;padding:10px 12px;border-radius:var(--rs);border:1.5px solid var(--b2);background:var(--s2);font-size:14px;font-family:var(--ff);color:var(--t1);outline:none;transition:border-color .15s;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blu);background:var(--s);}
+.field textarea{resize:none;min-height:70px;line-height:1.5;}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='7' viewBox='0 0 10 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239c9b95' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn-row{display:flex;gap:8px;}
+.btn{flex:1;padding:12px;border-radius:var(--rs);border:none;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--ff);transition:opacity .1s;}
+.btn:active{opacity:.8;}
+.btn-p{background:var(--blu);color:#fff;}
+.btn-s{background:var(--s2);color:var(--t1);border:.5px solid var(--b2);}
+.btn-d{background:var(--red-l);color:var(--red-t);}
+.seg{display:flex;gap:6px;flex-wrap:wrap;}
+.so{padding:6px 12px;border-radius:var(--rp);border:1.5px solid var(--b2);font-size:12px;font-weight:500;cursor:pointer;color:var(--t2);background:var(--s);font-family:var(--ff);}
+.so.on{border-color:var(--blu);background:var(--blu-l);color:var(--blu);}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:48px 24px;gap:12px;}
+.ei{width:52px;height:52px;border-radius:14px;background:var(--s);border:.5px solid var(--b2);display:flex;align-items:center;justify-content:center;}
+.et{font-size:15px;font-weight:500;}
+.es{font-size:13px;color:var(--t3);line-height:1.6;max-width:280px;}
+.eb{padding:9px 20px;border-radius:var(--rp);background:var(--blu);color:#fff;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);margin-top:4px;}
+
+/* MISC */
+.sp{height:24px;}
+.mono{font-family:var(--fm);font-size:11px;}
+.ll{background:var(--red-l);color:var(--red-t);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--fm);letter-spacing:.04em;}
+.info-box{background:var(--blu-l);border-radius:var(--rs);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--blu-t);}
+.warn-box{background:var(--amb-l);border-radius:var(--rs);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--amb-t);}
+.dep-bl{background:var(--amb-l);border-radius:var(--rs);padding:8px 10px;font-size:11px;color:var(--amb-t);margin-top:4px;}
+.action-strip{padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;}
+.action-btn{padding:9px 16px;border-radius:var(--rs);border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);}
+.action-btn-p{background:var(--blu);color:#fff;}
+.action-btn-s{background:var(--s2);color:var(--t1);border:.5px solid var(--b2);}
+</style>
+</head>
+<body>
+<div id="shell">
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="white" opacity=".9"/><rect x="9" y="2" width="5" height="5" rx="1" fill="white" opacity=".6"/><rect x="2" y="9" width="5" height="5" rx="1" fill="white" opacity=".6"/><rect x="9" y="9" width="5" height="5" rx="1" fill="white" opacity=".3"/></svg></div>
+    <div class="sb-name">MEP</div><div class="sb-sub">Design · Build · Deliver</div>
+  </div>
+  <div class="sb-sec">Main</div>
+  <button class="sb-item on" id="SB_overview" data-fn="goView" data-args='["overview"]'><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg><span>Dashboard</span></button>
+  <button class="sb-item" id="SB_opps" data-fn="goView" data-args='["opps"]'><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 1.5L2 5v6l6 3.5 6-3.5V5z"/><path d="M8 1.5v8M2 5l6 3 6-3"/></svg><span>Pipeline</span></button>
+  <button class="sb-item" id="SB_projects" data-fn="goView" data-args='["projects"]'><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="2" y="4" width="12" height="10" rx="1.5"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/></svg><span>Projects</span></button>
+  <button class="sb-item" id="SB_tasks" data-fn="goView" data-args='["tasks"]'><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 8l2.5 2.5L11 6"/></svg><span>All Tasks</span><div class="sb-badge" id="SB_taskBadge" style="display:none">!</div></button>
+  <div class="sb-sec">Design</div>
+  <button class="sb-item" id="SB_proc" data-fn="goView" data-args='["proc"]'><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 2h2l2 7h7l1.5-5H6"/><circle cx="7" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="11.5" cy="13" r="1" fill="currentColor" stroke="none"/></svg><span>Procurement</span></button>
+  <div class="sb-footer">
+    <div class="av av-lg av0">MH</div>
+    <div><div class="sb-uname" style="font-size:12px;font-weight:500;">Marcus H.</div><div class="sb-urole" style="font-size:10px;color:var(--t3);">Project Manager</div></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="hdr" id="G_hdr">
+    <div class="hdr-l">
+      <div class="mob-logo" id="MOB_LOGO"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="white" opacity=".9"/><rect x="9" y="2" width="5" height="5" rx="1" fill="white" opacity=".6"/><rect x="2" y="9" width="5" height="5" rx="1" fill="white" opacity=".6"/><rect x="9" y="9" width="5" height="5" rx="1" fill="white" opacity=".3"/></svg></div>
+      <div><div class="hdr-title" id="G_title">Dashboard</div><div class="hdr-sub" id="G_sub"></div></div>
+    </div>
+    <button class="icon-btn" id="G_hdrBtn"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="5.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="12.5" r="1.5" fill="currentColor" stroke="none"/></svg></button>
+  </div>
+  <div class="scroll" id="G_scroll">
+    <div class="view on" id="V_overview"><div id="R_overview"></div></div>
+    <div class="view" id="V_opps"><div id="R_opps"></div></div>
+    <div class="view" id="V_oppdet"><div id="R_oppdet"></div></div>
+    <div class="view" id="V_projects"><div id="R_projects"></div></div>
+    <div class="view" id="V_projdet"><div id="R_projdet"></div></div>
+    <div class="view" id="V_moduledet"><div id="R_moduledet"></div></div>
+    <div class="view" id="V_tasks"><div id="R_tasks"></div></div>
+    <div class="view" id="V_proc"><div id="R_proc"></div></div>
+  </div>
+  <nav class="bnav">
+    <button class="ni on" id="N_overview" data-fn="goView" data-args='["overview"]'><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="2"/><rect x="11" y="2" width="7" height="7" rx="2"/><rect x="2" y="11" width="7" height="7" rx="2"/><rect x="11" y="11" width="7" height="7" rx="2"/></svg><span class="ni-lbl">Overview</span></button>
+    <button class="ni" id="N_opps" data-fn="goView" data-args='["opps"]'><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 2L3 6v8l7 4 7-4V6z"/><path d="M10 2v10M3 6l7 4 7-4"/></svg><span class="ni-lbl">Pipeline</span></button>
+    <button class="ni" id="N_projects" data-fn="goView" data-args='["projects"]'><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="14" height="12" rx="2"/><path d="M7 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/></svg><span class="ni-lbl">Projects</span></button>
+    <button class="ni" id="N_tasks" data-fn="goView" data-args='["tasks"]'><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10l2.5 2.5L13 8"/></svg><span class="ni-lbl">Tasks</span><div class="ni-dot" id="N_taskDot" style="display:none"></div></button>
+    <button class="ni" id="N_proc" data-fn="goView" data-args='["proc"]'><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3h3l2.5 9h9L19 6H7"/><circle cx="9" cy="17" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg><span class="ni-lbl">Procure</span></button>
+  </nav>
+</div>
+</div>
+
+<button class="fab" id="G_fab" style="display:none" id="G_fab">+</button>
+<div class="backdrop" id="BACKDROP"></div>
+<div class="sheet" id="SHEET">
+  <div class="sh-handle"></div>
+  <div class="sh-hdr"><div class="sh-title" id="SH_title"></div><button class="icon-btn" id="SH_close"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l12 12M13 1L1 13"/></svg></button></div>
+  <div class="sh-body" id="SH_body"></div>
+  <div class="sh-foot" id="SH_foot"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════
+const STAGES=['Intake','Feasibility','Kickoff','Engineering','Procurement','Build','Testing','Delivery'];
+const OPP_ST=['New','Feasibility','Approved','Converted'];
+const TASK_ST=['Not Started','In Progress','Under Review','Blocked','Completed'];
+const MOD_ST=['Not Started','In Progress','Blocked','Completed','Ready for Procurement'];
+const PRIOS=['Low','Medium','High','Critical'];
+const DEPTS=['Mechanical','Electrical','Automation','Management'];
+const MOD_DEPTS=['Mechanical','Electrical','Automation'];
+const PROC_ST=['Not Ready','Pending Release','Ready','Ordered','Received'];
+const COMP_CAT=['Mechanical','Electrical','COTS','Custom'];
+const COMP_ST=['Planned','Confirmed','Ordered'];
+const RISKS=['Low','Medium','High','Critical'];
+const HEALTH=['Healthy','Watch','At Risk'];
+const AVC=['av0','av1','av2','av3','av4','av5'];
+const LL_WEEKS=8; // Long-lead threshold
+
+// ═══════════════════════════════════════════
+//  SEED DATA
+// ═══════════════════════════════════════════
+const SEED={
+  _oppId:10,_projId:10,_nodeId:200,_taskId:300,
+  opps:[
+    {id:1,title:'High-Speed Bottle Labeling MK3',customer:'BrewTech AG',machineType:'Labeling System',axes:6,delivery:'Q4 2025',createdBy:'Sarah Chen',requirements:'600 bpm sustained, IP65 wash-down, EN-ISO 13849 PLd, quick-change label roll.',status:'Converted',createdAt:'2024-09-15'},
+    {id:2,title:'Flexible Cartoning Line V2',customer:'AutoPack Ltd',machineType:'Cartoner',axes:4,delivery:'Q1 2026',createdBy:'Sarah Chen',requirements:'4-axis pick & place, multi-format, 200 cartons/min.',status:'Converted',createdAt:'2024-10-01'},
+    {id:3,title:'Integrated Bottling Cell',customer:'FlexFill GmbH',machineType:'Filling System',axes:8,delivery:'Q3 2025',createdBy:'Sarah Chen',requirements:'8-axis, 1200 bph, CIP-capable, 316L stainless, volumetric dosing.',status:'Converted',createdAt:'2024-08-20'},
+    {id:4,title:'Layer Palletizer MK2',customer:'Verpack Systems',machineType:'Palletizer',axes:3,delivery:'Q2 2025',createdBy:'Felix König',requirements:'Layer palletizing, mixed SKU, cobot integration.',status:'Converted',createdAt:'2024-07-10'},
+    {id:5,title:'Automated Assembly Station',customer:'Techvolt Industries',machineType:'Robot Cell',axes:6,delivery:'Q2 2026',createdBy:'Felix König',requirements:'6-axis robot, vision guidance, force-torque sensing, error-proofing.',status:'Feasibility',createdAt:'2025-01-15'},
+    {id:6,title:'Servo Press Line Extension',customer:'MetalCo AG',machineType:'Press System',axes:2,delivery:'Q3 2026',createdBy:'Sarah Chen',requirements:'Force control, 100 kN, precision ±0.01mm.',status:'New',createdAt:'2025-03-10'},
+  ],
+  projects:[
+    {
+      id:1,title:'BrewTech Labeling MK3',customer:'BrewTech AG',machineType:'Labeling System',axes:6,
+      delivery:'20 Dec 2025',pm:'M. Hoffmann',stage:'Engineering',health:'Watch',oppId:1,
+      kickoffDate:'2024-10-03',kickoffNotes:'Scope confirmed: 6-axis servo, 600 bpm, IP65, PLd safety. Key risk: 14-week servo drives. Customer to supply final load specs by 15 Nov 2024.',
+      milestones:[
+        {id:'m1',title:'Concept Freeze',date:'2024-11-15',status:'Done'},
+        {id:'m2',title:'Design Release',date:'2025-05-20',status:'Pending'},
+        {id:'m3',title:'BOM to Procurement',date:'2025-06-10',status:'Pending'},
+        {id:'m4',title:'Build Start',date:'2025-07-01',status:'Pending'},
+      ],
+      nodes:[
+        {id:1,type:'Machine',label:'BTL-MK3 Labeling Unit',parentId:null},
+        {id:2,type:'Module',label:'Drive System',parentId:1,
+          ownerName:'T. Walsh',dept:'Electrical',plannedEndDate:'2025-05-10',
+          modStatus:'In Progress',releaseReady:false,
+          deliverables:['Servo sizing report','Drive selection document','Wiring schematic approved'],
+          deliverablesDone:[true,true,false],
+          components:[
+            {id:'c1',partName:'IndraDrive Cs — HCS02.1E-W0054',qty:6,category:'Electrical',supplier:'Bosch Rexroth',leadTimeWeeks:14,status:'Planned',remarks:'Long-lead — order immediately after design release'},
+            {id:'c2',partName:'Siemens 1FK7 Servo Motors',qty:6,category:'Electrical',supplier:'Siemens AG',leadTimeWeeks:12,status:'Planned',remarks:'1FK7063-2AF71-1SG1'},
+            {id:'c3',partName:'Neugart PLE60 Gearboxes',qty:2,category:'Mechanical',supplier:'Neugart GmbH',leadTimeWeeks:6,status:'Confirmed',remarks:'i=5, output flange type K'},
+          ]
+        },
+        {id:3,type:'Subassembly',label:'Servo Drive Train',parentId:2},
+        {id:4,type:'Subassembly',label:'Gearbox Selection',parentId:2},
+        {id:5,type:'Module',label:'Label Application Head',parentId:1,
+          ownerName:'L. Müller',dept:'Mechanical',plannedEndDate:'2025-05-20',
+          modStatus:'Blocked',releaseReady:false,
+          deliverables:['Applicator concept design','FEA stress report','Web tension specification'],
+          deliverablesDone:[false,false,false],
+          components:[
+            {id:'c4',partName:'Linear Actuator — Festo DNCE',qty:2,category:'Mechanical',supplier:'Festo AG',leadTimeWeeks:5,status:'Planned',remarks:'Stroke 100mm, IP54'},
+            {id:'c5',partName:'Label Web Tension Sensor',qty:1,category:'Electrical',supplier:'Ifm Electronic',leadTimeWeeks:3,status:'Planned',remarks:''},
+          ]
+        },
+        {id:6,type:'Subassembly',label:'Applicator Mechanism',parentId:5},
+        {id:7,type:'Subassembly',label:'Web Tension Control',parentId:5},
+        {id:8,type:'Module',label:'Control Cabinet',parentId:1,
+          ownerName:'A. Pereira',dept:'Automation',plannedEndDate:'2025-05-30',
+          modStatus:'In Progress',releaseReady:false,
+          deliverables:['I/O list final','PLC program structure approved','HMI layout sign-off'],
+          deliverablesDone:[true,false,false],
+          components:[
+            {id:'c6',partName:'Siemens S7-1516 PLC',qty:1,category:'Electrical',supplier:'Siemens AG',leadTimeWeeks:4,status:'Planned',remarks:''},
+            {id:'c7',partName:'Pilz PNOZ m B0 Safety Controller',qty:1,category:'Electrical',supplier:'Pilz GmbH',leadTimeWeeks:4,status:'Confirmed',remarks:'EN ISO 13849 PLd certified'},
+            {id:'c8',partName:'Rittal HD TS8 IP65 Cabinet',qty:1,category:'COTS',supplier:'Rittal GmbH',leadTimeWeeks:8,status:'Planned',remarks:'800×600×2000mm'},
+          ]
+        },
+        {id:9,type:'Subassembly',label:'Safety System',parentId:8},
+      ],
+      tasks:[
+        {id:'t1',nodeId:3,title:'Servo sizing calculation',owner:'T. Walsh',dept:'Electrical',priority:'Medium',due:'2024-11-10',status:'Completed',dependsOnTaskId:null},
+        {id:'t2',nodeId:3,title:'Drive selection & specification',owner:'T. Walsh',dept:'Electrical',priority:'High',due:'2025-04-10',status:'In Progress',dependsOnTaskId:'t1'},
+        {id:'t3',nodeId:3,title:'Drive wiring schematic',owner:'T. Walsh',dept:'Electrical',priority:'High',due:'2025-04-20',status:'Blocked',dependsOnTaskId:'t2'},
+        {id:'t4',nodeId:4,title:'Torque & ratio analysis',owner:'L. Müller',dept:'Mechanical',priority:'Medium',due:'2024-11-05',status:'Completed',dependsOnTaskId:null},
+        {id:'t5',nodeId:6,title:'Concept design — Applicator',owner:'L. Müller',dept:'Mechanical',priority:'High',due:'2025-03-20',status:'Under Review',dependsOnTaskId:null},
+        {id:'t6',nodeId:6,title:'FEA stress analysis',owner:'L. Müller',dept:'Mechanical',priority:'Critical',due:'2025-04-10',status:'Blocked',dependsOnTaskId:'t5'},
+        {id:'t7',nodeId:7,title:'Web tension control spec',owner:'L. Müller',dept:'Mechanical',priority:'Medium',due:'2025-04-25',status:'In Progress',dependsOnTaskId:null},
+        {id:'t8',nodeId:9,title:'I/O list definition',owner:'A. Pereira',dept:'Automation',priority:'High',due:'2025-01-15',status:'Completed',dependsOnTaskId:null},
+        {id:'t9',nodeId:9,title:'PLC program structure',owner:'A. Pereira',dept:'Automation',priority:'Medium',due:'2025-04-30',status:'In Progress',dependsOnTaskId:'t8'},
+        {id:'t10',nodeId:9,title:'HMI screen layout',owner:'A. Pereira',dept:'Automation',priority:'Low',due:'2025-05-15',status:'Not Started',dependsOnTaskId:'t9'},
+      ],
+      procurement:[],decisions:[
+        {id:'d1',title:'Servo platform: Bosch Rexroth IndraDrive Cs selected',rationale:'Better EcoStruxure integration and existing service agreement.',by:'M. Hoffmann',date:'2024-11-12'},
+        {id:'d2',title:'Safety: EN-ISO 13849 PLd confirmed',rationale:'Dual-channel 24V safety circuit throughout.',by:'A. Pereira',date:'2024-10-03'},
+      ],createdAt:'2024-10-03'
+    },
+    {
+      id:2,title:'AutoPack Cartoner V2',customer:'AutoPack Ltd',machineType:'Cartoner',axes:4,
+      delivery:'15 Mar 2026',pm:'J. Schmidt',stage:'Engineering',health:'Healthy',oppId:2,
+      kickoffDate:'2024-10-20',kickoffNotes:'4-axis pick & place. Multi-format tooling. Clean dry environment. Vision system included.',
+      milestones:[{id:'m5',title:'Concept Freeze',date:'2024-12-01',status:'Done'},{id:'m6',title:'Design Release',date:'2025-06-01',status:'Pending'}],
+      nodes:[
+        {id:10,type:'Machine',label:'APC-V2 Cartoner',parentId:null},
+        {id:11,type:'Module',label:'Pick & Place Unit',parentId:10,
+          ownerName:'L. Müller',dept:'Mechanical',plannedEndDate:'2025-06-01',
+          modStatus:'In Progress',releaseReady:false,
+          deliverables:['Robot cell layout','Gripper design approved'],
+          deliverablesDone:[false,false],
+          components:[
+            {id:'c9',partName:'Fanuc LR Mate 200iD Robot',qty:1,category:'Mechanical',supplier:'Fanuc Corp',leadTimeWeeks:10,status:'Planned',remarks:'Reach 717mm, payload 7kg'},
+            {id:'c10',partName:'Custom Gripper Tooling',qty:1,category:'Custom',supplier:'In-house',leadTimeWeeks:4,status:'Planned',remarks:'To be designed by L.Müller'},
+          ]
+        },
+        {id:12,type:'Subassembly',label:'Robot Arm Integration',parentId:11},
+        {id:13,type:'Module',label:'Vision System',parentId:10,
+          ownerName:'T. Walsh',dept:'Electrical',plannedEndDate:'2025-05-15',
+          modStatus:'In Progress',releaseReady:false,
+          deliverables:['Camera selection signed off','Vision integration spec'],
+          deliverablesDone:[false,false],
+          components:[
+            {id:'c11',partName:'Cognex In-Sight 9000 Camera',qty:1,category:'Electrical',supplier:'Cognex Corp',leadTimeWeeks:8,status:'Planned',remarks:''},
+            {id:'c12',partName:'SICK Safety Laser Scanners',qty:2,category:'Electrical',supplier:'SICK AG',leadTimeWeeks:4,status:'Confirmed',remarks:'S300 Mini'},
+          ]
+        },
+        {id:14,type:'Subassembly',label:'Camera & Lighting',parentId:13},
+      ],
+      tasks:[
+        {id:'t11',nodeId:12,title:'Robot cell layout drawing',owner:'L. Müller',dept:'Mechanical',priority:'High',due:'2025-05-01',status:'In Progress',dependsOnTaskId:null},
+        {id:'t12',nodeId:12,title:'Gripper design',owner:'L. Müller',dept:'Mechanical',priority:'High',due:'2025-05-15',status:'Not Started',dependsOnTaskId:'t11'},
+        {id:'t13',nodeId:14,title:'Camera selection & spec',owner:'T. Walsh',dept:'Electrical',priority:'Medium',due:'2025-04-30',status:'In Progress',dependsOnTaskId:null},
+        {id:'t14',nodeId:14,title:'Safety functional spec',owner:'A. Pereira',dept:'Automation',priority:'High',due:'2025-05-10',status:'Not Started',dependsOnTaskId:'t13'},
+      ],
+      procurement:[],decisions:[{id:'d4',title:'Robot platform: Fanuc LR Mate selected',rationale:'Compact footprint fits layout.',by:'J. Schmidt',date:'2024-11-05'}],
+      createdAt:'2024-10-20'
+    },
+    {
+      id:3,title:'FlexFill Bottling Cell',customer:'FlexFill GmbH',machineType:'Filling System',axes:8,
+      delivery:'30 Sep 2025',pm:'R. Berg',stage:'Procurement',health:'At Risk',oppId:3,
+      kickoffDate:'2024-09-01',kickoffNotes:'8-axis CIP-capable filling cell. 316L stainless wetted parts. Long-lead linear actuators on critical path.',
+      milestones:[
+        {id:'m7',title:'Design Release',date:'2025-01-15',status:'Done'},
+        {id:'m8',title:'BOM to Procurement',date:'2025-02-01',status:'Done'},
+        {id:'m9',title:'Build Start',date:'2025-08-01',status:'Pending'},
+      ],
+      nodes:[
+        {id:20,type:'Machine',label:'FFC-1200 Bottling Cell',parentId:null},
+        {id:21,type:'Module',label:'Filling Station',parentId:20,
+          ownerName:'R. Berg',dept:'Mechanical',plannedEndDate:'2025-01-15',
+          modStatus:'Ready for Procurement',releaseReady:true,
+          deliverables:['Dosing valve selection','CIP circuit design','316L material certs'],
+          deliverablesDone:[true,true,true],
+          components:[
+            {id:'c13',partName:'Bürkert 8802 Dosing Valves',qty:8,category:'Mechanical',supplier:'Bürkert GmbH',leadTimeWeeks:6,status:'Ordered',remarks:'Stainless body, EPDM seal'},
+            {id:'c14',partName:'Swagelok SS Tube Fittings',qty:1,category:'COTS',supplier:'Swagelok',leadTimeWeeks:2,status:'Ordered',remarks:'316L, qty per BOM'},
+          ]
+        },
+        {id:22,type:'Subassembly',label:'Dosing System',parentId:21},
+        {id:23,type:'Module',label:'Conveyor System',parentId:20,
+          ownerName:'R. Berg',dept:'Mechanical',plannedEndDate:'2025-02-01',
+          modStatus:'Blocked',releaseReady:false,
+          deliverables:['Linear actuator spec','Customer I/O review sign-off'],
+          deliverablesDone:[false,false],
+          components:[
+            {id:'c15',partName:'Bosch Rexroth EMC Linear Actuators',qty:4,category:'Mechanical',supplier:'Bosch Rexroth',leadTimeWeeks:14,status:'Planned',remarks:'IP69K stainless — CRITICAL long-lead'},
+            {id:'c16',partName:'Servo Drive — IndraDrive Mi',qty:4,category:'Electrical',supplier:'Bosch Rexroth',leadTimeWeeks:10,status:'Planned',remarks:'Decentralized drive'},
+          ]
+        },
+        {id:24,type:'Subassembly',label:'Linear Transfer',parentId:23},
+      ],
+      tasks:[
+        {id:'t15',nodeId:22,title:'Dosing valve selection',owner:'R. Berg',dept:'Mechanical',priority:'High',due:'2025-01-10',status:'Completed',dependsOnTaskId:null},
+        {id:'t16',nodeId:22,title:'CIP circuit design',owner:'R. Berg',dept:'Mechanical',priority:'High',due:'2025-02-01',status:'Completed',dependsOnTaskId:'t15'},
+        {id:'t17',nodeId:24,title:'I/O list review with customer',owner:'A. Pereira',dept:'Automation',priority:'High',due:'2025-04-08',status:'In Progress',dependsOnTaskId:null},
+        {id:'t18',nodeId:24,title:'Linear actuator integration',owner:'R. Berg',dept:'Mechanical',priority:'Critical',due:'2025-04-05',status:'Blocked',dependsOnTaskId:'t17'},
+      ],
+      procurement:[],decisions:[{id:'d5',title:'Linear actuators: Bosch Rexroth EMC series',rationale:'IP69K. Integrated force sensing for fill-level confirmation.',by:'R. Berg',date:'2025-01-08'}],
+      createdAt:'2024-09-01'
+    },
+    {
+      id:4,title:'Verpack Palletizer MK2',customer:'Verpack Systems',machineType:'Palletizer',axes:3,
+      delivery:'30 Apr 2025',pm:'M. Hoffmann',stage:'Testing',health:'Healthy',oppId:4,
+      kickoffDate:'2024-07-15',kickoffNotes:'Layer palletizer with UR10e collaborative robot. Mixed SKU. Barcode verification per layer.',
+      milestones:[
+        {id:'m10',title:'Design Release',date:'2024-09-01',status:'Done'},
+        {id:'m11',title:'Build Complete',date:'2025-03-01',status:'Done'},
+        {id:'m12',title:'FAT',date:'2025-04-15',status:'Pending'},
+        {id:'m13',title:'Delivery',date:'2025-04-30',status:'Pending'},
+      ],
+      nodes:[
+        {id:30,type:'Machine',label:'VPK-MK2 Palletizer',parentId:null},
+        {id:31,type:'Module',label:'Cobot Arm',parentId:30,
+          ownerName:'M. Hoffmann',dept:'Mechanical',plannedEndDate:'2025-02-28',
+          modStatus:'Completed',releaseReady:true,
+          deliverables:['End-effector design','FAT protocol'],
+          deliverablesDone:[true,true],
+          components:[
+            {id:'c17',partName:'Universal Robots UR10e',qty:1,category:'COTS',supplier:'Universal Robots',leadTimeWeeks:8,status:'Ordered',remarks:''},
+            {id:'c18',partName:'Piab COAX Vacuum Gripper',qty:1,category:'COTS',supplier:'Piab AB',leadTimeWeeks:4,status:'Ordered',remarks:''},
+          ]
+        },
+        {id:32,type:'Subassembly',label:'End-Effector',parentId:31},
+        {id:33,type:'Module',label:'Conveyor Infeed',parentId:30,
+          ownerName:'A. Pereira',dept:'Automation',plannedEndDate:'2025-02-28',
+          modStatus:'Completed',releaseReady:true,
+          deliverables:['Layer formation logic','Barcode scanner integration'],
+          deliverablesDone:[true,true],
+          components:[
+            {id:'c19',partName:'Datalogic Matrix 210 Scanner',qty:1,category:'Electrical',supplier:'Datalogic',leadTimeWeeks:3,status:'Ordered',remarks:''},
+          ]
+        },
+        {id:34,type:'Subassembly',label:'Layer Formation',parentId:33},
+      ],
+      tasks:[
+        {id:'t19',nodeId:32,title:'End-effector design & build',owner:'L. Müller',dept:'Mechanical',priority:'High',due:'2025-02-15',status:'Completed',dependsOnTaskId:null},
+        {id:'t20',nodeId:34,title:'Layer formation logic',owner:'A. Pereira',dept:'Automation',priority:'High',due:'2025-02-28',status:'Completed',dependsOnTaskId:null},
+        {id:'t21',nodeId:32,title:'FAT test protocol execution',owner:'M. Hoffmann',dept:'Management',priority:'High',due:'2025-04-15',status:'In Progress',dependsOnTaskId:'t19'},
+      ],
+      procurement:[],decisions:[{id:'d6',title:'Cobot: UR10e selected',rationale:'Payload and reach match. Existing UR expertise.',by:'M. Hoffmann',date:'2024-07-20'}],
+      createdAt:'2024-07-15'
+    },
+  ]
+};
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let S;
+function initState(){try{const d=localStorage.getItem('mep4_s');if(d){S=JSON.parse(d);return;}}catch(e){}S=JSON.parse(JSON.stringify(SEED));}
+function save(){try{localStorage.setItem('mep4_s',JSON.stringify(S));}catch(e){}}
+function resetToSeed(){if(confirm('Reset to demo data? All changes will be lost.')){localStorage.removeItem('mep4_s');initState();renderAll();}}
+initState();
+
+let UI={
+  view:'overview',prev:null,
+  oppDetId:null,
+  projDetId:null,projTab:'overview',
+  moduleDetId:null,moduleProjId:null,moduleTab:'overview',
+  taskFilter:'All',
+};
+
+// ═══════════════════════════════════════════
+//  EVENT DELEGATION  (CSP-safe, no inline onclick)
+// ═══════════════════════════════════════════
+function initEvents(){
+  // Global delegation: data-fn + data-args on any clickable element
+  document.addEventListener('click', function(e){
+    const el=e.target.closest('[data-fn]');
+    if(!el) return;
+    const fn=el.dataset.fn;
+    let args=[];
+    try{if(el.dataset.args)args=JSON.parse(el.dataset.args);}catch(_){}
+    if(typeof window[fn]==='function') window[fn](...args);
+  });
+  // Sheet controls
+  document.getElementById('BACKDROP').addEventListener('click',closeSheet);
+  document.getElementById('SH_close').addEventListener('click',closeSheet);
+  document.getElementById('SH_foot').addEventListener('click',function(e){
+    const btn=e.target.closest('[data-a]');if(!btn)return;
+    const a=btn.dataset.a;
+    if(a==='close') closeSheet();
+    if(a==='submit'&&_onSubmit) _onSubmit();
+    if(a==='del'&&_onDelete) _onDelete();
+  });
+  document.getElementById('SH_body').addEventListener('click',function(e){
+    const btn=e.target.closest('[data-a]');if(!btn)return;
+    if(btn.dataset.a==='reset'){resetToSeed();closeSheet();}
+  });
+  // Header button
+  document.getElementById('G_hdrBtn').addEventListener('click',hdrAction);
+  // FAB
+  document.getElementById('G_fab').addEventListener('click',function(){if(_fabFn)_fabFn();});
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+const ALL_VIEWS=['overview','opps','oppdet','projects','projdet','moduledet','tasks','proc'];
+const NAV_IDS=['overview','opps','projects','tasks','proc'];
+
+function goView(v,opts={}){
+  UI.prev=UI.view; UI.view=v;
+  ALL_VIEWS.forEach(id=>{document.getElementById('V_'+id).classList.toggle('on',id===v);});
+  NAV_IDS.forEach(n=>{
+    const mob=document.getElementById('N_'+n);
+    const sb=document.getElementById('SB_'+n);
+    const active=n===v||(v==='oppdet'&&n==='opps')||(v==='projdet'&&n==='projects')||(v==='moduledet'&&n==='projects');
+    if(mob)mob.classList.toggle('on',active);
+    if(sb)sb.classList.toggle('on',active);
+  });
+  if(opts.oppId!==undefined)UI.oppDetId=opts.oppId;
+  if(opts.projId!==undefined){UI.projDetId=opts.projId;UI.projTab=opts.tab||'overview';}
+  if(opts.nodeId!==undefined){UI.moduleDetId=opts.nodeId;UI.moduleProjId=opts.projId||UI.projDetId;UI.moduleTab=opts.tab||'overview';}
+  document.getElementById('G_scroll').scrollTop=0;
+  renderAll(); updateFab();
+}
+
+function hdrAction(){
+  const v=UI.view;
+  if(v==='oppdet')goView('opps');
+  else if(v==='projdet')goView('projects');
+  else if(v==='moduledet')goView('projdet',{projId:UI.moduleProjId,tab:'mbs'});
+  else openSheet('Settings',`<div style="font-size:13px;color:var(--t2);line-height:1.8;margin-bottom:16px;"><strong>MEP v4</strong> — Machine Execution Platform<br>Design-to-Procurement Coordination<br>Data stored locally in browser.</div><button class="btn btn-d" style="margin-top:4px;" data-a="reset">Reset to Demo Data</button>`,'close');
+}
+
+function renderHeader(){
+  const isDetail=['oppdet','projdet','moduledet'].includes(UI.view);
+  const titles={overview:'Dashboard',opps:'Pipeline',oppdet:'Opportunity',projects:'Projects',projdet:'Project',moduledet:'Module Design',tasks:'All Tasks',proc:'Procurement'};
+  const el_title=document.getElementById('G_title');
+  el_title.textContent=titles[UI.view]||'MEP';
+  if(UI.view==='projdet'){const p=getProj();if(p)el_title.textContent=p.title;}
+  if(UI.view==='moduledet'){const m=getMod();if(m)el_title.textContent=m.label;}
+  let sub='';
+  if(UI.view==='overview')sub=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  else if(UI.view==='opps')sub=`${S.opps.length} requests`;
+  else if(UI.view==='oppdet'){const o=S.opps.find(x=>x.id===UI.oppDetId);sub=o?o.customer:'';}
+  else if(UI.view==='projects')sub=`${S.projects.length} active`;
+  else if(UI.view==='projdet'){const p=getProj();sub=p?`${p.customer} · ${p.health}`:'';}
+  else if(UI.view==='moduledet'){const m=getMod();sub=m?`${m.dept||''} · ${m.modStatus||''}`:'';}
+  else if(UI.view==='tasks'){const all=allTasks();sub=`${all.length} tasks · ${all.filter(t=>t.status==='Blocked').length} blocked`;}
+  else if(UI.view==='proc')sub='Cross-project';
+  document.getElementById('G_sub').textContent=sub;
+  document.getElementById('MOB_LOGO').style.display=isDetail?'none':'flex';
+  document.getElementById('G_hdrBtn').innerHTML=isDetail
+    ?`<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 9H3M8 4l-5 5 5 5"/></svg>`
+    :`<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="5.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none"/><circle cx="9" cy="12.5" r="1.5" fill="currentColor" stroke="none"/></svg>`;
+}
+
+// ═══════════════════════════════════════════
+//  FAB
+// ═══════════════════════════════════════════
+let _fabFn=null;
+function updateFab(){
+  const fab=document.getElementById('G_fab');
+  _fabFn=null;
+  if(UI.view==='opps')_fabFn=()=>openOppForm();
+  else if(UI.view==='projdet'){
+    const p=getProj();if(!p)return;
+    if(UI.projTab==='mbs')_fabFn=()=>openNodeForm(p.id,null,'Machine');
+    else if(UI.projTab==='procurement')_fabFn=()=>openProcForm(p.id);
+    else if(UI.projTab==='decisions')_fabFn=()=>openDecForm(p.id);
+  }
+  else if(UI.view==='moduledet'){
+    const m=getMod(),pid=UI.moduleProjId;
+    if(!m||!pid)return;
+    if(UI.moduleTab==='tasks')_fabFn=()=>openTaskForm(pid,m.id);
+    else if(UI.moduleTab==='components')_fabFn=()=>openCompForm(m.id,pid);
+  }
+  fab.style.display=_fabFn?'flex':'none';
+}
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function avCls(name){const h=[...(name||'?')].reduce((a,c)=>a+c.charCodeAt(0),0);return AVC[h%AVC.length];}
+function ini(name){return(name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function av(name,sz=''){return`<div class="av ${avCls(name)} ${sz}">${ini(name)}</div>`;}
+function bx(t,c){return`<span class="bx ${c}">${t}</span>`;}
+function oppBadge(s){return bx(s,{New:'b-pur',Feasibility:'b-amb',Approved:'b-blu',Converted:'b-tel'}[s]||'b-gray');}
+function taskBadge(s){return bx(s,{'Not Started':'b-gray','In Progress':'b-blu','Under Review':'b-pur','Blocked':'b-red','Completed':'b-tel'}[s]||'b-gray');}
+function modBadge(s){return bx(s,{'Not Started':'b-gray','In Progress':'b-blu','Blocked':'b-red','Completed':'b-tel','Ready for Procurement':'b-grn'}[s]||'b-gray');}
+function prioBadge(p){return bx(p,{Low:'b-gray',Medium:'b-amb',High:'b-cor',Critical:'b-red'}[p]||'b-gray');}
+function healthBadge(h){return bx(h,{Healthy:'b-grn',Watch:'b-amb','At Risk':'b-cor'}[h]||'b-gray');}
+function stageBadge(s){return bx(s,'b-pur');}
+function procBadge(s){return bx(s,{'Not Ready':'b-red','Pending Release':'b-amb',Ready:'b-grn',Ordered:'b-blu',Received:'b-tel'}[s]||'b-gray');}
+function compBadge(s){return bx(s,{Planned:'b-gray',Confirmed:'b-amb',Ordered:'b-grn'}[s]||'b-gray');}
+function riskBadge(r){return bx(r,{Low:'b-gray',Medium:'b-amb',High:'b-cor',Critical:'b-red'}[r]||'b-gray');}
+function nodeBadge(t){return bx(t,{Machine:'b-blu',Module:'b-pur',Subassembly:'b-gray'}[t]||'b-gray');}
+function progCls(h){return h==='Healthy'?'pg':h==='Watch'?'pa':'pr';}
+function projPct(p){const t=(p.tasks||[]).length;if(!t)return 0;return Math.round((p.tasks||[]).filter(x=>x.status==='Completed').length/t*100);}
+function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});}catch{return d;}}
+function getProj(){return S.projects.find(x=>x.id===UI.projDetId);}
+function getMod(){const p=S.projects.find(x=>x.id===UI.moduleProjId);if(!p)return null;return(p.nodes||[]).find(n=>n.id===UI.moduleDetId);}
+function allTasks(){return S.projects.flatMap(p=>(p.tasks||[]).map(t=>({...t,_proj:p})));}
+function allComps(){return S.projects.flatMap(p=>(p.nodes||[]).filter(n=>n.type==='Module').flatMap(m=>(m.components||[]).map(c=>({...c,_mod:m,_proj:p}))));}
+function modLLRisk(m){return(m.components||[]).filter(c=>c.leadTimeWeeks>=LL_WEEKS&&c.status!=='Ordered');}
+function modBlockers(m,p){const childIds=(p.nodes||[]).filter(n=>n.parentId===m.id).map(n=>n.id);return(p.tasks||[]).filter(t=>childIds.includes(t.nodeId)&&t.status==='Blocked');}
+function modBorderCls(m){
+  if(m.modStatus==='Ready for Procurement')return'mc-tel';
+  if(m.modStatus==='Completed')return'mc-grn';
+  if(m.modStatus==='Blocked')return'mc-red';
+  if(m.modStatus==='In Progress')return'mc-blu';
+  return'';
+}
+function isDepBlocked(task,allProjTasks){
+  if(!task.dependsOnTaskId)return false;
+  const dep=allProjTasks.find(t=>t.id===task.dependsOnTaskId);
+  return dep&&dep.status!=='Completed';
+}
+
+// ═══════════════════════════════════════════
+//  OVERVIEW / DASHBOARD
+// ═══════════════════════════════════════════
+function renderOverview(){
+  const el=document.getElementById('R_overview');
+  const allCompsAll=allComps();
+  const llAll=allCompsAll.filter(c=>c.leadTimeWeeks>=LL_WEEKS&&c.status!=='Ordered');
+  const blocked=allTasks().filter(t=>t.status==='Blocked');
+  const overdue=allTasks().filter(t=>t.due&&new Date(t.due)<new Date()&&t.status!=='Completed');
+  const allMods=S.projects.flatMap(p=>(p.nodes||[]).filter(n=>n.type==='Module'));
+  const readyMods=allMods.filter(m=>m.modStatus==='Ready for Procurement');
+  const blockedMods=allMods.filter(m=>m.modStatus==='Blocked');
+
+  let h=`<div class="kgrid">
+    <div class="kpi"><div class="kpi-l">Active Projects</div><div class="kpi-v">${S.projects.length}</div><div class="kpi-s">${S.projects.filter(p=>p.health==='Healthy').length} healthy</div></div>
+    <div class="kpi"><div class="kpi-l">Long-Lead Risk</div><div class="kpi-v" style="color:var(--red-t)">${llAll.length}</div><div class="kpi-s">≥${LL_WEEKS}wk unordered</div></div>
+    <div class="kpi"><div class="kpi-l">Ready for Procurement</div><div class="kpi-v" style="color:var(--grn-t)">${readyMods.length}</div><div class="kpi-s">Modules released</div></div>
+    <div class="kpi"><div class="kpi-l">Blocked Modules</div><div class="kpi-v" style="color:var(--amb-t)">${blockedMods.length}</div><div class="kpi-s">${blocked.length} tasks blocked</div></div>
+  </div>`;
+
+  if(S.projects.length){
+    h+=`<div class="slbl"><span>PROJECT HEALTH</span></div><div class="card-grid">`;
+    S.projects.forEach(p=>{
+      const pct=projPct(p);
+      const bl=(p.tasks||[]).filter(t=>t.status==='Blocked').length;
+      const mods=(p.nodes||[]).filter(n=>n.type==='Module');
+      const ready=mods.filter(m=>m.modStatus==='Ready for Procurement').length;
+      h+=`<div class="card" style="margin:0;" data-fn="openProj" data-args='[${p.id}]'>
+        <div class="li" style="cursor:pointer;">
+          <div class="li-r"><div class="li-title">${p.title}</div>${healthBadge(p.health||'Healthy')}</div>
+          <div class="li-r"><span class="li-meta mono">${p.customer}</span>${stageBadge(p.stage||'Intake')}</div>
+          <div class="prog"><div class="pf ${progCls(p.health||'Healthy')}" style="width:${pct}%"></div></div>
+          <div class="li-r" style="margin-top:5px;">
+            <span class="li-meta">${pct}% · ${p.pm} · ${fmtDate(p.delivery)}</span>
+            <span style="font-size:11px;display:flex;gap:5px;align-items:center;">
+              ${ready?`<span style="color:var(--grn-t);font-weight:500;">${ready} ready</span>`:''}
+              ${bl?`<span style="color:var(--red-t);font-weight:500;">${bl} blocked</span>`:''}
+            </span>
+          </div>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+
+  if(llAll.length){
+    h+=`<div class="slbl"><span>LONG-LEAD RISK</span></div>`;
+    llAll.slice(0,4).forEach(c=>{
+      h+=`<div class="alert alert-r" style="margin-bottom:8px;">
+        <div class="alert-title">${c.partName}</div>
+        <div class="alert-body">${c._proj.title} › ${c._mod.label} · ${c.supplier||'—'}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;"><span class="ll">${c.leadTimeWeeks} WKS</span>${compBadge(c.status)}</div>
+      </div>`;
+    });
+  }
+
+  if(readyMods.length){
+    h+=`<div class="slbl"><span>READY FOR PROCUREMENT</span></div>`;
+    readyMods.forEach(m=>{
+      const proj=S.projects.find(p=>(p.nodes||[]).find(n=>n.id===m.id));
+      if(!proj)return;
+      const compCount=(m.components||[]).length;
+      h+=`<div class="alert alert-g" style="margin-bottom:8px;" data-fn="goView" data-args='["moduledet",{"nodeId":${m.id},"projId":${proj.id},"tab":"components"}]'>
+        <div class="alert-title" style="color:var(--grn-t);">${m.label}</div>
+        <div class="alert-body" style="color:var(--grn-t);">${proj.title} · ${compCount} component${compCount!==1?'s':''} · Owner: ${m.ownerName||'—'}</div>
+      </div>`;
+    });
+  }
+  h+=`<div class="sp"></div>`;
+  el.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════
+//  OPPORTUNITIES
+// ═══════════════════════════════════════════
+function renderOpps(){
+  const el=document.getElementById('R_opps');
+  if(!S.opps.length){el.innerHTML=empty('Pipeline','No opportunities yet','Capture machine requests here.','+ New Request','openOppForm');return;}
+  const groups={New:[],Feasibility:[],Approved:[],Converted:[]};
+  S.opps.forEach(o=>(groups[o.status]||[]).push(o));
+  let h='';
+  ['New','Feasibility','Approved','Converted'].forEach(g=>{
+    if(!groups[g].length)return;
+    h+=`<div class="slbl"><span>${g.toUpperCase()}</span><button class="slbl-btn" data-fn="openOppForm">+</button></div><div class="card">`;
+    groups[g].forEach(o=>{
+      h+=`<div class="li" data-fn="goView" data-args='["oppdet",{"oppId":${o.id}}]'>
+        <div class="li-r"><div class="li-title">${o.title}</div>${oppBadge(o.status)}</div>
+        <div class="li-r"><span class="li-sub">${o.customer}</span><span class="li-meta">${o.machineType||''} · ${o.axes||'?'} axes</span></div>
+        <div class="li-meta">Delivery: ${o.delivery||'TBD'} · ${o.createdBy||'—'}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+  });
+  h+=`<div class="sp"></div>`;
+  el.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════
+//  OPP DETAIL
+// ═══════════════════════════════════════════
+function renderOppDet(){
+  const el=document.getElementById('R_oppdet');
+  const o=S.opps.find(x=>x.id===UI.oppDetId);
+  if(!o){el.innerHTML='';return;}
+  const proj=S.projects.find(p=>p.oppId===o.id);
+  let h=`<div class="slbl"><span>OVERVIEW</span></div>
+  <div class="card"><div class="li" style="cursor:default;">
+    <div class="li-r"><div class="li-title" style="font-size:16px;">${o.title}</div>${oppBadge(o.status)}</div>
+    <div class="li-sub" style="margin-top:2px;">${o.customer}</div>
+  </div></div>
+  <div class="slbl"><span>DETAILS</span></div>
+  <div class="card"><div class="li" style="cursor:default;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><div class="li-meta">Machine Type</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.machineType||'—'}</div></div>
+      <div><div class="li-meta">Axes</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.axes||'—'}</div></div>
+      <div><div class="li-meta">Delivery</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.delivery||'—'}</div></div>
+      <div><div class="li-meta">Sales Rep</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${o.createdBy||'—'}</div></div>
+    </div>
+  </div></div>`;
+  if(o.requirements)h+=`<div class="slbl"><span>REQUIREMENTS</span></div><div class="card"><div class="li" style="cursor:default;"><div class="li-sub" style="line-height:1.65;">${o.requirements}</div></div></div>`;
+  if(proj){
+    h+=`<div class="slbl"><span>LINKED PROJECT</span></div>
+    <div class="card"><div class="li" data-fn="openProj" data-args='[${proj.id}]'>
+      <div class="li-r"><div class="li-title">${proj.title}</div>${healthBadge(proj.health||'Healthy')}</div>
+      <div class="li-meta">${proj.stage} · PM: ${proj.pm}</div>
+    </div></div>`;
+  } else {
+    h+=`<div class="slbl"><span>ACTIONS</span></div><div class="card">`;
+    if(o.status==='New')h+=`<div class="li" data-fn="advOpp" data-args='[${o.id},"Feasibility"]'><div class="li-r"><div class="li-title">Start Feasibility Review</div></div><div class="li-meta">Move to technical feasibility</div></div>`;
+    if(o.status==='Feasibility')h+=`<div class="li" data-fn="advOpp" data-args='[${o.id},"Approved"]'><div class="li-r"><div class="li-title">Approve Opportunity</div></div><div class="li-meta">Mark ready to convert</div></div>`;
+    if(o.status!=='New')h+=`<div class="li" data-fn="openConvertForm" data-args='[${o.id}]'><div class="li-r"><div class="li-title" style="color:var(--blu);">Convert to Project</div></div><div class="li-meta">Assign PM and begin engineering</div></div>`;
+    h+=`</div>`;
+  }
+  h+=`<div class="slbl"><span>EDIT</span></div><div class="card">
+    <div class="li" data-fn="openOppEdit" data-args='[${o.id}]'><div class="li-title">Edit Opportunity</div></div>
+    <div class="li" data-fn="delOpp" data-args='[${o.id}]'><div class="li-title" style="color:var(--red-t)">Delete</div></div>
+  </div><div class="sp"></div>`;
+  el.innerHTML=h;
+}
+function advOpp(id,s){const o=S.opps.find(x=>x.id===id);if(o){o.status=s;save();renderAll();}}
+
+// ═══════════════════════════════════════════
+//  PROJECTS LIST
+// ═══════════════════════════════════════════
+function renderProjects(){
+  const el=document.getElementById('R_projects');
+  if(!S.projects.length){el.innerHTML=empty('Projects','No projects yet','Convert an opportunity to start.','Go to Pipeline →','goView,"opps"');return;}
+  let h=`<div class="slbl"><span>ACTIVE PROJECTS</span></div><div class="card-grid">`;
+  S.projects.forEach(p=>{
+    const pct=projPct(p);const bl=(p.tasks||[]).filter(t=>t.status==='Blocked').length;
+    h+=`<div class="card" style="margin:0;" data-fn="openProj" data-args='[${p.id}]'>
+      <div class="li" style="cursor:pointer;">
+        <div class="li-r"><div class="li-title">${p.title}</div>${healthBadge(p.health||'Healthy')}</div>
+        <div class="li-r"><span class="li-meta">${p.customer}</span>${stageBadge(p.stage||'Intake')}</div>
+        <div class="prog"><div class="pf ${progCls(p.health||'Healthy')}" style="width:${pct}%"></div></div>
+        <div class="li-r" style="margin-top:5px;"><span class="li-meta">${pct}% · ${p.pm||'—'} · ${fmtDate(p.delivery)}</span>${bl?`<span style="font-size:11px;color:var(--red-t);font-weight:500;">${bl} blocked</span>`:''}</div>
+      </div>
+    </div>`;
+  });
+  h+=`</div><div class="sp"></div>`;
+  el.innerHTML=h;
+}
+function openProj(id){goView('projdet',{projId:id,tab:'overview'});}
+
+// ═══════════════════════════════════════════
+//  PROJECT DETAIL
+// ═══════════════════════════════════════════
+function renderProjDet(){
+  const el=document.getElementById('R_projdet');
+  const p=getProj();if(!p){el.innerHTML='';return;}
+  const si=STAGES.indexOf(p.stage||'Intake');
+  let stgH=`<div class="stages">`;
+  STAGES.forEach((s,i)=>{stgH+=`<div class="stg ${i<si?'stg-d':i===si?'stg-n':'stg-t'}">${s}${i<si?' ✓':''}</div>`;if(i<STAGES.length-1)stgH+=`<div class="stg-ln ${i<si?'stg-ld':'stg-lt'}"></div>`;});
+  stgH+=`</div>`;
+  const tabs=['overview','mbs','tasks','procurement','decisions'];
+  const tabLabels=['Overview','MBS Tree','Tasks','Procurement','Decisions'];
+  let tabH=`<div class="tabs">`;
+  tabs.forEach((k,i)=>{tabH+=`<button class="tab ${UI.projTab===k?'on':''}" data-fn="setProjTab" data-args='["${k}"]'>${tabLabels[i]}</button>`;});
+  tabH+=`</div>`;
+  let content='';
+  if(UI.projTab==='overview')content=renderPOv(p);
+  else if(UI.projTab==='mbs')content=renderMBS(p);
+  else if(UI.projTab==='tasks')content=renderPTasks(p);
+  else if(UI.projTab==='procurement')content=renderPProc(p);
+  else if(UI.projTab==='decisions')content=renderPDecs(p);
+  el.innerHTML=stgH+tabH+content;
+}
+function setProjTab(t){UI.projTab=t;renderProjDet();updateFab();}
+
+function renderPOv(p){
+  const bl=(p.tasks||[]).filter(t=>t.status==='Blocked');
+  const mods=(p.nodes||[]).filter(n=>n.type==='Module');
+  const readyMods=mods.filter(m=>m.modStatus==='Ready for Procurement').length;
+  const llMods=mods.reduce((a,m)=>a+modLLRisk(m).length,0);
+  let h=`<div style="padding:12px 16px 0;">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+      <div class="kpi" style="padding:10px;"><div class="kpi-l">Modules</div><div class="kpi-v" style="font-size:20px;">${mods.length}</div></div>
+      <div class="kpi" style="padding:10px;"><div class="kpi-l">Proc Ready</div><div class="kpi-v" style="font-size:20px;color:var(--grn-t)">${readyMods}</div></div>
+      <div class="kpi" style="padding:10px;"><div class="kpi-l">Long-Lead</div><div class="kpi-v" style="font-size:20px;color:var(--red-t)">${llMods}</div></div>
+    </div>
+  </div>`;
+  h+=`<div class="slbl"><span>HEALTH</span><button class="slbl-btn" data-fn="openProjEdit" data-args='[${p.id}]'>Edit</button></div>
+  <div style="padding:0 16px 12px;"><div class="seg">
+    ${HEALTH.map(hv=>`<div class="so ${(p.health||'Healthy')===hv?'on':''}" data-fn="setHealth" data-args='[${p.id},"${hv}"]'>${hv}</div>`).join('')}
+  </div></div>
+  <div class="card"><div class="li" style="cursor:default;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><div class="li-meta">Customer</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${p.customer}</div></div>
+      <div><div class="li-meta">PM</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${p.pm||'—'}</div></div>
+      <div><div class="li-meta">Delivery</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${p.delivery||'—'}</div></div>
+      <div><div class="li-meta">Stage</div><div style="margin-top:2px;">${stageBadge(p.stage||'Intake')}</div></div>
+    </div>
+  </div></div>`;
+  const si=STAGES.indexOf(p.stage||'Intake');
+  if(si<STAGES.length-1)h+=`<div style="padding:10px 16px 0;"><button class="action-btn action-btn-s" style="width:100%;" data-fn="advanceStage" data-args='[${p.id}]'>Advance to ${STAGES[si+1]} →</button></div>`;
+  if(p.kickoffNotes)h+=`<div class="slbl"><span>KICKOFF NOTES</span></div><div class="card"><div class="li" style="cursor:default;"><div class="li-meta" style="margin-bottom:4px;">${fmtDate(p.kickoffDate)}</div><div class="li-sub" style="line-height:1.65;">${p.kickoffNotes}</div></div></div>`;
+  h+=`<div class="slbl"><span>MILESTONES</span><button class="slbl-btn" data-fn="openMilestoneForm" data-args='[${p.id}]'>+ Add</button></div>`;
+  if((p.milestones||[]).length){
+    h+=`<div class="card">`;
+    p.milestones.forEach((m,i)=>{const done=m.status==='Done';h+=`<div class="li" data-fn="toggleMilestone" data-args='[${p.id},${i}]'><div class="li-r"><div style="display:flex;align-items:center;gap:9px;"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7.5" stroke="${done?'var(--grn)':'var(--b2)'}" stroke-width="1.5"/>${done?'<path d="M5.5 9.5l2.5 2.5L13 6.5" stroke="var(--grn)" stroke-width="1.5" stroke-linecap="round"/>':''}</svg><span class="li-sub" style="${done?'text-decoration:line-through;color:var(--t3);':''}">${m.title}</span></div><span class="mono" style="color:${done?'var(--t3)':'var(--t2)'};">${fmtDate(m.date)}</span></div></div>`;});
+    h+=`</div>`;
+  }
+  if(bl.length){h+=`<div class="slbl"><span>ACTIVE BLOCKERS</span></div>`;bl.forEach(t=>{h+=`<div class="alert alert-r" style="margin-bottom:8px;"><div class="alert-title">${t.title}</div><div class="alert-body">${t.owner||'—'} · ${t.dept||'—'}</div><div style="display:flex;gap:6px;margin-top:8px;">${prioBadge(t.priority||'Medium')}</div></div>`;});}
+  h+=`<div class="slbl"><span>DANGER ZONE</span></div><div class="card"><div class="li" data-fn="delProj" data-args='[${p.id}]'><div class="li-title" style="color:var(--red-t);">Delete Project</div></div></div><div class="sp"></div>`;
+  return h;
+}
+function setHealth(pid,h){const p=S.projects.find(x=>x.id===pid);if(p){p.health=h;save();renderProjDet();renderAll();}}
+function advanceStage(pid){const p=S.projects.find(x=>x.id===pid);if(!p)return;const si=STAGES.indexOf(p.stage||'Intake');if(si<STAGES.length-1){p.stage=STAGES[si+1];save();renderAll();renderProjDet();}}
+function toggleMilestone(pid,idx){const p=S.projects.find(x=>x.id===pid);if(!p||!p.milestones[idx])return;p.milestones[idx].status=p.milestones[idx].status==='Done'?'Pending':'Done';save();renderProjDet();}
+
+// ── MBS TREE ──────────────────────────────
+function renderMBS(p){
+  const nodes=p.nodes||[],tasks=p.tasks||[];
+  function renderNode(node,depth){
+    const indent=16+depth*16;
+    const children=nodes.filter(n=>n.parentId===node.id);
+    const isLeaf=node.type==='Subassembly';
+    if(node.type==='Machine'){
+      let h=`<div class="tn" style="padding-left:${indent}px;background:var(--s2);cursor:default;">
+        ${nodeBadge('Machine')}
+        <span class="tn-lbl" style="font-weight:600;font-size:14px;">${node.label}</span>
+        <button class="add-c" data-fn="openNodeForm" data-args='[${p.id},${node.id},"Module"]'>+ Module</button>
+      </div>`;
+      children.forEach(c=>h+=renderNode(c,depth+1));
+      return h;
+    }
+    if(node.type==='Module'){
+      const ll=modLLRisk(node);
+      const bls=modBlockers(node,p);
+      const delivDone=(node.deliverablesDone||[]).filter(Boolean).length;
+      const delivTotal=(node.deliverables||[]).length;
+      const borderCls=modBorderCls(node);
+      let h=`<div class="mod-card ${borderCls}" style="margin-left:${indent-16}px;border-left-width:3px;border-bottom:.5px solid var(--b1);" data-fn="openModule" data-args='[${p.id},${node.id}]'>
+        <div class="mod-header">
+          ${node.ownerName?av(node.ownerName):'<div class="av av0">?</div>'}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">${node.label}</div>
+            <div style="font-size:11px;color:var(--t3);">${node.dept||''} · Due: ${fmtDate(node.plannedEndDate)||'TBD'}</div>
+          </div>
+          ${modBadge(node.modStatus||'Not Started')}
+        </div>
+        <div class="mod-info">
+          <div class="mod-row">
+            ${delivTotal?`<span style="font-size:11px;color:var(--t2);">📋 ${delivDone}/${delivTotal} deliverables</span>`:''}
+            ${bls.length?`<span style="font-size:11px;color:var(--red-t);font-weight:500;">⚠ ${bls.length} blocker${bls.length>1?'s':''}</span>`:''}
+            ${ll.length?`<span class="ll">${ll.length} long-lead</span>`:''}
+            ${(node.components||[]).length?`<span style="font-size:11px;color:var(--t2);">${(node.components||[]).length} components</span>`:''}
+          </div>
+        </div>
+      </div>`;
+      children.forEach(c=>h+=renderNode(c,depth+1));
+      return h;
+    }
+    // Subassembly
+    const ntasks=tasks.filter(t=>t.nodeId===node.id);
+    const blocked=ntasks.some(t=>t.status==='Blocked');
+    let h=`<div class="tn ${blocked?'blk':''}" style="padding-left:${indent}px;" data-fn="openNodeForm" data-args='[${p.id},${node.parentId},"SubLeaf"]'>
+      <span class="caret">└</span>
+      ${nodeBadge('Subassembly')}
+      <span class="tn-lbl">${node.label}</span>
+      <button class="add-c" data-fn="openTaskForm" data-args='[${p.id},${node.id}]'>+ Task</button>
+    </div>`;
+    ntasks.forEach(t=>{
+      const depBlk=isDepBlocked(t,tasks);
+      h+=`<div class="tn ${t.status==='Blocked'||depBlk?'blk':''}" style="padding-left:${indent+16}px;" data-fn="openTaskEdit" data-args='[${p.id},"${t.id}"]'>
+        <span class="caret" style="opacity:0;">·</span>
+        ${taskBadge(depBlk?'Blocked':t.status)}
+        <span class="tn-lbl" style="font-size:12px;">${t.title}${depBlk?`<span class="dep-bl" style="display:inline;padding:0 6px;">dep blocked</span>`:''}</span>
+        ${t.owner?av(t.owner,'av-sm'):''}
+      </div>`;
+    });
+    return h;
+  }
+  const roots=nodes.filter(n=>!n.parentId);
+  if(!roots.length)return `<div class="empty"><div class="ei"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blu)" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="8" width="8" height="8" rx="1.5"/><rect x="13" y="4" width="8" height="5" rx="1.5"/><rect x="13" y="14" width="8" height="5" rx="1.5"/></svg></div><div class="et">Build machine structure</div><div class="es">Add root Machine node, then Modules with owners and deliverables.</div><button class="eb" data-fn="openNodeForm" data-args='[${p.id},null,"Machine"]'>+ Add Machine</button></div>`;
+  let h=`<div style="background:var(--bg);">`;
+  roots.forEach(r=>h+=renderNode(r,0));
+  h+=`</div>`;
+  h+=`<div style="padding:12px 16px;"><button style="width:100%;padding:10px;border-radius:var(--rs);border:.5px solid var(--blu);background:var(--blu-l);color:var(--blu-t);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);" data-fn="openNodeForm" data-args='[${p.id},null,"Machine"]'>+ Add Machine Node</button></div><div class="sp"></div>`;
+  return h;
+}
+function openModule(pid,nid){goView('moduledet',{nodeId:nid,projId:pid,tab:'overview'});}
+
+function renderPTasks(p){
+  const tasks=p.tasks||[];
+  if(!tasks.length)return `<div class="empty"><div class="et">No tasks yet</div><div class="es">Add tasks from the MBS Tree via a Subassembly node.</div></div>`;
+  let h=`<div class="chips">
+    ${['All','Blocked','In Progress','Not Started','Completed'].map(f=>`<div class="chip ${f==='All'?'on':''}" data-fn="filterPT" data-args='["${f}",${p.id}]'>${f}</div>`).join('')}
+  </div>
+  <div style="padding:0 16px;margin-bottom:6px;display:flex;justify-content:flex-end;"><button style="font-size:12px;color:var(--blu);background:none;border:none;cursor:pointer;font-family:var(--ff);" data-fn="openTaskForm" data-args='[${p.id},null]'>+ Add Task</button></div>
+  <div class="card" style="margin:0 16px;" id="ptlist">`;
+  tasks.forEach(t=>{h+=ptRow(t,p.id,tasks);});
+  h+=`</div><div class="sp"></div>`;
+  return h;
+}
+function ptRow(t,pid,allProjTasks){
+  const isBlocked=t.status==='Blocked';
+  const depBlk=isDepBlocked(t,allProjTasks);
+  const isOverdue=t.due&&new Date(t.due)<new Date()&&t.status!=='Completed';
+  return `<div class="li" style="${isBlocked||depBlk?'background:var(--red-l);':isOverdue?'background:var(--amb-l);':''}" data-fn="openTaskEdit" data-args='[${pid},"${t.id}"]'>
+    <div class="li-r">${taskBadge(depBlk?'Blocked':t.status)}${prioBadge(t.priority||'Medium')}</div>
+    <div class="li-title" style="font-size:13px;">${t.title}</div>
+    ${depBlk?`<div class="dep-bl">Waiting on dependency: task ${t.dependsOnTaskId}</div>`:''}
+    <div class="li-r"><span class="li-meta">${t.owner||'—'} · ${t.dept||'—'}</span><span class="li-meta mono" style="${isOverdue?'color:var(--red-t);':''}">${fmtDate(t.due)||'—'}${isOverdue?' ⚠':''}</span></div>
+  </div>`;
+}
+function filterPT(f,pid){
+  const p=S.projects.find(x=>x.id===pid);if(!p)return;
+  const tasks=(p.tasks||[]).filter(t=>f==='All'||t.status===f);
+  const list=document.getElementById('ptlist');if(!list)return;
+  list.innerHTML=tasks.map(t=>ptRow(t,pid,p.tasks||[])).join('')||`<div class="li" style="cursor:default;text-align:center;"><div class="li-meta">No ${f.toLowerCase()} tasks.</div></div>`;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.args&&c.dataset.args.includes(`"${f}"`)));
+}
+
+function renderPProc(p){
+  const items=p.procurement||[];
+  const ll=items.filter(x=>x.leadTimeWeeks>=LL_WEEKS&&x.status!=='Ordered'&&x.status!=='Received');
+  let h='';
+  if(ll.length){h+=`<div class="slbl"><span>LONG-LEAD</span></div>`;ll.forEach(item=>{h+=`<div class="alert alert-r" style="margin-bottom:8px;"><div class="alert-title">${item.title}</div><div class="alert-body">${item.supplier||'—'}</div><div style="display:flex;gap:6px;margin-top:8px;"><span class="ll">${item.leadWeeks} WKS</span>${riskBadge(item.risk||'High')}</div></div>`;});}
+  if(!items.length){h+=`<div class="empty" style="padding:32px 24px;"><div class="et">No procurement items</div><div class="es">Module components automatically appear here when modules are released to procurement.</div></div>`;} else {
+    h+=`<div class="slbl"><span>ALL ITEMS</span></div><div class="card">`;
+    items.forEach(item=>{h+=`<div class="li" data-fn="openProcEdit" data-args='[${p.id},"${item.id}"]'><div class="li-r"><div class="li-title" style="font-size:13px;">${item.title}</div>${item.leadWeeks>=LL_WEEKS?`<span class="ll">${item.leadWeeks}wk</span>`:''}</div><div class="li-r"><span class="li-meta">${item.supplier||'—'}</span>${procBadge(item.status||'Not Ready')}</div></div>`;});
+    h+=`</div>`;
+  }
+  h+=`<div style="padding:12px 16px;"><button style="width:100%;padding:10px;border-radius:var(--rs);border:.5px solid var(--blu);background:var(--blu-l);color:var(--blu-t);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);" data-fn="openProcForm" data-args='[${p.id}]'>+ Add Item</button></div><div class="sp"></div>`;
+  return h;
+}
+
+function renderPDecs(p){
+  const decs=p.decisions||[];
+  let h=`<div class="slbl"><span>DECISION LOG</span></div>`;
+  if(!decs.length)h+=`<div class="card"><div class="li" style="cursor:default;text-align:center;"><div class="li-meta">No decisions logged yet.</div></div></div>`;
+  else{h+=`<div class="card">`;decs.forEach(d=>{h+=`<div class="li" style="cursor:default;"><div class="li-r"><div style="display:flex;align-items:center;gap:8px;">${av(d.by,'av-sm')}<span class="li-sub" style="font-weight:500;">${d.by}</span></div><span class="mono" style="color:var(--t3);">${fmtDate(d.date)}</span></div><div class="li-title" style="font-size:13px;margin-bottom:4px;">${d.title}</div><div class="li-meta" style="line-height:1.55;">${d.rationale||''}</div></div>`;});h+=`</div>`;}
+  h+=`<div style="padding:12px 16px;"><button style="width:100%;padding:10px;border-radius:var(--rs);border:.5px solid var(--blu);background:var(--blu-l);color:var(--blu-t);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--ff);" data-fn="openDecForm" data-args='[${p.id}]'>+ Log Decision</button></div><div class="sp"></div>`;
+  return h;
+}
+
+// ═══════════════════════════════════════════
+//  MODULE DETAIL VIEW
+// ═══════════════════════════════════════════
+function renderModuleDet(){
+  const el=document.getElementById('R_moduledet');
+  const m=getMod(); const p=S.projects.find(x=>x.id===UI.moduleProjId);
+  if(!m||!p){el.innerHTML='';return;}
+  const tabs=['overview','tasks','components','procurement'];
+  const tabLabels=['Overview','Tasks','Components','Procurement'];
+  let tabH=`<div class="tabs">`;
+  tabs.forEach((k,i)=>{tabH+=`<button class="tab ${UI.moduleTab===k?'on':''}" data-fn="setModTab" data-args='["${k}"]'>${tabLabels[i]}</button>`;});
+  tabH+=`</div>`;
+  let content='';
+  if(UI.moduleTab==='overview')content=renderModOv(m,p);
+  else if(UI.moduleTab==='tasks')content=renderModTasks(m,p);
+  else if(UI.moduleTab==='components')content=renderModComps(m,p);
+  else if(UI.moduleTab==='procurement')content=renderModProc(m,p);
+  el.innerHTML=tabH+content;
+}
+function setModTab(t){UI.moduleTab=t;renderModuleDet();updateFab();}
+
+function renderModOv(m,p){
+  const bl=modBlockers(m,p);
+  const ll=modLLRisk(m);
+  const delivs=m.deliverables||[];
+  const delivDone=m.deliverablesDone||[];
+  const allDone=delivs.length>0&&delivDone.every(Boolean);
+  const noCritBlocked=!bl.some(t=>t.priority==='Critical');
+  const canRelease=allDone&&noCritBlocked&&m.modStatus!=='Ready for Procurement';
+  const isReleased=m.modStatus==='Ready for Procurement';
+
+  let h=`<div class="slbl"><span>MODULE STATUS</span></div>
+  <div style="padding:0 16px 12px;"><div class="seg">
+    ${MOD_ST.map(s=>`<div class="so ${(m.modStatus||'Not Started')===s?'on':''}" data-fn="setModStatus" data-args='[${m.id},"${s}"]'>${s}</div>`).join('')}
+  </div></div>`;
+
+  h+=`<div class="slbl"><span>DETAILS</span><button class="slbl-btn" data-fn="openModEdit" data-args='[${m.id},${p.id}]'>Edit</button></div>
+  <div class="card"><div class="li" style="cursor:default;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div><div class="li-meta">Owner</div><div style="display:flex;align-items:center;gap:6px;margin-top:4px;">${m.ownerName?av(m.ownerName,'av-sm'):''}  <span class="li-sub" style="font-weight:500;">${m.ownerName||'—'}</span></div></div>
+      <div><div class="li-meta">Department</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${m.dept||'—'}</div></div>
+      <div><div class="li-meta">Target Completion</div><div class="li-sub" style="font-weight:500;margin-top:2px;">${fmtDate(m.plannedEndDate)||'—'}</div></div>
+      <div><div class="li-meta">Long-Lead Items</div><div class="li-sub" style="font-weight:500;margin-top:2px;${ll.length?'color:var(--red-t);':''}">${ll.length||'None'}</div></div>
+    </div>
+  </div></div>`;
+
+  // Deliverables
+  h+=`<div class="slbl"><span>DELIVERABLES</span><button class="slbl-btn" data-fn="openDelivForm" data-args='[${m.id},${p.id}]'>+ Add</button></div>`;
+  if(delivs.length){
+    h+=`<div class="card">`;
+    delivs.forEach((d,i)=>{
+      const done=delivDone[i]||false;
+      h+=`<div class="deliv" data-fn="toggleDeliv" data-args='[${m.id},${p.id},${i}]'>
+        <div class="deliv-check ${done?'done':''}">${done?`<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>`:''}</div>
+        <span class="deliv-lbl ${done?'done':''}">${d}</span>
+      </div>`;
+    });
+    h+=`</div>`;
+  } else {
+    h+=`<div class="card"><div class="li" style="cursor:default;text-align:center;"><div class="li-meta">No deliverables defined. Add design outputs like drawings, calculations, specs.</div></div></div>`;
+  }
+
+  // Blockers
+  if(bl.length){
+    h+=`<div class="slbl"><span>BLOCKERS</span></div>`;
+    bl.forEach(t=>{h+=`<div class="alert alert-r" style="margin-bottom:8px;"><div class="alert-title">${t.title}</div><div class="alert-body">${t.owner||'—'} · ${prioBadge(t.priority||'Medium')}</div></div>`;});
+  }
+
+  // Release to Procurement
+  h+=`<div class="slbl"><span>PROCUREMENT RELEASE</span></div><div style="padding:0 16px 12px;">`;
+  if(isReleased){
+    h+=`<div class="release-btn locked"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 7V5a3 3 0 0 1 6 0v2"/><rect x="3" y="7" width="10" height="8" rx="1.5"/></svg> Released to Procurement</div>`;
+  } else if(canRelease){
+    h+=`<button class="release-btn ready" data-fn="releaseModule" data-args='[${m.id},${p.id}]'><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 13h10"/></svg> Release to Procurement</button>`;
+  } else {
+    const reasons=[];
+    if(!allDone)reasons.push(`${delivs.filter((_,i)=>!delivDone[i]).length} deliverable${delivs.filter((_,i)=>!delivDone[i]).length!==1?'s':''} incomplete`);
+    if(bl.some(t=>t.priority==='Critical'))reasons.push('Critical task blocked');
+    if(!delivs.length)reasons.push('No deliverables defined');
+    h+=`<button class="release-btn blocked" disabled>${isReleased?'Released':'Release to Procurement'}</button>`;
+    h+=`<div class="warn-box" style="margin-top:8px;"><strong>Cannot release yet:</strong> ${reasons.join(', ')}.</div>`;
+  }
+  h+=`</div>`;
+  h+=`<div class="sp"></div>`;
+  return h;
+}
+
+function toggleDeliv(modId,pid,idx){
+  const p=S.projects.find(x=>x.id===pid);if(!p)return;
+  const m=(p.nodes||[]).find(n=>n.id===modId);if(!m)return;
+  if(!m.deliverablesDone)m.deliverablesDone=new Array((m.deliverables||[]).length).fill(false);
+  m.deliverablesDone[idx]=!m.deliverablesDone[idx];
+  save();renderModuleDet();
+}
+function setModStatus(modId,status){
+  for(const p of S.projects){const m=(p.nodes||[]).find(n=>n.id===modId);if(m){m.modStatus=status;save();renderModuleDet();renderAll();return;}}
+}
+function releaseModule(modId,pid){
+  const p=S.projects.find(x=>x.id===pid);if(!p)return;
+  const m=(p.nodes||[]).find(n=>n.id===modId);if(!m)return;
+  if(!confirm(`Release "${m.label}" to procurement? This will lock the module and notify procurement.`))return;
+  m.modStatus='Ready for Procurement';m.releaseReady=true;
+  // Push components to project procurement list
+  const comps=m.components||[];
+  if(!p.procurement)p.procurement=[];
+  comps.forEach(c=>{
+    if(!p.procurement.find(x=>x._compId===c.id)){
+      p.procurement.push({id:uid(),_compId:c.id,title:`${c.partName} [${m.label}]`,supplier:c.supplier,qty:c.qty,leadWeeks:c.leadTimeWeeks,status:c.status==='Ordered'?'Ordered':'Not Ready',risk:c.leadTimeWeeks>=LL_WEEKS?'High':'Low'});
+    }
+  });
+  save();renderAll();renderModuleDet();
+}
+
+function renderModTasks(m,p){
+  const childIds=(p.nodes||[]).filter(n=>n.parentId===m.id).map(n=>n.id);
+  const tasks=(p.tasks||[]).filter(t=>childIds.includes(t.nodeId));
+  const allProjTasks=p.tasks||[];
+  let h=`<div style="padding:12px 16px;display:flex;justify-content:flex-end;"><button style="font-size:12px;color:var(--blu);background:none;border:none;cursor:pointer;font-family:var(--ff);" data-fn="openTaskForm" data-args='[${p.id},null]'>+ Add Task</button></div>`;
+  if(!tasks.length)return h+`<div class="empty" style="padding:24px;"><div class="et">No tasks yet</div><div class="es">Add tasks to subassemblies in the MBS tree.</div></div>`;
+  h+=`<div class="card" style="margin:0 16px;">`;
+  tasks.forEach(t=>{h+=ptRow(t,p.id,allProjTasks);});
+  h+=`</div><div class="sp"></div>`;
+  return h;
+}
+
+function renderModComps(m,p){
+  const comps=m.components||[];
+  const ll=comps.filter(c=>c.leadTimeWeeks>=LL_WEEKS&&c.status!=='Ordered');
+  let h='';
+  if(ll.length){
+    h+=`<div class="slbl"><span>LONG-LEAD ≥${LL_WEEKS} WKS</span></div>`;
+    ll.forEach(c=>{h+=`<div class="alert alert-r" style="margin-bottom:8px;"><div class="alert-title">${c.partName}</div><div class="alert-body">${c.supplier||'—'} · ×${c.qty}</div><div style="display:flex;gap:6px;margin-top:8px;"><span class="ll">${c.leadTimeWeeks} WKS</span>${compBadge(c.status)}</div></div>`;});
+  }
+  h+=`<div class="slbl"><span>COMPONENTS (${comps.length})</span><button class="slbl-btn" data-fn="openCompForm" data-args='[${m.id},${p.id}]'>+ Add</button></div>`;
+  if(!comps.length){return h+`<div class="empty" style="padding:24px;"><div class="et">No components yet</div><div class="es">Add parts, COTS items, and custom components. Flag long-lead items early.</div><button class="eb" data-fn="openCompForm" data-args='[${m.id},${p.id}]'>+ Add Component</button></div>`;}
+  h+=`<div class="card" style="margin:0 16px;">`;
+  comps.forEach(c=>{
+    const isLL=c.leadTimeWeeks>=LL_WEEKS&&c.status!=='Ordered';
+    h+=`<div class="comp-row ${isLL?'ll-risk':''}" data-fn="openCompEdit" data-args='["${c.id}",${m.id},${p.id}]'>
+      <div class="comp-col-name">
+        <div style="font-size:13px;font-weight:500;margin-bottom:2px;">${c.partName}</div>
+        <div style="font-size:11px;color:var(--t3);">${c.category} · ${c.supplier||'—'}${c.remarks?` · ${c.remarks}`:''}</div>
+      </div>
+      <div class="comp-col-qty">×${c.qty}</div>
+      <div class="comp-col-lead" style="${isLL?'color:var(--red-t);font-weight:600;':''}">${c.leadTimeWeeks}w</div>
+      ${compBadge(c.status)}
+    </div>`;
+  });
+  h+=`</div><div class="sp"></div>`;
+  return h;
+}
+
+function renderModProc(m,p){
+  const comps=m.components||[];
+  const isReleased=m.modStatus==='Ready for Procurement';
+  let h=`<div style="padding:12px 16px;">`;
+  if(isReleased){
+    h+=`<div class="alert alert-g" style="margin-bottom:12px;"><div class="alert-title" style="color:var(--grn-t);">Released to Procurement</div><div class="alert-body" style="color:var(--grn-t);">This module's components have been pushed to the project procurement list.</div></div>`;
+  } else {
+    h+=`<div class="warn-box">Module not yet released. Complete all deliverables and resolve critical blockers, then use the Overview tab to release.</div>`;
+  }
+  h+=`</div>`;
+  if(comps.length){
+    h+=`<div class="slbl"><span>COMPONENT SUMMARY</span></div><div class="card" style="margin:0 16px;">`;
+    comps.forEach(c=>{
+      const isLL=c.leadTimeWeeks>=LL_WEEKS&&c.status!=='Ordered';
+      h+=`<div class="comp-row ${isLL?'ll-risk':''}" style="cursor:default;">
+        <div class="comp-col-name"><div style="font-size:13px;font-weight:500;">${c.partName}</div><div style="font-size:11px;color:var(--t3);">${c.supplier||'—'}</div></div>
+        <div class="comp-col-qty">×${c.qty}</div>
+        <div class="comp-col-lead" style="${isLL?'color:var(--red-t);font-weight:600;':''}">${c.leadTimeWeeks}w${isLL?' ⚠':''}</div>
+        ${compBadge(c.status)}
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  h+=`<div class="sp"></div>`;
+  return h;
+}
+
+// ═══════════════════════════════════════════
+//  ALL TASKS
+// ═══════════════════════════════════════════
+function renderTasks(){
+  const el=document.getElementById('R_tasks');
+  const all=allTasks();
+  if(!all.length){el.innerHTML=`<div class="empty"><div class="et">No tasks yet</div><div class="es">Tasks are created inside projects via the MBS Tree.</div></div>`;return;}
+  const f=UI.taskFilter||'All';
+  const filtered=f==='All'?all:all.filter(t=>t.status===f);
+  let h=`<div class="chips">
+    ${['All','Blocked','In Progress','Not Started','Completed'].map(ff=>`<div class="chip ${f===ff?'on':''}" data-fn="setTF" data-args='["${ff}"]'>${ff}</div>`).join('')}
+  </div>
+  <div style="padding:0 16px;font-size:11px;color:var(--t3);margin-bottom:8px;">${filtered.length} tasks · ${all.filter(t=>t.status==='Blocked').length} blocked</div>`;
+  h+=`<div class="card" style="margin:0 16px;">`;
+  filtered.forEach(t=>{
+    const isBlocked=t.status==='Blocked';
+    const isOverdue=t.due&&new Date(t.due)<new Date()&&t.status!=='Completed';
+    const pTasks=(t._proj.tasks||[]);
+    const depBlk=isDepBlocked(t,pTasks);
+    h+=`<div class="li" style="${isBlocked||depBlk?'background:var(--red-l);':isOverdue?'background:var(--amb-l);':''}" data-fn="openTaskEdit" data-args='[${t._proj.id},"${t.id}"]'>
+      <div class="li-r">${taskBadge(depBlk?'Blocked':t.status)}${prioBadge(t.priority||'Medium')}</div>
+      <div class="li-title" style="font-size:13px;">${t.title}</div>
+      ${depBlk?`<div class="dep-bl">Dependency not completed</div>`:''}
+      <div class="li-r"><span class="li-meta">${t._proj.title} · ${t.owner||'—'}</span><span class="li-meta mono" style="${isOverdue?'color:var(--red-t);':''}">${fmtDate(t.due)||'—'}${isOverdue?' ⚠':''}</span></div>
+    </div>`;
+  });
+  h+=`</div><div class="sp"></div>`;
+  el.innerHTML=h;
+}
+function setTF(f){UI.taskFilter=f;renderTasks();}
+
+// ═══════════════════════════════════════════
+//  PROCUREMENT DASHBOARD
+// ═══════════════════════════════════════════
+function renderProc(){
+  const el=document.getElementById('R_proc');
+  const all=allComps();
+  const ll=all.filter(c=>c.leadTimeWeeks>=LL_WEEKS&&c.status!=='Ordered');
+  const planned=all.filter(c=>c.status==='Planned');
+  const confirmed=all.filter(c=>c.status==='Confirmed');
+  const ordered=all.filter(c=>c.status==='Ordered');
+  let h=`<div class="kgrid">
+    <div class="kpi"><div class="kpi-l">Long-Lead ≥${LL_WEEKS}wk</div><div class="kpi-v" style="color:var(--red-t)">${ll.length}</div><div class="kpi-s">Unordered</div></div>
+    <div class="kpi"><div class="kpi-l">Planned</div><div class="kpi-v" style="color:var(--amb-t)">${planned.length}</div><div class="kpi-s">Not yet confirmed</div></div>
+    <div class="kpi"><div class="kpi-l">Confirmed</div><div class="kpi-v" style="color:var(--blu-t)">${confirmed.length}</div><div class="kpi-s">Ready to order</div></div>
+    <div class="kpi"><div class="kpi-l">Ordered</div><div class="kpi-v" style="color:var(--grn-t)">${ordered.length}</div><div class="kpi-s">On order</div></div>
+  </div>`;
+  if(ll.length){
+    h+=`<div class="slbl"><span>LONG-LEAD RISK — ORDER NOW</span></div>`;
+    ll.forEach(c=>{h+=`<div class="alert alert-r" style="margin-bottom:8px;" data-fn="goView" data-args='["moduledet",{"nodeId":${c._mod.id},"projId":${c._proj.id},"tab":"components"}]'>
+      <div class="alert-title">${c.partName}</div>
+      <div class="alert-body">${c._proj.title} › ${c._mod.label} · ${c.supplier||'—'} · ×${c.qty}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;"><span class="ll">${c.leadTimeWeeks} WKS</span>${compBadge(c.status)}</div>
+    </div>`;});
+  }
+  if(all.length){
+    // Group by project
+    const byProj={};
+    all.forEach(c=>{if(!byProj[c._proj.id])byProj[c._proj.id]={proj:c._proj,items:[]};byProj[c._proj.id].items.push(c);});
+    Object.values(byProj).forEach(({proj,items})=>{
+      h+=`<div class="slbl"><span>${proj.title.toUpperCase()}</span></div><div class="card" style="margin:0 16px;">`;
+      items.forEach(c=>{
+        const isLL=c.leadTimeWeeks>=LL_WEEKS&&c.status!=='Ordered';
+        h+=`<div class="comp-row ${isLL?'ll-risk':''}" data-fn="goView" data-args='["moduledet",{"nodeId":${c._mod.id},"projId":${proj.id},"tab":"components"}]'>
+          <div class="comp-col-name"><div style="font-size:13px;font-weight:500;">${c.partName}</div><div style="font-size:11px;color:var(--t3);">${c._mod.label} · ${c.supplier||'—'}</div></div>
+          <div class="comp-col-qty">×${c.qty}</div>
+          <div class="comp-col-lead" style="${isLL?'color:var(--red-t);font-weight:700;':''}">${c.leadTimeWeeks}w</div>
+          ${compBadge(c.status)}
+        </div>`;
+      });
+      h+=`</div>`;
+    });
+  } else {
+    h+=`<div class="empty"><div class="et">No components yet</div><div class="es">Add components inside Module → Components tab. Long-lead items appear here immediately.</div></div>`;
+  }
+  h+=`<div class="sp"></div>`;
+  el.innerHTML=h;
+}
+
+// ═══════════════════════════════════════════
+//  SHEET SYSTEM
+// ═══════════════════════════════════════════
+let _onSubmit=null,_onDelete=null;
+function openSheet(title,body,type,onSubmit,onDelete){
+  document.getElementById('SH_title').textContent=title;
+  document.getElementById('SH_body').innerHTML=body;
+  _onSubmit=onSubmit||null; _onDelete=onDelete||null;
+  const foot=document.getElementById('SH_foot');
+  if(type==='save-del')foot.innerHTML=`<div class="btn-row"><button class="btn btn-d" data-a="del">Delete</button><button class="btn btn-s" data-a="close">Cancel</button><button class="btn btn-p" data-a="submit">Save</button></div>`;
+  else if(type==='close')foot.innerHTML=`<div class="btn-row"><button class="btn btn-p" data-a="close">Close</button></div>`;
+  else foot.innerHTML=`<div class="btn-row"><button class="btn btn-s" data-a="close">Cancel</button><button class="btn btn-p" data-a="submit">Save</button></div>`;
+  document.getElementById('SHEET').classList.add('on');
+  document.getElementById('BACKDROP').classList.add('on');
+}
+function closeSheet(){document.getElementById('SHEET').classList.remove('on');document.getElementById('BACKDROP').classList.remove('on');_onSubmit=null;_onDelete=null;}
+function fv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function sel(id,opts,cur){return`<select id="${id}">${opts.map(o=>`<option ${o===cur?'selected':''}>${o}</option>`).join('')}</select>`;}
+
+// ── FORMS ────────────────────────────────
+function openOppForm(){
+  openSheet('New Machine Request',
+  `<div class="field"><label class="fl">Request Title *</label><input id="f_ti" placeholder="e.g. High-Speed Labeling System MK3"></div>
+   <div class="field"><label class="fl">Customer *</label><input id="f_cu" placeholder="e.g. BrewTech AG"></div>
+   <div class="field-row"><div class="field"><label class="fl">Machine Type</label><input id="f_mt" placeholder="e.g. Labeling System"></div><div class="field"><label class="fl">Axes</label><input id="f_ax" type="number" min="1" placeholder="6"></div></div>
+   <div class="field-row"><div class="field"><label class="fl">Delivery</label><input id="f_de" placeholder="Q4 2025"></div><div class="field"><label class="fl">Sales Rep</label><input id="f_cr" placeholder="Name"></div></div>
+   <div class="field"><label class="fl">Key Requirements</label><textarea id="f_req" placeholder="IP65, 600 bpm, EN-ISO 13849 PLd..."></textarea></div>`,
+  'save',()=>{
+    const ti=fv('f_ti'),cu=fv('f_cu');if(!ti||!cu){alert('Title and customer required.');return;}
+    S.opps.push({id:S._oppId++,title:ti,customer:cu,machineType:fv('f_mt'),axes:fv('f_ax'),delivery:fv('f_de'),createdBy:fv('f_cr'),requirements:fv('f_req'),status:'New',createdAt:new Date().toISOString().split('T')[0]});
+    save();closeSheet();renderAll();
+  });
+}
+function openOppEdit(id){
+  const o=S.opps.find(x=>x.id===id);if(!o)return;
+  openSheet('Edit Opportunity',
+  `<div class="field"><label class="fl">Title</label><input id="f_ti" value="${o.title}"></div>
+   <div class="field"><label class="fl">Customer</label><input id="f_cu" value="${o.customer}"></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st',OPP_ST,o.status)}</div>
+   <div class="field-row"><div class="field"><label class="fl">Machine Type</label><input id="f_mt" value="${o.machineType||''}"></div><div class="field"><label class="fl">Delivery</label><input id="f_de" value="${o.delivery||''}"></div></div>
+   <div class="field"><label class="fl">Requirements</label><textarea id="f_req">${o.requirements||''}</textarea></div>`,
+  'save-del',
+  ()=>{o.title=fv('f_ti')||o.title;o.customer=fv('f_cu')||o.customer;o.machineType=fv('f_mt');o.delivery=fv('f_de');o.status=fv('f_st')||o.status;o.requirements=fv('f_req');save();closeSheet();renderAll();},
+  ()=>delOpp(id));
+}
+function openConvertForm(oid){
+  const o=S.opps.find(x=>x.id===oid);if(!o)return;
+  openSheet('Convert to Project',
+  `<div class="info-box">Converting: <strong>${o.title}</strong></div>
+   <div class="field"><label class="fl">Project Title *</label><input id="f_pt" value="${o.title}"></div>
+   <div class="field-row"><div class="field"><label class="fl">Project Manager *</label><input id="f_pm" placeholder="PM name"></div><div class="field"><label class="fl">Kickoff Date</label><input id="f_kd" type="date"></div></div>
+   <div class="field"><label class="fl">Kickoff Notes / Scope</label><textarea id="f_kn" placeholder="Attendees, scope, key risks, decisions..."></textarea></div>`,
+  'save',()=>{
+    const pt=fv('f_pt'),pm=fv('f_pm');if(!pt||!pm){alert('Title and PM required.');return;}
+    const proj={id:S._projId++,title:pt,customer:o.customer,machineType:o.machineType,axes:o.axes,delivery:o.delivery,pm,kickoffDate:fv('f_kd'),kickoffNotes:fv('f_kn'),stage:'Intake',health:'Healthy',oppId:o.id,nodes:[],tasks:[],procurement:[],decisions:[],milestones:[],createdAt:new Date().toISOString().split('T')[0]};
+    S.projects.push(proj);o.status='Converted';save();closeSheet();goView('projdet',{projId:proj.id,tab:'overview'});
+  });
+}
+function openProjEdit(pid){
+  const p=S.projects.find(x=>x.id===pid);if(!p)return;
+  openSheet('Edit Project',
+  `<div class="field"><label class="fl">Title</label><input id="f_pt" value="${p.title}"></div>
+   <div class="field-row"><div class="field"><label class="fl">PM</label><input id="f_pm" value="${p.pm||''}"></div><div class="field"><label class="fl">Delivery</label><input id="f_de" value="${p.delivery||''}"></div></div>
+   <div class="field"><label class="fl">Stage</label>${sel('f_st',STAGES,p.stage||'Intake')}</div>
+   <div class="field"><label class="fl">Kickoff Notes</label><textarea id="f_kn">${p.kickoffNotes||''}</textarea></div>`,
+  'save',()=>{p.title=fv('f_pt')||p.title;p.pm=fv('f_pm');p.delivery=fv('f_de');p.stage=fv('f_st')||p.stage;p.kickoffNotes=fv('f_kn');save();closeSheet();renderAll();});
+}
+function openModEdit(modId,pid){
+  const p=S.projects.find(x=>x.id===pid);const m=(p.nodes||[]).find(n=>n.id===modId);if(!m)return;
+  openSheet('Edit Module',
+  `<div class="field"><label class="fl">Module Name</label><input id="f_mn" value="${m.label}"></div>
+   <div class="field-row"><div class="field"><label class="fl">Owner</label><input id="f_ow" value="${m.ownerName||''}"></div><div class="field"><label class="fl">Department</label>${sel('f_dp',MOD_DEPTS,m.dept||'Mechanical')}</div></div>
+   <div class="field"><label class="fl">Target Completion</label><input id="f_pe" type="date" value="${m.plannedEndDate||''}"></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_ms',MOD_ST,m.modStatus||'Not Started')}</div>`,
+  'save',()=>{m.label=fv('f_mn')||m.label;m.ownerName=fv('f_ow');m.dept=fv('f_dp');m.plannedEndDate=fv('f_pe');m.modStatus=fv('f_ms')||m.modStatus;save();closeSheet();renderAll();renderModuleDet();});
+}
+function openDelivForm(modId,pid){
+  const p=S.projects.find(x=>x.id===pid);const m=(p.nodes||[]).find(n=>n.id===modId);if(!m)return;
+  openSheet('Add Deliverable',
+  `<div class="field"><label class="fl">Deliverable *</label><input id="f_dv" placeholder="e.g. Servo sizing report, Wiring schematic approved"></div>`,
+  'save',()=>{
+    const dv=fv('f_dv');if(!dv){alert('Deliverable name required.');return;}
+    if(!m.deliverables)m.deliverables=[];if(!m.deliverablesDone)m.deliverablesDone=[];
+    m.deliverables.push(dv);m.deliverablesDone.push(false);
+    save();closeSheet();renderModuleDet();
+  });
+}
+function openNodeForm(pid,parentId,type){
+  if(type==='SubLeaf')return; // triggered by clicking subassembly header, ignore
+  const p=S.projects.find(x=>x.id===pid);
+  const parent=parentId?(p.nodes||[]).find(n=>n.id===parentId):null;
+  const isModule=type==='Module';
+  openSheet(`Add ${type}`,
+  `${parent?`<div class="info-box">Under: <strong>${parent.label}</strong></div>`:''}
+   <div class="field"><label class="fl">${type} Name *</label><input id="f_nl" placeholder="${type==='Machine'?'e.g. BTL-MK3 Labeling Unit':type==='Module'?'e.g. Drive System':'e.g. Servo Drive Train'}"></div>
+   ${isModule?`<div class="field-row"><div class="field"><label class="fl">Owner</label><input id="f_ow" placeholder="Engineer name"></div><div class="field"><label class="fl">Department</label>${sel('f_dp',MOD_DEPTS,'Mechanical')}</div></div><div class="field"><label class="fl">Target Completion</label><input id="f_pe" type="date"></div>`:''}`,
+  'save',()=>{
+    const label=fv('f_nl');if(!label){alert('Name required.');return;}
+    if(!p.nodes)p.nodes=[];
+    const node={id:S._nodeId++,type,label,parentId:parentId||null};
+    if(isModule){node.ownerName=fv('f_ow');node.dept=fv('f_dp')||'Mechanical';node.plannedEndDate=fv('f_pe');node.modStatus='Not Started';node.deliverables=[];node.deliverablesDone=[];node.components=[];}
+    p.nodes.push(node);save();closeSheet();renderProjDet();
+  });
+}
+function openCompForm(modId,pid){
+  openSheet('Add Component',
+  `<div class="field"><label class="fl">Part Name *</label><input id="f_pn" placeholder="e.g. IndraDrive Cs HCS02.1E-W0054"></div>
+   <div class="field-row"><div class="field"><label class="fl">Category</label>${sel('f_ca',COMP_CAT,'COTS')}</div><div class="field"><label class="fl">Quantity</label><input id="f_qt" type="number" min="1" value="1"></div></div>
+   <div class="field-row"><div class="field"><label class="fl">Supplier</label><input id="f_su" placeholder="Supplier name"></div><div class="field"><label class="fl">Lead Time (weeks)</label><input id="f_lw" type="number" min="0" placeholder="e.g. 14"></div></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st',COMP_ST,'Planned')}</div>
+   <div class="field"><label class="fl">Remarks / Part Number</label><input id="f_rm" placeholder="Part number, spec note..."></div>`,
+  'save',()=>{
+    const pn=fv('f_pn');if(!pn){alert('Part name required.');return;}
+    const p=S.projects.find(x=>x.id===pid);const m=(p.nodes||[]).find(n=>n.id===modId);if(!m)return;
+    if(!m.components)m.components=[];
+    const lw=parseInt(fv('f_lw'))||0;
+    m.components.push({id:uid(),partName:pn,qty:parseInt(fv('f_qt'))||1,category:fv('f_ca')||'COTS',supplier:fv('f_su'),leadTimeWeeks:lw,status:fv('f_st')||'Planned',remarks:fv('f_rm')});
+    save();closeSheet();renderModuleDet();renderOverview();renderProc();
+  });
+}
+function openCompEdit(cid,modId,pid){
+  const p=S.projects.find(x=>x.id===pid);const m=(p.nodes||[]).find(n=>n.id===modId);const c=(m.components||[]).find(x=>x.id===cid);if(!c)return;
+  openSheet('Edit Component',
+  `<div class="field"><label class="fl">Part Name</label><input id="f_pn" value="${c.partName}"></div>
+   <div class="field-row"><div class="field"><label class="fl">Category</label>${sel('f_ca',COMP_CAT,c.category)}</div><div class="field"><label class="fl">Quantity</label><input id="f_qt" type="number" value="${c.qty}"></div></div>
+   <div class="field-row"><div class="field"><label class="fl">Supplier</label><input id="f_su" value="${c.supplier||''}"></div><div class="field"><label class="fl">Lead Time (wks)</label><input id="f_lw" type="number" value="${c.leadTimeWeeks}"></div></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st',COMP_ST,c.status)}</div>
+   <div class="field"><label class="fl">Remarks</label><input id="f_rm" value="${c.remarks||''}"></div>`,
+  'save-del',
+  ()=>{c.partName=fv('f_pn')||c.partName;c.category=fv('f_ca')||c.category;c.qty=parseInt(fv('f_qt'))||c.qty;c.supplier=fv('f_su');c.leadTimeWeeks=parseInt(fv('f_lw'))||0;c.status=fv('f_st')||c.status;c.remarks=fv('f_rm');save();closeSheet();renderModuleDet();renderOverview();renderProc();},
+  ()=>{m.components=(m.components||[]).filter(x=>x.id!==cid);save();closeSheet();renderModuleDet();renderOverview();renderProc();});
+}
+function openTaskForm(pid,nodeId){
+  const p=S.projects.find(x=>x.id===pid);
+  const node=nodeId?(p.nodes||[]).find(n=>n.id===nodeId):null;
+  const taskOpts=`<option value="">None</option>`+(p.tasks||[]).map(t=>`<option value="${t.id}">${t.title.slice(0,40)}</option>`).join('');
+  openSheet('Add Task',
+  `${node?`<div class="info-box">Subassembly: <strong>${node.label}</strong></div>`:''}
+   <div class="field"><label class="fl">Task Title *</label><input id="f_tt" placeholder="e.g. Servo sizing calculation"></div>
+   <div class="field-row"><div class="field"><label class="fl">Owner</label><input id="f_ow" placeholder="Engineer name"></div><div class="field"><label class="fl">Department</label>${sel('f_dp',[''].concat(DEPTS),'')}</div></div>
+   <div class="field-row"><div class="field"><label class="fl">Priority</label>${sel('f_pr',PRIOS,'Medium')}</div><div class="field"><label class="fl">Due Date</label><input id="f_du" type="date"></div></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st',TASK_ST,'Not Started')}</div>
+   <div class="field"><label class="fl">Depends On (optional)</label><select id="f_dep">${taskOpts}</select></div>`,
+  'save',()=>{
+    const title=fv('f_tt');if(!title){alert('Title required.');return;}
+    if(!p.tasks)p.tasks=[];
+    p.tasks.push({id:uid(),nodeId:nodeId||null,title,owner:fv('f_ow'),dept:fv('f_dp'),priority:fv('f_pr')||'Medium',due:fv('f_du'),status:fv('f_st')||'Not Started',dependsOnTaskId:fv('f_dep')||null});
+    save();closeSheet();renderAll();if(UI.view==='projdet')renderProjDet();if(UI.view==='moduledet')renderModuleDet();
+  });
+}
+function openTaskEdit(pid,tid){
+  const p=S.projects.find(x=>x.id===pid);const t=(p.tasks||[]).find(x=>x.id===tid);if(!t)return;
+  const taskOpts=`<option value="">None</option>`+(p.tasks||[]).filter(x=>x.id!==tid).map(x=>`<option value="${x.id}" ${x.id===t.dependsOnTaskId?'selected':''}>${x.title.slice(0,40)}</option>`).join('');
+  openSheet('Edit Task',
+  `<div class="field"><label class="fl">Title</label><input id="f_tt" value="${t.title.replace(/"/g,'&quot;')}"></div>
+   <div class="field-row"><div class="field"><label class="fl">Status</label>${sel('f_st',TASK_ST,t.status)}</div><div class="field"><label class="fl">Priority</label>${sel('f_pr',PRIOS,t.priority||'Medium')}</div></div>
+   <div class="field-row"><div class="field"><label class="fl">Owner</label><input id="f_ow" value="${t.owner||''}"></div><div class="field"><label class="fl">Department</label>${sel('f_dp',[''].concat(DEPTS),t.dept||'')}</div></div>
+   <div class="field"><label class="fl">Due Date</label><input id="f_du" type="date" value="${t.due||''}"></div>
+   <div class="field"><label class="fl">Depends On</label><select id="f_dep">${taskOpts}</select></div>`,
+  'save-del',
+  ()=>{t.title=fv('f_tt')||t.title;t.status=fv('f_st')||t.status;t.priority=fv('f_pr')||t.priority;t.owner=fv('f_ow');t.dept=fv('f_dp');t.due=fv('f_du');t.dependsOnTaskId=fv('f_dep')||null;save();closeSheet();renderAll();if(UI.view==='projdet')renderProjDet();if(UI.view==='moduledet')renderModuleDet();},
+  ()=>{p.tasks=(p.tasks||[]).filter(x=>x.id!==tid);save();closeSheet();renderAll();if(UI.view==='projdet')renderProjDet();if(UI.view==='moduledet')renderModuleDet();});
+}
+function openProcForm(pid){
+  openSheet('Add Procurement Item',
+  `<div class="field"><label class="fl">Item Name *</label><input id="f_pn" placeholder="e.g. Servo Drives IndraDrive Cs ×6"></div>
+   <div class="field-row"><div class="field"><label class="fl">Supplier</label><input id="f_su" placeholder="Supplier"></div><div class="field"><label class="fl">Lead Weeks</label><input id="f_lw" type="number" min="0" placeholder="0"></div></div>
+   <div class="field-row"><div class="field"><label class="fl">Qty</label><input id="f_qt" type="number" value="1"></div><div class="field"><label class="fl">Status</label>${sel('f_st',PROC_ST,'Not Ready')}</div></div>`,
+  'save',()=>{
+    const pn=fv('f_pn');if(!pn){alert('Name required.');return;}
+    const p=S.projects.find(x=>x.id===pid);if(!p.procurement)p.procurement=[];
+    const lw=parseInt(fv('f_lw'))||0;
+    p.procurement.push({id:uid(),title:pn,supplier:fv('f_su'),qty:parseInt(fv('f_qt'))||1,leadWeeks:lw,status:fv('f_st')||'Not Ready',risk:lw>=LL_WEEKS?'High':'Low'});
+    save();closeSheet();renderProjDet();
+  });
+}
+function openProcEdit(pid,itemId){
+  const p=S.projects.find(x=>x.id===pid);const item=(p.procurement||[]).find(x=>x.id===itemId);if(!item)return;
+  openSheet('Edit Item',
+  `<div class="field"><label class="fl">Name</label><input id="f_pn" value="${item.title}"></div>
+   <div class="field-row"><div class="field"><label class="fl">Supplier</label><input id="f_su" value="${item.supplier||''}"></div><div class="field"><label class="fl">Lead Weeks</label><input id="f_lw" type="number" value="${item.leadWeeks||0}"></div></div>
+   <div class="field"><label class="fl">Status</label>${sel('f_st',PROC_ST,item.status)}</div>`,
+  'save-del',
+  ()=>{item.title=fv('f_pn')||item.title;item.supplier=fv('f_su');item.leadWeeks=parseInt(fv('f_lw'))||0;item.status=fv('f_st')||item.status;save();closeSheet();renderProjDet();},
+  ()=>{p.procurement=(p.procurement||[]).filter(x=>x.id!==itemId);save();closeSheet();renderProjDet();});
+}
+function openDecForm(pid){
+  const today=new Date().toISOString().split('T')[0];
+  openSheet('Log Decision',
+  `<div class="field"><label class="fl">Decision *</label><input id="f_dt" placeholder="e.g. Servo platform: Bosch Rexroth selected"></div>
+   <div class="field"><label class="fl">Rationale</label><textarea id="f_dr" placeholder="Why? What alternatives were evaluated?"></textarea></div>
+   <div class="field-row"><div class="field"><label class="fl">Decision By *</label><input id="f_db" placeholder="Name"></div><div class="field"><label class="fl">Date</label><input id="f_dd" type="date" value="${today}"></div></div>`,
+  'save',()=>{
+    const dt=fv('f_dt'),db=fv('f_db');if(!dt||!db){alert('Decision and name required.');return;}
+    const p=S.projects.find(x=>x.id===pid);if(!p.decisions)p.decisions=[];
+    p.decisions.unshift({id:uid(),title:dt,rationale:fv('f_dr'),by:db,date:fv('f_dd')||today});
+    save();closeSheet();renderProjDet();
+  });
+}
+function openMilestoneForm(pid){
+  openSheet('Add Milestone',
+  `<div class="field"><label class="fl">Milestone *</label><input id="f_mt" placeholder="e.g. Design Release, Build Start, FAT"></div>
+   <div class="field"><label class="fl">Target Date</label><input id="f_md" type="date"></div>`,
+  'save',()=>{
+    const mt=fv('f_mt');if(!mt){alert('Name required.');return;}
+    const p=S.projects.find(x=>x.id===pid);if(!p.milestones)p.milestones=[];
+    p.milestones.push({id:uid(),title:mt,date:fv('f_md'),status:'Pending'});
+    save();closeSheet();renderProjDet();
+  });
+}
+
+// DELETES
+function delOpp(id){if(!confirm('Delete this opportunity?'))return;S.opps=S.opps.filter(x=>x.id!==id);save();goView('opps');}
+function delProj(id){if(!confirm('Delete project and all its data?'))return;S.projects=S.projects.filter(x=>x.id!==id);save();goView('projects');}
+
+// UTILS
+function empty(icon,title,sub,btnLabel,btnFn){
+  return`<div class="empty"><div class="ei"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blu)" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg></div><div class="et">${title}</div><div class="es">${sub}</div><button class="eb" data-fn="${btnFn}">${btnLabel}</button></div>`;
+}
+function updateDots(){
+  const bl=allTasks().filter(t=>t.status==='Blocked').length;
+  document.getElementById('N_taskDot').style.display=bl?'':'none';
+  const sb=document.getElementById('SB_taskBadge');if(sb)sb.style.display=bl?'':'none';
+}
+
+// ═══════════════════════════════════════════
+//  RENDER ALL
+// ═══════════════════════════════════════════
+function renderAll(){
+  renderHeader();
+  renderOverview();
+  renderOpps();
+  renderOppDet();
+  renderProjects();
+  renderProjDet();
+  renderModuleDet();
+  renderTasks();
+  renderProc();
+  updateDots();
+}
+
+// BOOT
+initEvents();
+renderAll();
+</script>
+</body>
+</html>

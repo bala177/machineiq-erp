@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# ============================================================
+# miq — MachineIQ script runner
+# Run from any directory inside the project or any worktree.
+#
+# Usage:
+#   miq <command>                  → run in current branch root
+#   miq <command> @<worktree>      → run in a specific worktree
+#   miq worktrees                  → list available worktrees
+#
+# Examples:
+#   miq dev                        → start master dev servers
+#   miq dev @feature-phase1        → start feature branch dev servers
+#   miq stop                       → stop all servers (port-based, kills both)
+#   miq logs @feature-phase1       → tail feature branch logs
+# ============================================================
+
+COMMAND="${1:-help}"
+COMMAND="${COMMAND%.sh}"
+WORKTREE_ARG="${2:-}"
+
+# Walk up from CWD to find the project root (has scripts/dev.sh + package.json)
+find_root() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -f "$dir/scripts/dev.sh" && -f "$dir/package.json" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  return 1
+}
+
+# Find the main repo root (contains .worktrees/)
+find_main_root() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.worktrees" && -f "$dir/scripts/dev.sh" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  # Fall back to ROOT if no .worktrees dir
+  echo "$ROOT"
+}
+
+ROOT=$(find_root) || {
+  echo "ERROR: Could not find MachineIQ project root from: $PWD"
+  echo "Make sure you are inside the project (needs scripts/dev.sh + package.json)."
+  exit 1
+}
+
+MAIN_ROOT=$(find_main_root)
+
+# Resolve target root — support @worktree-name or worktree-name as 2nd arg
+resolve_target() {
+  local arg="${1#@}"  # strip leading @
+  if [[ -z "$arg" ]]; then
+    echo "$ROOT"
+    return 0
+  fi
+
+  # Exact match under .worktrees/
+  local wt="$MAIN_ROOT/.worktrees/$arg"
+  if [[ -d "$wt" && -f "$wt/scripts/dev.sh" ]]; then
+    echo "$wt"
+    return 0
+  fi
+
+  # Fuzzy match: find first worktree containing the arg as substring
+  for dir in "$MAIN_ROOT/.worktrees"/*/; do
+    local name
+    name=$(basename "$dir")
+    if [[ "$name" == *"$arg"* && -f "$dir/scripts/dev.sh" ]]; then
+      echo "${dir%/}"
+      return 0
+    fi
+  done
+
+  echo "ERROR: Worktree not found matching: $arg" >&2
+  echo "Run 'miq worktrees' to see available worktrees." >&2
+  return 1
+}
+
+TARGET_ROOT=$(resolve_target "$WORKTREE_ARG") || exit 1
+
+case "$COMMAND" in
+  dev|stop|logs|seed|setup|build|restart|clean|start-and-logs|reset-db)
+    SCRIPT="$TARGET_ROOT/scripts/${COMMAND}.sh"
+    if [[ ! -f "$SCRIPT" ]]; then
+      echo "ERROR: Script not found: $SCRIPT"
+      exit 1
+    fi
+    if [[ "$TARGET_ROOT" != "$ROOT" ]]; then
+      echo "→ Running in worktree: $(basename "$TARGET_ROOT")"
+    fi
+    exec bash "$SCRIPT"
+    ;;
+
+  worktrees|wt)
+    echo ""
+    echo "  Available worktrees:"
+    echo "  * master  →  $MAIN_ROOT  (current main)"
+    if [[ -d "$MAIN_ROOT/.worktrees" ]]; then
+      for dir in "$MAIN_ROOT/.worktrees"/*/; do
+        [[ -d "$dir" ]] || continue
+        local_name=$(basename "$dir")
+        echo "  * $local_name  →  $dir"
+      done
+    else
+      echo "  (no worktrees found)"
+    fi
+    echo ""
+    echo "  Usage: miq dev @<name>   (partial name match supported)"
+    echo ""
+    ;;
+
+  help|--help|-h)
+    echo ""
+    echo "  miq <command> [@worktree]"
+    echo ""
+    echo "  dev           Start backend (:4051) + frontend (:4050)"
+    echo "  stop          Stop dev servers (kills ports 4050/4051)"
+    echo "  logs          Watch live logs"
+    echo "  seed          Seed the database"
+    echo "  setup         Install dependencies + create .env files"
+    echo "  build         Production build"
+    echo "  restart       Restart dev servers"
+    echo "  clean         Remove node_modules and build artifacts"
+    echo "  reset-db      Drop and re-seed the database"
+    echo "  worktrees     List available worktrees"
+    echo ""
+    echo "  @worktree     Optional: target a worktree by name (partial match ok)"
+    echo "                e.g.  miq dev @feature-phase1"
+    echo ""
+    echo "  Current root:  $ROOT"
+    echo "  Main root:     $MAIN_ROOT"
+    echo ""
+    ;;
+  *)
+    echo "Unknown command: $COMMAND"
+    echo "Run 'miq help' for usage."
+    exit 1
+    ;;
+esac
