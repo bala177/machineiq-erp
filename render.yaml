@@ -36,6 +36,7 @@ services:
   - type: web
     name: machineiq-api
     runtime: node
+    repo: https://github.com/bala177/machineiq-erp.git
     plan: free                # $0/mo — sleeps after 15 min idle, see note above
     region: oregon           # keep the API and PostgreSQL in the same region
     branch: main
@@ -69,6 +70,7 @@ services:
   - type: web
     name: machineiq-web
     runtime: node
+    repo: https://github.com/bala177/machineiq-erp.git
     plan: free
     region: oregon
     branch: main
