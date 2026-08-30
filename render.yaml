@@ -15,8 +15,8 @@
 #   www.machineiq.tech
 #   machineiq.tech
 #
-# Current deployment uses paid always-on compute suitable for initial
-# client testing/UAT. Scale only after actual usage requires it.
+# PostgreSQL and the API use paid always-on compute for reliable UAT.
+# The frontend uses free compute and may cold-start after inactivity.
 
 databases:
   - name: machineiq-postgres
@@ -76,7 +76,7 @@ services:
     name: machineiq-web
     runtime: node
     repo: https://github.com/bala177/machineiq-erp.git
-    plan: 0.5c-512mb
+    plan: free
     region: singapore
     branch: main
     rootDir: frontend
