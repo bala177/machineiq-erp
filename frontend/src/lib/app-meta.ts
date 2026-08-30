@@ -56,40 +56,40 @@ export interface FaqGroup { id: string; label: string; items: FaqItem[] }
 
 export const FAQ: FaqGroup[] = [
   {
-    id: 'account',
-    label: 'Account and access',
+    id: 'release1',
+    label: 'Release 1 scope',
     items: [
-      { q: 'How do I update my profile or theme?', a: 'Open your profile menu in the top-right. Choose My Profile or Account Settings; Light and Dark appearance controls are in the same menu.' },
-      { q: 'Why can’t I see or edit a module?', a: 'Navigation and actions follow your assigned role. Ask an administrator to verify your role if your responsibilities have changed.' },
-      { q: 'When does my session end?', a: 'The default token lifetime is eight hours. Signing out ends the local session immediately.' },
+      { q: 'What should we configure first in Release 1?', a: 'Configure the company, then branches and locations. Next review permissions and document types, followed by customers, suppliers, item categories, units of measure, and items.' },
+      { q: 'Which database does Release 1 use?', a: 'PostgreSQL 16 is the only released system of record. Users do not need to choose or synchronize a database in the application.' },
+      { q: 'Which ERP transactions are not part of Release 1?', a: 'Sales orders, delivery notes, customer payments, inventory transactions, purchase orders, goods receipts, production work orders, payroll, and general-ledger accounting are assigned to later releases.' },
     ],
   },
   {
-    id: 'opportunities',
-    label: 'Machine Inquiries',
+    id: 'master-data',
+    label: 'Master data',
     items: [
-      { q: 'Who can create or edit a machine inquiry?', a: 'Sales and Admin can create and edit intake data until conversion. Manager and Admin control review assignment, approval, rejection, and project conversion.' },
-      { q: 'Why can’t the machine inquiry enter review?', a: 'A Manager or Admin must assign a reviewer before moving a New machine inquiry to Under Review.' },
-      { q: 'Why is approval disabled?', a: 'Feasibility, complexity, and risk notes must all be completed. Approval is then available to a Manager or Admin.' },
-      { q: 'Can a rejected machine inquiry be reopened?', a: 'Yes. A Manager or Admin can return it to Under Review, where review work continues.' },
+      { q: 'Why must I create a company before a branch?', a: 'Every branch belongs to the legal company. Physical locations then belong to a branch, so configure Organization in company, branch, location order.' },
+      { q: 'Are customer and supplier codes entered manually?', a: 'MachineIQ generates sequential customer and supplier codes. Complete the required business, contact, tax, and commercial fields; do not invent a parallel code.' },
+      { q: 'What must exist before I create an item?', a: 'Create the required item category and unit of measure first. Then create the item with its code, description, category, UOM, cost, selling price, and applicable planning defaults.' },
+      { q: 'What is an item master record?', a: 'It is the shared definition of a purchased, manufactured, or otherwise tracked item. Release 1 can link engineering components to this record; it does not create stock balances or movements.' },
     ],
   },
   {
-    id: 'projects',
-    label: 'Projects and delivery',
+    id: 'administration',
+    label: 'Permissions and numbering',
     items: [
-      { q: 'Who can convert an approved machine inquiry?', a: 'A Manager or Admin can convert it, select the project manager, and confirm project dates and priority.' },
-      { q: 'What remains linked after conversion?', a: 'The machine inquiry becomes read-only and retains its REQ number and a link to the new PRJ record for traceability.' },
-      { q: 'Where should engineering work be tracked?', a: 'Use the project workspace for machine structure, tasks, components, deliverables, documents, decisions, milestones, and procurement readiness.' },
+      { q: 'Why can’t a user see or change a record?', a: 'Access depends on both the user role and its assigned permissions. An Admin should check Users first, then Settings > Permissions. Permission checks are enforced by the server.' },
+      { q: 'How do I change permissions safely?', a: 'In Settings > Permissions, review one role at a time, change only the capabilities that role needs, save that role, and verify the result with a user assigned to it.' },
+      { q: 'What are document types used for?', a: 'Document types define controlled numbering rules such as prefixes and sequence behavior for supported business documents. Configure them in Settings > Document Types before relying on generated references.' },
     ],
   },
   {
-    id: 'data',
-    label: 'Data and traceability',
+    id: 'support',
+    label: 'Validation and support',
     items: [
-      { q: 'Are REQ and PRJ numbers editable?', a: 'No. MachineIQ generates sequential yearly reference numbers and preserves them for traceability.' },
-      { q: 'Where can I see who changed something?', a: 'Open the record’s Activity view. Status changes, review updates, and other important mutations are recorded in the audit history.' },
-      { q: 'How should discussions be used?', a: 'Record concise calls, meetings, emails, internal notes, open questions, and decisions. Capture outcomes and owners instead of pasting an entire email thread.' },
+      { q: 'How do I know Release 1 setup is complete?', a: 'Confirm the organization hierarchy, role permissions, document types, customers, suppliers, categories, UOMs, and items can all be opened and used by the intended roles without duplicate codes or missing references.' },
+      { q: 'Can I delete master data that has already been used?', a: 'Production records are soft-deleted or deactivated to preserve references and audit history. Prefer correcting or deactivating a record instead of trying to remove its history.' },
+      { q: 'What should I include when reporting a problem?', a: 'Include the page name, record code, your role, the action attempted, expected result, actual message, and a screenshot without passwords, tokens, or database URLs.' },
     ],
   },
 ];
