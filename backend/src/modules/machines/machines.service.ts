@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectPgModel } from '../../database/postgres-document.module';
 import { Model as MongooseModel } from '../../database/postgres-document.model';
@@ -7,6 +6,7 @@ import { Component } from '../../schemas/component.schema';
 import { ControlModule, EquipmentModule, Machine, Unit } from '../../schemas/machine.schema';
 import { Task } from '../../schemas/task.schema';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { readSpreadsheetRows } from '../../common/spreadsheet';
 import {
   ComponentDesignStatus,
   ComponentProcurementStatus,
@@ -397,9 +397,8 @@ export class MachinesService {
 
   async importTree(machineId: string, buffer: Buffer, userId: string) {
     const machine = await this.requireMachine(machineId);
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: '' });
+    const extension = buffer.subarray(0, 2).toString() === 'PK' ? 'xlsx' : 'csv';
+    const rows = await readSpreadsheetRows(buffer, extension);
 
     if (!rows.length) throw new BadRequestException('File is empty or has no parseable rows');
 

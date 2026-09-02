@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 type ImportRowError = { row: number; name: string; reason: string };
 type ImportResult = { created: number; skipped: number; errors: ImportRowError[] };
 
-const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
+const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx'];
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -32,7 +32,7 @@ export function ImportCustomersModal({ onClose, onImported }: Props) {
   function handleFile(f: File) {
     const ext = `.${f.name.split('.').pop()?.toLowerCase() ?? ''}`;
     if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      setError('Please upload a .csv, .xlsx, or .xls file.');
+      setError('Please upload a .csv or .xlsx file.');
       return;
     }
     setError('');
@@ -84,7 +84,7 @@ export function ImportCustomersModal({ onClose, onImported }: Props) {
             <input
               ref={inputRef}
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx"
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
             />
@@ -110,7 +110,7 @@ export function ImportCustomersModal({ onClose, onImported }: Props) {
                 <Upload className="h-10 w-10 text-fg-muted" />
                 <div className="text-center">
                   <p className="font-semibold text-fg">Drop a file here, or click to browse</p>
-                  <p className="mt-0.5 text-sm text-fg-muted">Accepts .csv, .xlsx, .xls — max 10 MB</p>
+                  <p className="mt-0.5 text-sm text-fg-muted">Accepts .csv and .xlsx — max 10 MB</p>
                 </div>
               </>
             )}

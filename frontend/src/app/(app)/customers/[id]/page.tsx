@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Building2, FileText, FolderKanban, Pencil, Plus, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -32,7 +32,8 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-export default function CustomerDetailPage({ params }: { params: { id: string } }) {
+export default function CustomerDetailPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const [customer, setCustomer] = useState<CustomerRecord | null>(null);
   const [loading, setLoading] = useState(true);

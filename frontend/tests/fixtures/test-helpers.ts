@@ -174,6 +174,51 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
       return;
     }
 
+    if (path === '/organization/company' && method === 'GET') {
+      await route.fulfill(jsonResponse({ _id: 'company-1', code: 'MIQ', name: 'MachineIQ', baseCurrency: 'INR', timezone: 'Asia/Kolkata' }));
+      return;
+    }
+
+    if (path === '/organization/branches' && method === 'GET') {
+      await route.fulfill(jsonResponse([{ _id: 'branch-1', code: 'HQ', name: 'Head Office', isActive: true }]));
+      return;
+    }
+
+    if (path === '/organization/locations' && method === 'GET') {
+      await route.fulfill(jsonResponse([{ _id: 'location-1', code: 'PLANT', name: 'Main Plant', type: 'factory', isActive: true }]));
+      return;
+    }
+
+    if (path === '/suppliers' && method === 'GET') {
+      await route.fulfill(jsonResponse([{ _id: 'supplier-1', code: 'SUP-0001', name: 'Motion Supply Co.' }]));
+      return;
+    }
+
+    if (path === '/items' && method === 'GET') {
+      await route.fulfill(jsonResponse([{ _id: 'item-1', code: 'ITM-0001', name: 'Servo Drive' }, { _id: 'item-2', code: 'ITM-0002', name: 'Safety Relay' }]));
+      return;
+    }
+
+    if (path === '/items/categories' && method === 'GET') {
+      await route.fulfill(jsonResponse([{ _id: 'category-1', code: 'ELEC', name: 'Electrical' }]));
+      return;
+    }
+
+    if (path === '/items/uoms' && method === 'GET') {
+      await route.fulfill(jsonResponse([{ _id: 'uom-1', code: 'EA', name: 'Each' }]));
+      return;
+    }
+
+    if (path === '/document-types' && method === 'GET') {
+      await route.fulfill(jsonResponse([{ _id: 'doctype-1', code: 'QUOTATION', name: 'Quotation' }]));
+      return;
+    }
+
+    if (path === '/permissions/matrix' && method === 'GET') {
+      await route.fulfill(jsonResponse({ permissions: [{ _id: 'permission-1', code: 'items.manage' }], assignments: [{ role: 'admin', permissionId: 'permission-1', allowed: true }] }));
+      return;
+    }
+
     if (path === '/dashboard/executive' && method === 'GET') {
       await route.fulfill(jsonResponse(options.empty?.dashboard ? { ...dashboard, departmentBottlenecks: [] } : dashboard));
       return;
@@ -314,6 +359,18 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
 
     if (path.startsWith('/opportunities/') && path.endsWith('/discussion') && method === 'GET') {
       await route.fulfill(jsonResponse([]));
+      return;
+    }
+
+    if (path.match(/^\/opportunities\/[^/]+\/convert$/) && method === 'POST') {
+      const payload = request.postDataJSON() as Record<string, unknown>;
+      const project = {
+        _id: 'proj-created', milestones: [], teamMembers: [], kickoff: {}, ...payload,
+        customerId: [customerA, customerB].find((customer) => customer._id === payload.customerId) ?? customerA,
+        projectManagerId: users.find((user) => user._id === payload.projectManagerId) ?? adminUser,
+      };
+      mutableProjects.unshift(project as never);
+      await route.fulfill(jsonResponse({ project }, 201));
       return;
     }
 

@@ -33,11 +33,21 @@ type NotificationPrefs = {
 };
 
 type CommercialPrefs = {
-  organizationName: string; organizationEmail: string; organizationPhone: string;
-  taxRegistrationNumber: string; billingAddress: string; quotePrefix: string;
-  quoteNumberPadding: number; defaultCurrency: string; defaultValidityDays: number;
-  defaultTaxName: string; defaultTaxPercent: number; defaultNotes: string;
-  defaultTerms: string; bankDetails: string; units: string[];
+  organizationName: string;
+  organizationEmail: string;
+  organizationPhone: string;
+  taxRegistrationNumber: string;
+  billingAddress: string;
+  quotePrefix: string;
+  quoteNumberPadding: number;
+  defaultCurrency: string;
+  defaultValidityDays: number;
+  defaultTaxName: string;
+  defaultTaxPercent: number;
+  defaultNotes: string;
+  defaultTerms: string;
+  bankDetails: string;
+  units: string[];
   taxes: { name: string; rate: number }[];
   items: { name: string; sku: string; hsnSac: string; unit: string; rate: number; taxName: string; taxPercent: number; description: string }[];
 };
@@ -50,7 +60,6 @@ const NOTIF_LABELS: { key: keyof NotificationPrefs; label: string; description: 
 ];
 
 const TABS = [
-  { key: 'departments', label: 'Departments', icon: Building2 },
   { key: 'commercial', label: 'Commercial', icon: FileText },
   { key: 'roles', label: 'Roles', icon: ShieldCheck },
   { key: 'permissions', label: 'Permissions', icon: KeyRound },
@@ -309,7 +318,7 @@ function DepartmentsTab() {
       )}
 
       {/* Delete Confirm */}
-      {deleteTarget && <ConfirmDialog message={`Delete "${deleteTarget.name}"? This action cannot be undone. Users assigned to this department will need to be reassigned.`} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />}
+      {deleteTarget && <ConfirmDialog message={`Delete "${deleteTarget.name}"? This action cannot be undone. Departments with active users cannot be deleted.`} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />}
     </div>
   );
 }
@@ -320,9 +329,7 @@ function RolesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-fg-tertiary">
-          Roles control what each user can see and do across MachineIQ. Role permissions are enforced server-side on every request.
-        </p>
+        <p className="text-sm text-fg-tertiary">Roles control what each user can see and do across MachineIQ. Role permissions are enforced server-side on every request.</p>
       </div>
 
       <div className="space-y-2 sm:hidden">
@@ -338,13 +345,28 @@ function RolesTab() {
 
       <div className="card hidden overflow-hidden sm:block">
         <table className="w-full text-left text-sm">
-          <thead><tr className="table-header"><th>Role</th><th>Permissions &amp; Scope</th><th>Status</th></tr></thead>
+          <thead>
+            <tr className="table-header">
+              <th>Role</th>
+              <th>Permissions &amp; Scope</th>
+              <th>Status</th>
+            </tr>
+          </thead>
           <tbody className="divide-y divide-border">
-            {ROLE_DEFINITIONS.map((r) => <tr key={r.key} className="table-row">
-              <td className="px-5 py-4"><span className={clsx('inline-flex items-center rounded px-2.5 py-0.5 text-xs font-semibold capitalize', r.color)}>{r.label}</span></td>
-              <td className="max-w-xl px-5 py-4 text-fg-tertiary">{r.description}</td>
-              <td className="px-5 py-4"><span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[15px] font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Active</span></td>
-            </tr>)}
+            {ROLE_DEFINITIONS.map((r) => (
+              <tr key={r.key} className="table-row">
+                <td className="px-5 py-4">
+                  <span className={clsx('inline-flex items-center rounded px-2.5 py-0.5 text-xs font-semibold capitalize', r.color)}>{r.label}</span>
+                </td>
+                <td className="max-w-xl px-5 py-4 text-fg-tertiary">{r.description}</td>
+                <td className="px-5 py-4">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[15px] font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Active
+                  </span>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -356,7 +378,6 @@ function RolesTab() {
     </div>
   );
 }
-
 
 // ─── Permission Matrix Tab ───────────────────────────────────────────────────
 
@@ -370,28 +391,27 @@ function PermissionsTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    api.get<{ permissions: Permission[]; assignments: RolePermission[] }>('/permissions/matrix')
+    api
+      .get<{ permissions: Permission[]; assignments: RolePermission[] }>('/permissions/matrix')
       .then((matrix) => {
         setPermissions(matrix.permissions.filter((permission) => permission.isActive));
-        setSelected(Object.fromEntries(ROLE_KEYS.map((role) => [role, matrix.assignments
-          .filter((assignment) => assignment.role === role && assignment.allowed)
-          .map((assignment) => assignment.permissionId)])));
+        setSelected(Object.fromEntries(ROLE_KEYS.map((role) => [role, matrix.assignments.filter((assignment) => assignment.role === role && assignment.allowed).map((assignment) => assignment.permissionId)])));
         setError('');
       })
       .catch((err: any) => setError(err.message || 'Failed to load permission matrix'))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function toggle(role: string, permissionId: string) {
     setSelected((current) => {
       const rolePermissions = current[role] || [];
       return {
         ...current,
-        [role]: rolePermissions.includes(permissionId)
-          ? rolePermissions.filter((id) => id !== permissionId)
-          : [...rolePermissions, permissionId],
+        [role]: rolePermissions.includes(permissionId) ? rolePermissions.filter((id) => id !== permissionId) : [...rolePermissions, permissionId],
       };
     });
     setSavedRole('');
@@ -413,17 +433,50 @@ function PermissionsTab() {
 
   if (loading) return <LoadingSpinner />;
 
-  return <div className="space-y-4">
-    <p className="text-sm text-fg-tertiary">Assign explicit server-enforced permissions to each role. Save each role after making changes.</p>
-    {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">{error}</div>}
-    <div className="card overflow-x-auto">
-      <table className="w-full min-w-[820px] text-left text-sm">
-        <thead><tr className="table-header"><th>Capability</th>{ROLE_DEFINITIONS.map((role) => <th key={role.key} className="text-center">{role.label}</th>)}</tr></thead>
-        <tbody className="divide-y divide-border">{permissions.map((permission) => <tr key={permission._id} className="table-row"><td className="px-5 py-4"><p className="font-semibold text-fg">{permission.module} · {permission.action}</p><p className="mt-0.5 font-mono text-xs text-fg-muted">{permission.code}</p></td>{ROLE_DEFINITIONS.map((role) => <td key={role.key} className="px-4 py-4 text-center"><input type="checkbox" className="h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-500" aria-label={`${role.label}: ${permission.module} ${permission.action}`} checked={(selected[role.key] || []).includes(permission._id)} onChange={() => toggle(role.key, permission._id)} /></td>)}</tr>)}</tbody>
-      </table>
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-fg-tertiary">Assign explicit server-enforced permissions to each role. Save each role after making changes.</p>
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">{error}</div>}
+      <div className="card overflow-x-auto">
+        <table className="w-full min-w-[820px] text-left text-sm">
+          <thead>
+            <tr className="table-header">
+              <th>Capability</th>
+              {ROLE_DEFINITIONS.map((role) => (
+                <th key={role.key} className="text-center">
+                  {role.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {permissions.map((permission) => (
+              <tr key={permission._id} className="table-row">
+                <td className="px-5 py-4">
+                  <p className="font-semibold text-fg">
+                    {permission.module} · {permission.action}
+                  </p>
+                  <p className="mt-0.5 font-mono text-xs text-fg-muted">{permission.code}</p>
+                </td>
+                {ROLE_DEFINITIONS.map((role) => (
+                  <td key={role.key} className="px-4 py-4 text-center">
+                    <input type="checkbox" className="h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-500" aria-label={`${role.label}: ${permission.module} ${permission.action}`} checked={(selected[role.key] || []).includes(permission._id)} onChange={() => toggle(role.key, permission._id)} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        {ROLE_DEFINITIONS.map((role) => (
+          <button key={role.key} type="button" className="btn-secondary" disabled={Boolean(savingRole)} onClick={() => void save(role.key)}>
+            {savingRole === role.key ? <RefreshCw className="h-4 w-4 animate-spin" /> : savedRole === role.key ? <Check className="h-4 w-4 text-emerald-600" /> : <Save className="h-4 w-4" />}Save {role.label}
+          </button>
+        ))}
+      </div>
     </div>
-    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">{ROLE_DEFINITIONS.map((role) => <button key={role.key} type="button" className="btn-secondary" disabled={Boolean(savingRole)} onClick={() => void save(role.key)}>{savingRole === role.key ? <RefreshCw className="h-4 w-4 animate-spin" /> : savedRole === role.key ? <Check className="h-4 w-4 text-emerald-600" /> : <Save className="h-4 w-4" />}Save {role.label}</button>)}</div>
-  </div>;
+  );
 }
 
 // ─── Document Types Tab ──────────────────────────────────────────────────────
@@ -440,12 +493,19 @@ function DocumentTypesTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    api.get<DocumentType[]>('/document-types').then((data) => { setDocumentTypes(data); setError(''); })
+    api
+      .get<DocumentType[]>('/document-types')
+      .then((data) => {
+        setDocumentTypes(data);
+        setError('');
+      })
       .catch((err: any) => setError(err.message || 'Failed to load document types'))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function openCreate() {
     setEditTarget(null);
@@ -495,23 +555,122 @@ function DocumentTypesTab() {
 
   if (loading) return <LoadingSpinner />;
 
-  return <div className="space-y-4">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-fg-tertiary">Control document prefixes, number padding, reset periods, and the next number issued.</p><button type="button" className="btn-primary shrink-0" onClick={openCreate}><Plus className="h-4 w-4" />New Document Type</button></div>
-    {error && !open && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">{error}</div>}
-    {documentTypes.length === 0 ? <div className="card flex flex-col items-center py-12 text-center"><FileCog className="mb-3 h-10 w-10 text-fg-muted" /><p className="text-sm font-medium text-fg">No document types configured</p><p className="mt-1 text-xs text-fg-muted">Create the first numbering rule for quotes, invoices, or future ERP documents.</p></div> : <div className="card overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead><tr className="table-header"><th>Document type</th><th>Prefix</th><th>Reset</th><th>Next number</th><th>Status</th><th /></tr></thead><tbody className="divide-y divide-border">{documentTypes.map((documentType) => <tr key={documentType._id} className="table-row"><td className="px-5 py-4"><p className="font-semibold text-fg">{documentType.name}</p><p className="font-mono text-xs text-fg-muted">{documentType.code}</p></td><td className="px-5 py-4 font-mono text-fg-secondary">{documentType.prefix}</td><td className="px-5 py-4 capitalize text-fg-secondary">{documentType.resetFrequency}</td><td className="px-5 py-4 text-fg-secondary">{String(documentType.nextNumber).padStart(documentType.padding, '0')}</td><td className="px-5 py-4"><span className={documentType.isActive ? 'badge-green' : 'badge-gray'}>{documentType.isActive ? 'Active' : 'Inactive'}</span></td><td className="px-5 py-4"><div className="flex justify-end gap-1"><button type="button" className="btn-ghost p-2" title="Edit" onClick={() => openEdit(documentType)}><Pencil className="h-4 w-4" /></button><button type="button" className="btn-ghost p-2 text-red-600" title="Delete" onClick={() => setDeleteTarget(documentType)}><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody></table></div>}
-    {open && <Modal title={editTarget ? 'Edit Document Type' : 'New Document Type'} onClose={() => setOpen(false)}><form className="space-y-4" onSubmit={save}><label className="block text-sm font-medium text-fg-secondary">Code<input className="input-field mt-1.5" required disabled={Boolean(editTarget)} value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value.toLowerCase() })} placeholder="quote" /></label><label className="block text-sm font-medium text-fg-secondary">Name<input className="input-field mt-1.5" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Quote" /></label><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium text-fg-secondary">Prefix<input className="input-field mt-1.5" required value={form.prefix} onChange={(event) => setForm({ ...form, prefix: event.target.value.toUpperCase() })} placeholder="QTE" /></label><label className="block text-sm font-medium text-fg-secondary">Padding<input className="input-field mt-1.5" type="number" min="1" max="10" required value={form.padding} onChange={(event) => setForm({ ...form, padding: Number(event.target.value) })} /></label><label className="block text-sm font-medium text-fg-secondary">Reset frequency<select className="input-field mt-1.5" value={form.resetFrequency} onChange={(event) => setForm({ ...form, resetFrequency: event.target.value as DocumentTypeForm['resetFrequency'] })}><option value="never">Never</option><option value="yearly">Yearly</option><option value="monthly">Monthly</option></select></label><label className="block text-sm font-medium text-fg-secondary">Next number<input className="input-field mt-1.5" type="number" min="1" required value={form.nextNumber} onChange={(event) => setForm({ ...form, nextNumber: Number(event.target.value) })} /></label></div>{error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}<div className="flex justify-end gap-2 border-t border-border pt-4"><button type="button" className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editTarget ? 'Save Changes' : 'Create Document Type'}</button></div></form></Modal>}
-    {deleteTarget && <ConfirmDialog message={`Delete "${deleteTarget.name}"? Existing documents keep their issued numbers, but this type cannot issue new numbers.`} onConfirm={() => void remove()} onCancel={() => setDeleteTarget(null)} />}
-  </div>;
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-fg-tertiary">Control document prefixes, number padding, reset periods, and the next number issued.</p>
+        <button type="button" className="btn-primary shrink-0" onClick={openCreate}>
+          <Plus className="h-4 w-4" />
+          New Document Type
+        </button>
+      </div>
+      {error && !open && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">{error}</div>}
+      {documentTypes.length === 0 ? (
+        <div className="card flex flex-col items-center py-12 text-center">
+          <FileCog className="mb-3 h-10 w-10 text-fg-muted" />
+          <p className="text-sm font-medium text-fg">No document types configured</p>
+          <p className="mt-1 text-xs text-fg-muted">Create the first numbering rule for quotes, invoices, or future ERP documents.</p>
+        </div>
+      ) : (
+        <div className="card overflow-x-auto">
+          <table className="w-full min-w-[700px] text-left text-sm">
+            <thead>
+              <tr className="table-header">
+                <th>Document type</th>
+                <th>Prefix</th>
+                <th>Reset</th>
+                <th>Next number</th>
+                <th>Status</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {documentTypes.map((documentType) => (
+                <tr key={documentType._id} className="table-row">
+                  <td className="px-5 py-4">
+                    <p className="font-semibold text-fg">{documentType.name}</p>
+                    <p className="font-mono text-xs text-fg-muted">{documentType.code}</p>
+                  </td>
+                  <td className="px-5 py-4 font-mono text-fg-secondary">{documentType.prefix}</td>
+                  <td className="px-5 py-4 capitalize text-fg-secondary">{documentType.resetFrequency}</td>
+                  <td className="px-5 py-4 text-fg-secondary">{String(documentType.nextNumber).padStart(documentType.padding, '0')}</td>
+                  <td className="px-5 py-4">
+                    <span className={documentType.isActive ? 'badge-green' : 'badge-gray'}>{documentType.isActive ? 'Active' : 'Inactive'}</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end gap-1">
+                      <button type="button" className="btn-ghost p-2" title="Edit" onClick={() => openEdit(documentType)}>
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button type="button" className="btn-ghost p-2 text-red-600" title="Delete" onClick={() => setDeleteTarget(documentType)}>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {open && (
+        <Modal title={editTarget ? 'Edit Document Type' : 'New Document Type'} onClose={() => setOpen(false)}>
+          <form className="space-y-4" onSubmit={save}>
+            <label className="block text-sm font-medium text-fg-secondary">
+              Code
+              <input className="input-field mt-1.5" required disabled={Boolean(editTarget)} value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value.toLowerCase() })} placeholder="quote" />
+            </label>
+            <label className="block text-sm font-medium text-fg-secondary">
+              Name
+              <input className="input-field mt-1.5" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Quote" />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-fg-secondary">
+                Prefix
+                <input className="input-field mt-1.5" required value={form.prefix} onChange={(event) => setForm({ ...form, prefix: event.target.value.toUpperCase() })} placeholder="QTE" />
+              </label>
+              <label className="block text-sm font-medium text-fg-secondary">
+                Padding
+                <input className="input-field mt-1.5" type="number" min="1" max="10" required value={form.padding} onChange={(event) => setForm({ ...form, padding: Number(event.target.value) })} />
+              </label>
+              <label className="block text-sm font-medium text-fg-secondary">
+                Reset frequency
+                <select className="input-field mt-1.5" value={form.resetFrequency} onChange={(event) => setForm({ ...form, resetFrequency: event.target.value as DocumentTypeForm['resetFrequency'] })}>
+                  <option value="never">Never</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-fg-secondary">
+                Next number
+                <input className="input-field mt-1.5" type="number" min="1" required value={form.nextNumber} onChange={(event) => setForm({ ...form, nextNumber: Number(event.target.value) })} />
+              </label>
+            </div>
+            {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn-primary" disabled={saving}>
+                {saving ? 'Saving…' : editTarget ? 'Save Changes' : 'Create Document Type'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {deleteTarget && <ConfirmDialog message={`Delete "${deleteTarget.name}"? Existing documents keep their issued numbers, but this type cannot issue new numbers.`} onConfirm={() => void remove()} onCancel={() => setDeleteTarget(null)} />}
+    </div>
+  );
 }
 
 // ─── Notifications Tab ────────────────────────────────────────────────────────
 
 function NotificationsTab() {
   const [prefs, setPrefs] = useState<NotificationPrefs>({
-    assignment:    true,
+    assignment: true,
     status_change: true,
-    due_reminder:  true,
-    overdue:       true,
+    due_reminder: true,
+    overdue: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -741,9 +900,42 @@ function CommercialTab() {
           <div className="space-y-2">
             {prefs.taxes.map((tax, index) => (
               <div key={index} className="grid grid-cols-[1fr_100px_auto] gap-2">
-                <input className="input-field" value={tax.name} onChange={(e) => set('taxes', prefs.taxes.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} placeholder="Tax name" />
-                <input className="input-field" type="number" min="0" max="100" value={tax.rate} onChange={(e) => set('taxes', prefs.taxes.map((item, i) => i === index ? { ...item, rate: Number(e.target.value) } : item))} />
-                <button type="button" className="btn-ghost p-2 text-red-600" onClick={() => set('taxes', prefs.taxes.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></button>
+                <input
+                  className="input-field"
+                  value={tax.name}
+                  onChange={(e) =>
+                    set(
+                      'taxes',
+                      prefs.taxes.map((item, i) => (i === index ? { ...item, name: e.target.value } : item)),
+                    )
+                  }
+                  placeholder="Tax name"
+                />
+                <input
+                  className="input-field"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={tax.rate}
+                  onChange={(e) =>
+                    set(
+                      'taxes',
+                      prefs.taxes.map((item, i) => (i === index ? { ...item, rate: Number(e.target.value) } : item)),
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  className="btn-ghost p-2 text-red-600"
+                  onClick={() =>
+                    set(
+                      'taxes',
+                      prefs.taxes.filter((_, i) => i !== index),
+                    )
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             ))}
           </div>
@@ -751,18 +943,26 @@ function CommercialTab() {
 
         <div className="card p-5">
           <h2 className="mb-4 text-sm font-semibold text-fg">Units</h2>
-          <textarea className="input-field min-h-[150px]" value={prefs.units.join('\n')} onChange={(e) => set('units', e.target.value.split('\n').map((item) => item.trim()).filter(Boolean))} />
+          <textarea
+            className="input-field min-h-[150px]"
+            value={prefs.units.join('\n')}
+            onChange={(e) =>
+              set(
+                'units',
+                e.target.value
+                  .split('\n')
+                  .map((item) => item.trim())
+                  .filter(Boolean),
+              )
+            }
+          />
         </div>
       </div>
 
       <div className="card p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-fg">Item catalog</h2>
-          <button
-            type="button"
-            className="btn-secondary px-3 py-2"
-            onClick={() => set('items', [...prefs.items, { name: '', sku: '', hsnSac: '', unit: 'Nos', rate: 0, taxName: prefs.defaultTaxName, taxPercent: prefs.defaultTaxPercent, description: '' }])}
-          >
+          <button type="button" className="btn-secondary px-3 py-2" onClick={() => set('items', [...prefs.items, { name: '', sku: '', hsnSac: '', unit: 'Nos', rate: 0, taxName: prefs.defaultTaxName, taxPercent: prefs.defaultTaxPercent, description: '' }])}>
             <Plus className="h-4 w-4" /> Add
           </button>
         </div>
@@ -770,17 +970,113 @@ function CommercialTab() {
           {prefs.items.map((item, index) => (
             <div key={index} className="rounded-lg border border-border p-3">
               <div className="grid gap-2 md:grid-cols-[1fr_120px_120px_90px_120px_auto]">
-                <input className="input-field" value={item.name} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, name: e.target.value } : entry))} placeholder="Item name" />
-                <input className="input-field" value={item.sku} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, sku: e.target.value } : entry))} placeholder="SKU" />
-                <input className="input-field" value={item.hsnSac} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, hsnSac: e.target.value } : entry))} placeholder="HSN/SAC" />
-                <input className="input-field" value={item.unit} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, unit: e.target.value } : entry))} placeholder="Unit" />
-                <input className="input-field" type="number" min="0" value={item.rate} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, rate: Number(e.target.value) } : entry))} placeholder="Rate" />
-                <button type="button" className="btn-ghost p-2 text-red-600" onClick={() => set('items', prefs.items.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></button>
+                <input
+                  className="input-field"
+                  value={item.name}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, name: e.target.value } : entry)),
+                    )
+                  }
+                  placeholder="Item name"
+                />
+                <input
+                  className="input-field"
+                  value={item.sku}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, sku: e.target.value } : entry)),
+                    )
+                  }
+                  placeholder="SKU"
+                />
+                <input
+                  className="input-field"
+                  value={item.hsnSac}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, hsnSac: e.target.value } : entry)),
+                    )
+                  }
+                  placeholder="HSN/SAC"
+                />
+                <input
+                  className="input-field"
+                  value={item.unit}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, unit: e.target.value } : entry)),
+                    )
+                  }
+                  placeholder="Unit"
+                />
+                <input
+                  className="input-field"
+                  type="number"
+                  min="0"
+                  value={item.rate}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, rate: Number(e.target.value) } : entry)),
+                    )
+                  }
+                  placeholder="Rate"
+                />
+                <button
+                  type="button"
+                  className="btn-ghost p-2 text-red-600"
+                  onClick={() =>
+                    set(
+                      'items',
+                      prefs.items.filter((_, i) => i !== index),
+                    )
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
               <div className="mt-2 grid gap-2 md:grid-cols-[180px_120px_1fr]">
-                <input className="input-field" value={item.taxName} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, taxName: e.target.value } : entry))} placeholder="Tax name" />
-                <input className="input-field" type="number" min="0" max="100" value={item.taxPercent} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, taxPercent: Number(e.target.value) } : entry))} placeholder="Tax %" />
-                <input className="input-field" value={item.description} onChange={(e) => set('items', prefs.items.map((entry, i) => i === index ? { ...entry, description: e.target.value } : entry))} placeholder="Description shown on quote" />
+                <input
+                  className="input-field"
+                  value={item.taxName}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, taxName: e.target.value } : entry)),
+                    )
+                  }
+                  placeholder="Tax name"
+                />
+                <input
+                  className="input-field"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={item.taxPercent}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, taxPercent: Number(e.target.value) } : entry)),
+                    )
+                  }
+                  placeholder="Tax %"
+                />
+                <input
+                  className="input-field"
+                  value={item.description}
+                  onChange={(e) =>
+                    set(
+                      'items',
+                      prefs.items.map((entry, i) => (i === index ? { ...entry, description: e.target.value } : entry)),
+                    )
+                  }
+                  placeholder="Description shown on quote"
+                />
               </div>
             </div>
           ))}
@@ -789,7 +1085,11 @@ function CommercialTab() {
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
       <div className="flex justify-end gap-3">
-        {saved && <span className="flex items-center gap-1.5 text-sm text-emerald-600"><Check className="h-4 w-4" /> Saved</span>}
+        {saved && (
+          <span className="flex items-center gap-1.5 text-sm text-emerald-600">
+            <Check className="h-4 w-4" /> Saved
+          </span>
+        )}
         <button type="button" onClick={save} disabled={saving} className="btn-primary">
           {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Save Commercial Settings
@@ -803,10 +1103,10 @@ function CommercialTab() {
 
 function PlatformTab() {
   const rows: { label: string; value: string }[] = [
-    { label: 'Product',  value: 'MachineIQ — ERP for Machine Builders' },
-    { label: 'Version',  value: APP_VERSION },
-    { label: 'Status',   value: 'In development — not yet released' },
-    { label: 'Support',  value: 'support@machineiq.com' },
+    { label: 'Product', value: 'MachineIQ — ERP for Machine Builders' },
+    { label: 'Version', value: APP_VERSION },
+    { label: 'Status', value: 'In development — not yet released' },
+    { label: 'Support', value: 'support@machineiq.com' },
   ];
 
   return (
@@ -832,7 +1132,12 @@ function PlatformTab() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminSettingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('departments');
+  const [activeTab, setActiveTab] = useState<Tab>('commercial');
+
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get('tab') as Tab | null;
+    if (requestedTab && TABS.some((tab) => tab.key === requestedTab)) setActiveTab(requestedTab);
+  }, []);
 
   return (
     <>
@@ -851,7 +1156,6 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Tab panels */}
-      {activeTab === 'departments' && <DepartmentsTab />}
       {activeTab === 'commercial' && <CommercialTab />}
       {activeTab === 'roles' && <RolesTab />}
       {activeTab === 'permissions' && <PermissionsTab />}

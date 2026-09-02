@@ -383,7 +383,7 @@ function ImportPanel({ machineId, onImported }: { machineId: string; onImported:
           : <><FileSpreadsheet className="h-6 w-6 text-fg-muted" />
             <span className="text-xs text-fg-muted">Drop <strong>.csv</strong> or <strong>.xlsx</strong> here, or <span className="text-brand-600">click to browse</span></span></>}
       </div>
-      <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
+      <input ref={fileRef} type="file" accept=".csv,.xlsx" className="hidden"
         onChange={(e) => { if (e.target.files?.[0]) doImport(e.target.files[0]); }} />
       {result && (
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">

@@ -6,6 +6,7 @@ import { Roles } from '../../decorators/roles.decorator';
 import { Role } from '../../common/enums';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ChangePasswordDto, SetupDto } from './auth.dto';
+import { CurrentUser } from '../../decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -43,8 +44,8 @@ export class AuthController {
   @Roles(Role.ADMIN)
   @Throttle({ default: { ttl: 60000, limit: 20 } })
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @CurrentUser('userId') userId: string) {
+    return this.authService.register(dto, userId);
   }
 
   @UseGuards(AuthGuard('jwt'))

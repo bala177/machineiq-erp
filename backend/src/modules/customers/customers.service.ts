@@ -2,10 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectPgModel } from '../../database/postgres-document.module';
 import { Model } from '../../database/postgres-document.model';
 import { DatabaseId } from '../../database/postgres-document.types';
-import * as XLSX from 'xlsx';
 import { Customer } from '../../schemas/customer.schema';
 import { CreateCustomerDto, UpdateCustomerDto } from './customers.dto';
 import { SequencesService } from '../sequences/sequences.service';
+import { readSpreadsheetRows } from '../../common/spreadsheet';
 
 const VALID_ACCOUNT_TYPES = ['prospect', 'active', 'inactive', 'churned'];
 const VALID_COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-1000', '1001+'];
@@ -179,13 +179,11 @@ export class CustomersService {
 
   async bulkImport(buffer: Buffer, originalname: string) {
     const ext = (originalname.split('.').pop() ?? '').toLowerCase();
-    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
-      throw new BadRequestException('Only .csv, .xlsx, and .xls files are supported');
+    if (!['csv', 'xlsx'].includes(ext)) {
+      throw new BadRequestException('Only .csv and .xlsx files are supported');
     }
 
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+    const rawRows = await readSpreadsheetRows(buffer, ext);
 
     const results = {
       created: 0,

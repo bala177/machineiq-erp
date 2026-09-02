@@ -61,7 +61,10 @@ test('supports mobile menu navigation', async ({ page, isMobile }) => {
   await setAuthenticatedSession(page);
   await page.goto('/dashboard');
 
-  await page.getByRole('button').filter({ has: page.locator('svg.lucide-menu') }).click();
+  await page
+    .getByRole('button')
+    .filter({ has: page.locator('svg.lucide-menu') })
+    .click();
   await page.locator('aside').getByRole('link', { name: 'Customers', exact: true }).click();
   await expect(page).toHaveURL(/\/customers$/);
 });
@@ -88,7 +91,7 @@ test('support pages share current release-candidate identity and fit the viewpor
   await setAuthenticatedSession(page);
 
   await page.goto('/help');
-  await expect(page.getByRole('heading', { name: 'Help Center' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Release 1 Help & FAQ' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
 
   await page.goto('/about');

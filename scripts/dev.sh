@@ -27,7 +27,12 @@ fi
 
 mkdir -p "$LOG_DIR"
 
-if ! command -v pg_isready >/dev/null 2>&1 || ! pg_isready -h localhost -p 5432 >/dev/null 2>&1; then
+PG_ISREADY="$(command -v pg_isready 2>/dev/null || true)"
+if [ -z "$PG_ISREADY" ] && [ -x "/c/Program Files/PostgreSQL/16/bin/pg_isready.exe" ]; then
+  PG_ISREADY="/c/Program Files/PostgreSQL/16/bin/pg_isready.exe"
+fi
+
+if [ -z "$PG_ISREADY" ] || ! "$PG_ISREADY" -h localhost -p 5432 >/dev/null 2>&1; then
   echo "PostgreSQL is not ready on localhost:5432."
   echo "Run ./scripts/postgres-setup.sh, then start development again."
   exit 1

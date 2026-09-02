@@ -22,6 +22,12 @@ async function installSettingsMocks(page: import('@playwright/test').Page) {
   // Mutable copy for in-test mutations
   const depts = mockDepartments.map((d) => ({ ...d }));
 
+  await page.route('http://localhost:4051/api/organization/**', async (route) => {
+    const path = new URL(route.request().url()).pathname.replace('/api', '');
+    const response = path === '/organization/company' ? null : [];
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(response) });
+  });
+
   await page.route('http://localhost:4051/api/departments', async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(depts) });
@@ -86,90 +92,70 @@ async function installSettingsMocks(page: import('@playwright/test').Page) {
   });
 }
 
-// ─── Departments tab ──────────────────────────────────────────────────────────
+// ─── Organization departments ────────────────────────────────────────────────
 
-test.describe('Settings — Departments tab', () => {
+test.describe('Organization — Departments', () => {
   test.beforeEach(async ({ page }) => {
     await installSettingsMocks(page);
     await setAuthenticatedSession(page);
-    await page.goto('/admin/settings');
+    await page.goto('/organization');
+    await page.getByRole('tab', { name: /Department/ }).click();
   });
 
-  test('renders heading and Departments tab by default', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Departments' })).toBeVisible();
+  test('shows departments as part of the organization structure', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Organization' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /Department/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('heading', { name: 'Departments' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Company profile' })).toBeHidden();
+    await expect(page.getByText('3 configured').first()).toBeVisible();
   });
 
-  test('lists all departments in the table', async ({ page, isMobile }) => {
-    if (isMobile) {
-      await expect(page.locator('.card').filter({ hasText: 'Mechanical Engineering' }).first()).toBeVisible();
-      await expect(page.locator('.card').filter({ hasText: 'Electrical Engineering' }).first()).toBeVisible();
-    } else {
-      await expect(page.getByRole('cell', { name: 'Mechanical Engineering' })).toBeVisible();
-      await expect(page.locator('table').getByText('MECH', { exact: true })).toBeVisible();
-      await expect(page.locator('table').getByText('ELEC', { exact: true })).toBeVisible();
-    }
+  test('lists all departments', async ({ page }) => {
+    const section = page.getByRole('region', { name: 'Departments' });
+    await expect(section.getByText('Mechanical Engineering')).toBeVisible();
+    await expect(section.getByText('MECH', { exact: true })).toBeVisible();
+    await expect(section.getByText('ELEC', { exact: true })).toBeVisible();
   });
 
   test('opens Add Department modal and creates a department', async ({ page, isMobile }) => {
     await page.getByRole('button', { name: 'Add Department' }).click();
     const modal = page.locator('[role="dialog"], .fixed.inset-0').last();
-    await expect(modal.getByText('Add Department')).toBeVisible();
+    await expect(modal.getByText('Add department')).toBeVisible();
 
-    await page.getByLabel('Name').fill('Controls Engineering');
-    await page.getByLabel('Code').fill('ctrl');
+    await page.getByLabel('Department name').fill('Controls Engineering');
+    await page.getByLabel('Department code').fill('ctrl');
     await page.getByLabel('Description').fill('PLC and motion control');
-    await page.getByRole('button', { name: 'Create' }).click();
+    await page.getByRole('button', { name: 'Create department' }).click();
 
-    if (isMobile) {
-      await expect(page.locator('.card').filter({ hasText: 'Controls Engineering' }).first()).toBeVisible();
-    } else {
-      await expect(page.locator('table').getByText('Controls Engineering', { exact: true })).toBeVisible();
-    }
+    await expect(page.getByRole('region', { name: 'Departments' }).getByText('Controls Engineering', { exact: true })).toBeVisible();
   });
 
   test('validates required name field in Add modal', async ({ page }) => {
     await page.getByRole('button', { name: 'Add Department' }).click();
-    await page.getByRole('button', { name: 'Create' }).click();
-    await expect(page.getByText('Department name is required')).toBeVisible();
+    await page.getByRole('button', { name: 'Create department' }).click();
+    await expect(page.getByText('Department name is required.')).toBeVisible();
   });
 
-  test('opens Edit modal pre-filled and saves changes', async ({ page, isMobile }) => {
-    if (isMobile) {
-      await page.locator('.card').filter({ hasText: 'Mechanical Engineering' }).getByRole('button').first().click();
-    } else {
-      await page.locator('tr').filter({ hasText: 'Mechanical Engineering' }).getByTitle('Edit').click();
-    }
+  test('opens Edit modal pre-filled and saves changes', async ({ page }) => {
+    await page.getByRole('button', { name: 'Edit Mechanical Engineering' }).click();
     const dialog = page.locator('.fixed.inset-0').last();
-    await expect(dialog.getByLabel('Name')).toHaveValue('Mechanical Engineering');
-    await dialog.getByLabel('Name').fill('Mechanical Design');
-    await dialog.getByRole('button', { name: 'Save Changes' }).click();
-    if (isMobile) {
-      await expect(page.locator('.card').filter({ hasText: 'Mechanical Design' }).first()).toBeVisible();
-    } else {
-      await expect(page.locator('table').getByText('Mechanical Design', { exact: true })).toBeVisible();
-    }
+    await expect(dialog.getByLabel('Department name')).toHaveValue('Mechanical Engineering');
+    await dialog.getByLabel('Department name').fill('Mechanical Design');
+    await dialog.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('region', { name: 'Departments' }).getByText('Mechanical Design', { exact: true })).toBeVisible();
   });
 
-  test('deletes a department after confirming the dialog', async ({ page, isMobile }) => {
-    if (isMobile) {
-      await page.locator('.card').filter({ hasText: 'Procurement' }).getByRole('button').last().click();
-    } else {
-      await page.locator('tr').filter({ hasText: 'Procurement' }).getByTitle('Delete').click();
-    }
+  test('deletes a department after confirming the dialog', async ({ page }) => {
+    await page.getByRole('button', { name: 'Delete Procurement' }).click();
     await expect(page.getByText(/Delete.*Procurement/)).toBeVisible();
-    await page.locator('.fixed.inset-0').last().getByRole('button', { name: 'Delete' }).click();
-    await expect(page.locator('tbody tr').filter({ hasText: 'Procurement' })).toHaveCount(0);
+    await page.locator('.fixed.inset-0').last().getByRole('button', { name: 'Delete department' }).click();
+    await expect(page.getByRole('region', { name: 'Departments' }).getByText('Procurement', { exact: true })).toHaveCount(0);
   });
 
-  test('cancels deletion and keeps the department', async ({ page, isMobile }) => {
-    if (isMobile) {
-      await page.locator('.card').filter({ hasText: 'Procurement' }).getByRole('button').last().click();
-    } else {
-      await page.locator('tr').filter({ hasText: 'Procurement' }).getByTitle('Delete').click();
-    }
+  test('cancels deletion and keeps the department', async ({ page }) => {
+    await page.getByRole('button', { name: 'Delete Procurement' }).click();
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.locator('tbody tr').filter({ hasText: 'Procurement' })).toHaveCount(1);
+    await expect(page.getByRole('region', { name: 'Departments' }).getByText('Procurement', { exact: true })).toBeVisible();
   });
 });
 
@@ -242,6 +228,12 @@ test.describe('Settings — Release 1 administration', () => {
     await expect(page.getByText('items.manage')).toBeVisible();
     await expect(page.getByRole('checkbox', { name: 'Admin: Items Manage' })).toBeChecked();
     await page.getByRole('button', { name: 'Save Admin' }).click();
+  });
+
+  test('opens the requested administration tab from a dashboard setup link', async ({ page }) => {
+    await page.goto('/admin/settings?tab=documentTypes');
+    await expect(page.getByRole('button', { name: 'Document Types' })).toHaveClass(/border-brand-600/);
+    await expect(page.getByRole('button', { name: 'New Document Type' })).toBeVisible();
   });
 
   test('creates a document type', async ({ page }) => {

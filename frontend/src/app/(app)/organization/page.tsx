@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Modal } from '@/components/ui/modal';
 import { api } from '@/lib/api';
+import { DepartmentManagement } from '@/components/organization/department-management';
 
 type Company = {
   _id: string; code: string; name: string; email?: string; phone?: string; website?: string;
@@ -14,6 +15,8 @@ type Company = {
 };
 type Branch = { _id: string; code: string; name: string; companyId: Company; city?: string; stateProvince?: string; taxRegistrationNumber?: string; isActive: boolean };
 type Location = { _id: string; code: string; name: string; branchId: Branch; type: 'office' | 'warehouse' | 'factory' | 'service'; city?: string; stateProvince?: string; isActive: boolean };
+type OrganizationSection = 'company' | 'branches' | 'locations' | 'departments';
+const organizationSections: OrganizationSection[] = ['company', 'branches', 'locations', 'departments'];
 
 const emptyCompany = { code: 'MIQ', name: '', email: '', phone: '', website: '', taxRegistrationNumber: '', registrationNumber: '', baseCurrency: 'INR', timezone: 'Asia/Kolkata', address: '', city: '', stateProvince: '', postalCode: '', country: 'India' };
 const emptyBranch = { code: '', name: '', taxRegistrationNumber: '', email: '', phone: '', address: '', city: '', stateProvince: '', postalCode: '', country: 'India' };
@@ -41,6 +44,8 @@ export default function OrganizationPage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [departmentCount, setDepartmentCount] = useState(0);
+  const [activeSection, setActiveSection] = useState<OrganizationSection>('company');
   const [companyForm, setCompanyForm] = useState(emptyCompany);
   const [branchForm, setBranchForm] = useState(emptyBranch);
   const [locationForm, setLocationForm] = useState(emptyLocation);
@@ -53,15 +58,17 @@ export default function OrganizationPage() {
 
   async function load() {
     try {
-      const [companyData, branchData, locationData] = await Promise.all([
+      const [companyData, branchData, locationData, departmentData] = await Promise.all([
         api.get<Company | null>('/organization/company'),
         api.get<Branch[]>('/organization/branches'),
         api.get<Location[]>('/organization/locations'),
+        api.get<Array<{ _id: string }>>('/departments'),
       ]);
       setCompany(companyData);
       setCompanyForm(companyToForm(companyData));
       setBranches(branchData);
       setLocations(locationData);
+      setDepartmentCount(departmentData.length);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load organization');
@@ -71,6 +78,10 @@ export default function OrganizationPage() {
   }
 
   useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    const requestedSection = new URLSearchParams(window.location.search).get('section') as OrganizationSection | null;
+    if (requestedSection && organizationSections.includes(requestedSection)) setActiveSection(requestedSection);
+  }, []);
 
   async function saveCompany(event: FormEvent) {
     event.preventDefault(); setSaving(true); setMessage(''); setError('');
@@ -114,20 +125,21 @@ export default function OrganizationPage() {
   if (loading) return <LoadingSpinner />;
 
   return <>
-    <PageHeader title="Organization" description="Manage the legal company, operating branches, and physical locations used across ERP transactions." />
+    <PageHeader title="Organization" description="Manage your legal company, operating structure, physical locations, and departments." />
     {error && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300">{error}</div>}
     {message && <div className="mb-5 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700 dark:border-brand-900 dark:bg-brand-950/20 dark:text-brand-300">{message}</div>}
 
-    <div className="mb-6 grid gap-3 sm:grid-cols-3">
+    <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="tablist" aria-label="Organization sections">
       {[
-        { label: 'Company profile', detail: company ? 'Complete' : 'Required first', complete: Boolean(company) },
-        { label: 'Operating branch', detail: branches.length ? `${branches.length} configured` : 'After company', complete: branches.length > 0 },
-        { label: 'Physical location', detail: locations.length ? `${locations.length} configured` : 'After branch', complete: locations.length > 0 },
-      ].map((step, index) => <div key={step.label} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 shadow-sm"><div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${step.complete ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' : 'bg-surface-tertiary text-fg-muted'}`}>{step.complete ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}</div><div><p className="text-sm font-semibold text-fg">{index + 1}. {step.label}</p><p className="text-xs text-fg-muted">{step.detail}</p></div></div>)}
+        { id: 'company' as const, label: 'Company profile', detail: company ? 'Complete' : 'Required first', complete: Boolean(company) },
+        { id: 'branches' as const, label: 'Operating branch', detail: branches.length ? `${branches.length} configured` : 'After company', complete: branches.length > 0 },
+        { id: 'locations' as const, label: 'Physical location', detail: locations.length ? `${locations.length} configured` : 'After branch', complete: locations.length > 0 },
+        { id: 'departments' as const, label: 'Department', detail: departmentCount ? `${departmentCount} configured` : 'Set up teams', complete: departmentCount > 0 },
+      ].map((step, index) => <button key={step.id} role="tab" aria-selected={activeSection === step.id} aria-controls={`${step.id}-panel`} onClick={() => { setActiveSection(step.id); setMessage(''); }} className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left shadow-sm transition-colors ${activeSection === step.id ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-100 dark:bg-brand-950/20 dark:ring-brand-950/50' : 'border-border bg-surface hover:border-border-strong hover:bg-surface-secondary'}`}><div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${step.complete ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' : activeSection === step.id ? 'bg-brand-100 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300' : 'bg-surface-tertiary text-fg-muted'}`}>{step.complete ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}</div><div><p className="text-sm font-semibold text-fg">{index + 1}. {step.label}</p><p className="text-xs text-fg-muted">{step.detail}</p></div></button>)}
     </div>
 
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,.85fr)]">
-      <form className="card p-5" onSubmit={saveCompany}>
+    <div className="grid gap-6">
+      <form id="company-panel" role="tabpanel" className={`card p-5 ${activeSection === 'company' ? '' : 'hidden'}`} onSubmit={saveCompany}>
         <div className="mb-5 flex items-center gap-3 border-b border-border pb-4"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/30 dark:text-brand-300"><Building2 className="h-5 w-5" /></div><div><h2 className="font-semibold text-fg">Company profile</h2><p className="text-sm text-fg-muted">Legal and commercial identity</p></div></div>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <SectionTitle title="Identity" description="Official name and internal company code." />
@@ -153,11 +165,13 @@ export default function OrganizationPage() {
         <div className="mt-5 flex justify-end border-t border-border pt-4"><button className="btn-primary" disabled={saving}><Save className="h-4 w-4" />{saving ? 'Saving…' : 'Save company'}</button></div>
       </form>
 
-      <div className="space-y-6">
+      <div id={activeSection === 'branches' ? 'branches-panel' : 'locations-panel'} role="tabpanel" className={activeSection === 'branches' ? 'space-y-6 [&>section:nth-child(2)]:hidden' : activeSection === 'locations' ? 'space-y-6 [&>section:first-child]:hidden' : 'hidden'}>
         <section className="card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="font-semibold text-fg">Branches</h2><p className="text-sm text-fg-muted">{branches.length ? `${branches.length} operating entities` : 'Create after the company profile'}</p></div><button className="btn-secondary" onClick={openBranch}><Plus className="h-4 w-4" />Add</button></div><div className="divide-y divide-border">{branches.map((branch) => <div key={branch._id} className="flex items-start gap-3 p-4"><div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300"><Factory className="h-4 w-4" /></div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-fg">{branch.name}</p><span className="badge-blue">{branch.code}</span></div><p className="mt-1 text-sm text-fg-muted">{[branch.city, branch.stateProvince].filter(Boolean).join(', ') || 'Address pending'}</p></div></div>)}</div></section>
         <section className="card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="font-semibold text-fg">Locations</h2><p className="text-sm text-fg-muted">{locations.length ? `${locations.length} physical locations` : 'Create after the first branch'}</p></div><button className="btn-secondary" onClick={openLocation}><Plus className="h-4 w-4" />Add</button></div><div className="divide-y divide-border">{locations.map((location) => <div key={location._id} className="flex items-start gap-3 p-4"><div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">{location.type === 'warehouse' ? <Warehouse className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-fg">{location.name}</p><span className="badge-gray capitalize">{location.type}</span></div><p className="mt-1 text-sm text-fg-muted">{location.branchId?.name} · {location.code}</p></div></div>)}</div></section>
       </div>
     </div>
+
+    {activeSection === 'departments' && <div id="departments-panel" role="tabpanel"><DepartmentManagement onCountChange={setDepartmentCount} /></div>}
 
     {branchOpen && <Modal title="Add branch" onClose={() => setBranchOpen(false)} size="lg"><form className="grid gap-4 sm:grid-cols-2" onSubmit={createBranch}><Field label="Branch code"><input required className="input-field" value={branchForm.code} onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value.toUpperCase() })} /></Field><Field label="Branch name"><input required className="input-field" value={branchForm.name} onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })} /></Field><Field label="Email"><input type="email" className="input-field" value={branchForm.email} onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })} /></Field><Field label="Phone"><input className="input-field" value={branchForm.phone} onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })} /></Field><Field label="Tax registration"><input className="input-field" value={branchForm.taxRegistrationNumber} onChange={(e) => setBranchForm({ ...branchForm, taxRegistrationNumber: e.target.value })} /></Field><div className="hidden sm:block" /><Field label="Address"><input className="input-field" value={branchForm.address} onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })} /></Field><Field label="City"><input className="input-field" value={branchForm.city} onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })} /></Field><Field label="State / province"><input className="input-field" value={branchForm.stateProvince} onChange={(e) => setBranchForm({ ...branchForm, stateProvince: e.target.value })} /></Field><Field label="Postal code"><input className="input-field" value={branchForm.postalCode} onChange={(e) => setBranchForm({ ...branchForm, postalCode: e.target.value })} /></Field><Field label="Country"><input className="input-field" value={branchForm.country} onChange={(e) => setBranchForm({ ...branchForm, country: e.target.value })} /></Field><div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setBranchOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create branch'}</button></div></form></Modal>}
     {locationOpen && <Modal title="Add location" onClose={() => setLocationOpen(false)} size="lg"><form className="grid gap-4 sm:grid-cols-2" onSubmit={createLocation}><Field label="Location code"><input required className="input-field" value={locationForm.code} onChange={(e) => setLocationForm({ ...locationForm, code: e.target.value.toUpperCase() })} /></Field><Field label="Location name"><input required className="input-field" value={locationForm.name} onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })} /></Field><Field label="Branch"><select required className="input-field" value={locationForm.branchId} onChange={(e) => setLocationForm({ ...locationForm, branchId: e.target.value })}><option value="">Select branch</option>{branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.code} — {branch.name}</option>)}</select></Field><Field label="Location type"><select className="input-field" value={locationForm.type} onChange={(e) => setLocationForm({ ...locationForm, type: e.target.value })}><option value="office">Office</option><option value="factory">Factory</option><option value="warehouse">Warehouse</option><option value="service">Service</option></select></Field><Field label="Address"><input className="input-field" value={locationForm.address} onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })} /></Field><Field label="City"><input className="input-field" value={locationForm.city} onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })} /></Field><Field label="State / province"><input className="input-field" value={locationForm.stateProvince} onChange={(e) => setLocationForm({ ...locationForm, stateProvince: e.target.value })} /></Field><Field label="Postal code"><input className="input-field" value={locationForm.postalCode} onChange={(e) => setLocationForm({ ...locationForm, postalCode: e.target.value })} /></Field><Field label="Country"><input className="input-field" value={locationForm.country} onChange={(e) => setLocationForm({ ...locationForm, country: e.target.value })} /></Field><div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setLocationOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create location'}</button></div></form></Modal>}

@@ -296,7 +296,7 @@ export default function CustomersPage() {
               </a>
               <button
                 type="button"
-                onClick={() => generateCustomerTemplate()}
+                onClick={() => void generateCustomerTemplate()}
                 className="btn-ghost flex-1 justify-center gap-2 py-3 text-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/20"
               >
                 <FileSpreadsheet className="h-4 w-4" />
@@ -367,7 +367,7 @@ export default function CustomersPage() {
                 'Only the name column is required. Rows with a blank name are skipped.',
                 'Duplicate company names are skipped (existing records are not overwritten).',
                 'Invalid account type or company size values are silently cleared.',
-                'Accepts .csv, .xlsx, and .xls files up to 10 MB.',
+                'Accepts .csv and .xlsx files up to 10 MB.',
               ].map((rule, i) => (
                 <div key={i} className="flex items-start gap-2 text-xs text-fg-secondary">
                   <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-fg-muted" />

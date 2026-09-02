@@ -6,14 +6,38 @@ test.describe('core workflows', () => {
     await installApiMocks(page);
   });
 
-  test('renders Release 1 dashboard metrics and inquiry breakdowns', async ({ page }) => {
+  test('renders the operational admin dashboard when setup is complete', async ({ page }) => {
     await setAuthenticatedSession(page);
     await page.goto('/dashboard');
 
     await expect(page.getByText('Customers').first()).toBeVisible();
-    await expect(page.getByText('Machine Inquiries').first()).toBeVisible();
-    await expect(page.getByText('Recent Machine Inquiries')).toBeVisible();
-    await expect(page.getByText('By Priority')).toBeVisible();
+    await expect(page.getByText('Suppliers').first()).toBeVisible();
+    await expect(page.getByText('Items').first()).toBeVisible();
+    await expect(page.getByText('Active users').first()).toBeVisible();
+    await expect(page.getByText('Organization setup complete')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Master data status' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Team and access' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Quick actions' })).toBeVisible();
+    await expect(page.getByText('Release 1 scope')).toHaveCount(0);
+    await expect(page.getByText('Machine Inquiries')).toHaveCount(0);
+    await expect(page.getByText('By Priority')).toHaveCount(0);
+  });
+
+  test('guides the administrator to the next incomplete setup step', async ({ page }) => {
+    await page.route('**/api/organization/branches', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    });
+    await setAuthenticatedSession(page);
+    await page.goto('/dashboard');
+
+    await expect(page.getByText('Setup in progress')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Next: Operating branch' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Add an operating branch/ })).toBeVisible();
+    await expect(page.getByText('Organization setup complete')).toHaveCount(0);
+
+    await page.getByRole('link', { name: /Add an operating branch/ }).click();
+    await expect(page).toHaveURL(/\/organization\?section=branches/);
+    await expect(page.getByRole('tab', { name: /Operating branch/ })).toHaveAttribute('aria-selected', 'true');
   });
 
   test('filters opportunities and opens the detail page', async ({ page, isMobile }) => {
@@ -74,6 +98,7 @@ test.describe('core workflows', () => {
     await page.goto('/opportunities/new');
 
     // Step 1: select a customer
+    await page.getByRole('combobox', { name: 'Search by company name…' }).click();
     await page.getByRole('button', { name: 'Atlas Foods' }).click();
     await page.getByRole('button', { name: /Next.*Choose machine/i }).click();
 
@@ -90,6 +115,7 @@ test.describe('core workflows', () => {
     await page.goto('/opportunities/new');
 
     // Step 1: select a customer
+    await page.getByRole('combobox', { name: 'Search by company name…' }).click();
     await page.getByRole('button', { name: 'Atlas Foods' }).click();
     await page.getByRole('button', { name: /Next.*Choose machine/i }).click();
 
@@ -100,16 +126,16 @@ test.describe('core workflows', () => {
 
   test('converts an opportunity into a prefilled project form and creates the project', async ({ page }) => {
     await setAuthenticatedSession(page);
-    await page.goto('/opportunities/opp-1');
+    await page.goto('/opportunities/opp-2');
     await page.getByRole('link', { name: 'Convert to Project' }).click();
 
-    await expect(page).toHaveURL(/\/projects\/new\?opportunityId=opp-1$/);
-    await expect(page.getByLabel('Project Name')).toHaveValue('High-Speed Cartoner');
-    await expect(page.getByLabel('Customer')).toHaveValue('cust-a');
+    await expect(page).toHaveURL(/\/projects\/new\?opportunityId=opp-2$/);
+    await expect(page.getByLabel('Project Name')).toHaveValue('Case Packer Revamp');
+    await expect(page.getByLabel('Customer')).toHaveValue('cust-b');
 
-    await page.getByRole('button', { name: 'Create Project' }).click();
+    await page.getByRole('button', { name: 'Convert to Project' }).click();
     await expect(page).toHaveURL(/\/projects\/proj-created$/);
-    await expect(page.getByText('High-Speed Cartoner')).toBeVisible();
+    await expect(page.getByText('Case Packer Revamp')).toBeVisible();
   });
 
   test('renders project detail execution snapshot', async ({ page }) => {
@@ -126,7 +152,7 @@ test.describe('core workflows', () => {
     await setAuthenticatedSession(page);
     await page.goto('/projects/proj-1');
 
-    await page.getByRole('button', { name: 'Machine Breakdown' }).click();
+    await page.getByRole('button', { name: 'Machine Architecture', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Primary Cartoner' })).toBeVisible();
     await expect(page.getByText('Infeed').first()).toBeVisible();
 
@@ -181,8 +207,16 @@ test.describe('core workflows', () => {
 
     await page.getByRole('button', { name: 'Components', exact: true }).click();
     await page.getByPlaceholder('Component name').fill('Drive shaft');
-    await page.locator('select').filter({ has: page.locator('option', { hasText: 'Mechanical' }) }).first().selectOption('Mechanical');
-    await page.locator('select').filter({ has: page.locator('option', { hasText: 'Eli Engineer' }) }).first().selectOption('user-eng');
+    await page
+      .locator('select')
+      .filter({ has: page.locator('option', { hasText: 'Mechanical' }) })
+      .first()
+      .selectOption('Mechanical');
+    await page
+      .locator('select')
+      .filter({ has: page.locator('option', { hasText: 'Eli Engineer' }) })
+      .first()
+      .selectOption('user-eng');
     await page.locator('input[type="date"]').fill('2026-06-18');
     await page.getByRole('button', { name: 'Create' }).click();
 
@@ -207,7 +241,7 @@ test.describe('core workflows', () => {
     await setAuthenticatedSession(page);
     await page.goto('/projects/proj-1');
 
-    await page.getByRole('button', { name: 'Machine Breakdown' }).click();
+    await page.getByRole('button', { name: 'Machine Architecture', exact: true }).click();
     await expect(page.getByRole('button', { name: /Infeed Primary Cartoner/ })).toBeVisible();
     await page.getByRole('button', { name: /Infeed Primary Cartoner/ }).click();
 
