@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useDeferredValue, useEffect, useState } from 'react';
-import { AlertTriangle, Boxes, CircleDollarSign, PackageCheck, Pencil, Plus, Power, Ruler, Search, Tags, Trash2 } from 'lucide-react';
+import { AlertTriangle, Boxes, Check, CircleDollarSign, PackageCheck, Pencil, Plus, Power, Ruler, Search, Tags, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { ItemForm, ItemFormPayload } from '@/components/items/item-form';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -58,6 +58,7 @@ export default function ItemsPage() {
   const [uomOpen, setUomOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState('');
   const [editingUomId, setEditingUomId] = useState('');
+  const [guidedSetup, setGuidedSetup] = useState(false);
   const [error, setError] = useState('');
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [uomForm, setUomForm] = useState(initialUomForm);
@@ -123,6 +124,10 @@ export default function ItemsPage() {
       setEditingCategoryId('');
       setCategoryForm(initialCategoryForm);
       await loadData();
+      if (guidedSetup) {
+        if (uoms.length) setCreateOpen(true);
+        else setUomOpen(true);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create item category');
     } finally {
@@ -141,6 +146,7 @@ export default function ItemsPage() {
       setEditingUomId('');
       setUomForm(initialUomForm);
       await loadData();
+      if (guidedSetup) setCreateOpen(true);
     } catch (err: any) {
       setError(err.message || 'Failed to create UOM');
     } finally {
@@ -149,9 +155,30 @@ export default function ItemsPage() {
   }
 
   function openCreateItem() {
-    if (!categories.length) setCategoryOpen(true);
-    else if (!uoms.length) setUomOpen(true);
-    else setCreateOpen(true);
+    if (!categories.length) {
+      setGuidedSetup(true);
+      setCategoryOpen(true);
+    } else if (!uoms.length) {
+      setGuidedSetup(true);
+      setUomOpen(true);
+    } else {
+      setGuidedSetup(false);
+      setCreateOpen(true);
+    }
+  }
+
+  function closeCategory() {
+    setCategoryOpen(false);
+    setEditingCategoryId('');
+    setCategoryForm(initialCategoryForm);
+    setGuidedSetup(false);
+  }
+
+  function closeUom() {
+    setUomOpen(false);
+    setEditingUomId('');
+    setUomForm(initialUomForm);
+    setGuidedSetup(false);
   }
 
   function openEditItem(item: ItemRecord) {
@@ -196,8 +223,8 @@ export default function ItemsPage() {
         description="Govern materials, bought-out components, assemblies, and services across engineering and ERP workflows."
         actions={
           <div className="flex flex-wrap gap-2">
-            <button className="btn-secondary" onClick={() => setCategoryOpen(true)}><Tags className="h-4 w-4" /> New Category</button>
-            <button className="btn-secondary" onClick={() => setUomOpen(true)}><Ruler className="h-4 w-4" /> New UOM</button>
+            <button className="btn-secondary" onClick={() => { setGuidedSetup(false); setCategoryOpen(true); }}><Tags className="h-4 w-4" /> New Category</button>
+            <button className="btn-secondary" onClick={() => { setGuidedSetup(false); setUomOpen(true); }}><Ruler className="h-4 w-4" /> New UOM</button>
             <button className="btn-primary" onClick={openCreateItem}><Plus className="h-4 w-4" /> New Item</button>
           </div>
         }
@@ -271,24 +298,39 @@ export default function ItemsPage() {
         <ItemForm initialValues={editingItem} categories={categories} uoms={uoms} suppliers={suppliers} saving={saving} error={error} onSubmit={handleSaveItem} onCancel={() => { setCreateOpen(false); setEditingItem(null); setError(''); }} />
       </Modal>}
 
-      {categoryOpen && <Modal title="Manage item categories" onClose={() => { setCategoryOpen(false); setEditingCategoryId(''); setCategoryForm(initialCategoryForm); }}>
+      {categoryOpen && <Modal title={guidedSetup ? 'Set up item master' : 'Manage item categories'} onClose={closeCategory}>
         <form className="space-y-4" onSubmit={handleCreateCategory}>
-          <label className="block text-sm font-medium text-fg">Category code<input className="input-field mt-1.5" required disabled={!!editingCategoryId} value={categoryForm.code} onChange={(event) => setCategoryForm({ ...categoryForm, code: event.target.value.toUpperCase() })} /></label>
-          <label className="block text-sm font-medium text-fg">Category name<input className="input-field mt-1.5" required value={categoryForm.name} onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })} /></label>
+          {guidedSetup && <ReferenceSetupProgress step={1} title="Create your first category" description="Categories group items for search, reporting, and procurement. You can add more categories later." />}
+          <label className="block text-sm font-medium text-fg">Category code<input className="input-field mt-1.5" required autoFocus disabled={!!editingCategoryId} value={categoryForm.code} onChange={(event) => setCategoryForm({ ...categoryForm, code: event.target.value.toUpperCase() })} placeholder="e.g. ELEC" /><span className="mt-1.5 block text-xs font-normal text-fg-muted">Use a short, recognizable code.</span></label>
+          <label className="block text-sm font-medium text-fg">Category name<input className="input-field mt-1.5" required value={categoryForm.name} onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })} placeholder="e.g. Electrical components" /></label>
           <div className="max-h-48 divide-y divide-border overflow-y-auto border-y border-border">{categories.map((category) => <div key={category._id} className="flex items-center gap-2 py-2"><span className="min-w-0 flex-1 truncate text-sm">{category.code} — {category.name}</span><button type="button" className="btn-ghost p-2" title="Edit category" onClick={() => { setEditingCategoryId(category._id); setCategoryForm({ code: category.code, name: category.name }); }}><Pencil className="h-4 w-4" /></button><button type="button" className="btn-ghost p-2 text-red-600" title="Remove category" onClick={() => void removeReference('categories', category._id)}><Trash2 className="h-4 w-4" /></button></div>)}</div>
-          <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => { setEditingCategoryId(''); setCategoryForm(initialCategoryForm); }}>{editingCategoryId ? 'Cancel edit' : 'Clear'}</button><button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editingCategoryId ? 'Save changes' : 'Create category'}</button></div>
+          <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => { setEditingCategoryId(''); setCategoryForm(initialCategoryForm); }}>{editingCategoryId ? 'Cancel edit' : 'Clear'}</button><button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editingCategoryId ? 'Save changes' : guidedSetup ? 'Save & continue' : 'Create category'}</button></div>
         </form>
       </Modal>}
 
-      {uomOpen && <Modal title="Manage units of measure" onClose={() => { setUomOpen(false); setEditingUomId(''); setUomForm(initialUomForm); }}>
+      {uomOpen && <Modal title={guidedSetup ? 'Set up item master' : 'Manage units of measure'} onClose={closeUom}>
         <form className="space-y-4" onSubmit={handleCreateUom}>
-          <label className="block text-sm font-medium text-fg">UOM code<input className="input-field mt-1.5" required disabled={!!editingUomId} value={uomForm.code} onChange={(event) => setUomForm({ ...uomForm, code: event.target.value.toUpperCase() })} /></label>
-          <label className="block text-sm font-medium text-fg">UOM name<input className="input-field mt-1.5" required value={uomForm.name} onChange={(event) => setUomForm({ ...uomForm, name: event.target.value })} /></label>
-          <label className="block text-sm font-medium text-fg">Conversion factor<input className="input-field mt-1.5" type="number" min="0.000001" step="any" required value={uomForm.conversionFactor} onChange={(event) => setUomForm({ ...uomForm, conversionFactor: Number(event.target.value) })} /></label>
+          {guidedSetup && <ReferenceSetupProgress step={2} title="Define how items are measured" description="Add the base unit used for item quantities. A common first unit is EA — Each." />}
+          <label className="block text-sm font-medium text-fg">UOM code<input className="input-field mt-1.5" required autoFocus disabled={!!editingUomId} value={uomForm.code} onChange={(event) => setUomForm({ ...uomForm, code: event.target.value.toUpperCase() })} placeholder="e.g. EA" /></label>
+          <label className="block text-sm font-medium text-fg">UOM name<input className="input-field mt-1.5" required value={uomForm.name} onChange={(event) => setUomForm({ ...uomForm, name: event.target.value })} placeholder="e.g. Each" /></label>
+          <label className="block text-sm font-medium text-fg">Conversion factor<input className="input-field mt-1.5" type="number" min="0.000001" step="any" required value={uomForm.conversionFactor} onChange={(event) => setUomForm({ ...uomForm, conversionFactor: Number(event.target.value) })} /><span className="mt-1.5 block text-xs font-normal text-fg-muted">Keep this at 1 for a base unit such as Each.</span></label>
           <div className="max-h-48 divide-y divide-border overflow-y-auto border-y border-border">{uoms.map((uom) => <div key={uom._id} className="flex items-center gap-2 py-2"><span className="min-w-0 flex-1 truncate text-sm">{uom.code} — {uom.name}</span><button type="button" className="btn-ghost p-2" title="Edit UOM" onClick={() => { setEditingUomId(uom._id); setUomForm({ code: uom.code, name: uom.name, conversionFactor: uom.conversionFactor }); }}><Pencil className="h-4 w-4" /></button><button type="button" className="btn-ghost p-2 text-red-600" title="Remove UOM" onClick={() => void removeReference('uoms', uom._id)}><Trash2 className="h-4 w-4" /></button></div>)}</div>
-          <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => { setEditingUomId(''); setUomForm(initialUomForm); }}>{editingUomId ? 'Cancel edit' : 'Clear'}</button><button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editingUomId ? 'Save changes' : 'Create UOM'}</button></div>
+          <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => { setEditingUomId(''); setUomForm(initialUomForm); }}>{editingUomId ? 'Cancel edit' : 'Clear'}</button><button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editingUomId ? 'Save changes' : guidedSetup ? 'Save & create item' : 'Create UOM'}</button></div>
         </form>
       </Modal>}
     </>
   );
+}
+
+function ReferenceSetupProgress({ step, title, description }: { step: 1 | 2; title: string; description: string }) {
+  return <div className="rounded-lg border border-brand-200 bg-brand-50 p-4 dark:border-brand-900 dark:bg-brand-950/30">
+    <div className="mb-3 flex items-center gap-2" aria-label={`Step ${step} of 3`}>
+      {[1, 2, 3].map((number) => <div key={number} className="flex flex-1 items-center gap-2">
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${number < step ? 'bg-brand-600 text-white' : number === step ? 'bg-brand-600 text-white ring-4 ring-brand-100 dark:ring-brand-900' : 'border border-border bg-surface text-fg-muted'}`}>{number < step ? <Check className="h-3.5 w-3.5" /> : number}</span>
+        {number < 3 && <span className={`h-px flex-1 ${number < step ? 'bg-brand-600' : 'bg-border'}`} />}
+      </div>)}
+    </div>
+    <p className="font-semibold text-fg">{title}</p>
+    <p className="mt-1 text-sm leading-5 text-fg-secondary">{description}</p>
+  </div>;
 }

@@ -155,6 +155,35 @@ test('validates and creates a new item through the tabbed form', async ({ page }
   await expect(page.locator('p:visible').filter({ hasText: /^REL-SAFE-01$/ })).toBeVisible();
 });
 
+test('guides missing item references into the full item form', async ({ page }) => {
+  let categories: typeof category[] = [];
+  let uoms: typeof uom[] = [];
+  await page.route('http://localhost:4051/api/items/categories', async (route) => {
+    if (route.request().method() === 'POST') categories = [{ ...category, ...route.request().postDataJSON() }];
+    await route.fulfill({ status: route.request().method() === 'POST' ? 201 : 200, contentType: 'application/json', body: JSON.stringify(route.request().method() === 'POST' ? categories[0] : categories) });
+  });
+  await page.route('http://localhost:4051/api/items/uoms', async (route) => {
+    if (route.request().method() === 'POST') uoms = [{ ...uom, ...route.request().postDataJSON() }];
+    await route.fulfill({ status: route.request().method() === 'POST' ? 201 : 200, contentType: 'application/json', body: JSON.stringify(route.request().method() === 'POST' ? uoms[0] : uoms) });
+  });
+
+  await page.goto('/items');
+  await page.getByRole('button', { name: 'New Item' }).click();
+  await expect(page.getByRole('heading', { name: 'Set up item master' })).toBeVisible();
+  await expect(page.getByText('Create your first category')).toBeVisible();
+  await page.getByLabel('Category code').fill('ELEC');
+  await page.getByLabel('Category name').fill('Electrical components');
+  await page.getByRole('button', { name: 'Save & continue' }).click();
+
+  await expect(page.getByText('Define how items are measured')).toBeVisible();
+  await page.getByLabel('UOM code').fill('EA');
+  await page.getByLabel('UOM name').fill('Each');
+  await page.getByRole('button', { name: 'Save & create item' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Create item' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Overview' })).toBeVisible();
+});
+
 test('persists full supplier details and supports edit and deactivation', async ({ page }) => {
   await page.goto('/suppliers');
   await page.locator('button[title="Edit supplier"]:visible').first().click();
