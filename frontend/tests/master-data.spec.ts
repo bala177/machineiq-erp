@@ -112,20 +112,47 @@ test('completes item fields and supports edit and deactivation', async ({ page }
   await page.goto('/items');
   await expect(page.getByText('Avg. standard cost')).toBeVisible();
   await page.locator('button[title="Edit item"]:visible').first().click();
-  await expect(page.getByRole('heading', { name: 'Edit item' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Edit Servo Drive' })).toBeVisible();
+  await page.getByRole('button', { name: 'Inventory & Tax' }).click();
   await expect(page.getByLabel('Tax rate (%)')).toHaveValue('18');
+  await page.getByLabel('Manufacturer part number').fill('MPN-SD-100');
+  await page.getByRole('button', { name: 'Sales & Purchase' }).click();
   await expect(page.getByLabel('Preferred supplier')).toHaveValue(supplier._id);
   await page.getByLabel('Lead time (days)').fill('28');
-  await page.getByLabel('Manufacturer part number').fill('MPN-SD-100');
   await page.getByLabel('Sales description').fill('Servo drive for customer documents');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await page.locator('button[title="Edit item"]:visible').first().click();
+  await page.getByRole('button', { name: 'Inventory & Tax' }).click();
   await expect(page.getByLabel('Manufacturer part number')).toHaveValue('MPN-SD-100');
+  await page.getByRole('button', { name: 'Sales & Purchase' }).click();
   await expect(page.getByLabel('Sales description')).toHaveValue('Servo drive for customer documents');
   await page.getByRole('button', { name: 'Cancel' }).click();
   await page.locator('button[title="Deactivate item"]:visible').first().click();
   await expect(page.locator('span.badge-gray:visible').filter({ hasText: /^Inactive$/ })).toBeVisible();
   await expect(page.locator('div').filter({ hasText: /^Active items0$/ }).first()).toBeVisible();
+});
+
+test('validates and creates a new item through the tabbed form', async ({ page }) => {
+  await page.goto('/items');
+  await page.getByRole('button', { name: 'New Item' }).click();
+  await expect(page.getByRole('heading', { name: 'Create item' })).toBeVisible();
+  await expect(page.getByTestId('modal-backdrop')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.elementFromPoint(window.innerWidth - 8, 30)?.getAttribute('data-testid'))).toBe('modal-backdrop');
+
+  await page.getByRole('button', { name: 'Create item' }).click();
+  await expect(page.getByText('Item name is required.')).toBeVisible();
+  await page.getByLabel('Item name').fill('Safety relay');
+  await page.getByLabel(/Item code \/ SKU/).fill('REL-SAFE-01');
+  await page.locator('label').filter({ hasText: /^Category/ }).locator('select').selectOption(category._id);
+  await page.locator('label').filter({ hasText: /^Base unit/ }).locator('select').selectOption(uom._id);
+
+  await page.getByRole('button', { name: 'Sales & Purchase' }).click();
+  await page.getByLabel('Selling price').fill('850');
+  await page.getByLabel('Purchase cost').fill('600');
+  await page.getByRole('button', { name: 'Create item' }).click();
+
+  await expect(page.locator('p:visible').filter({ hasText: /^Safety relay$/ })).toBeVisible();
+  await expect(page.locator('p:visible').filter({ hasText: /^REL-SAFE-01$/ })).toBeVisible();
 });
 
 test('persists full supplier details and supports edit and deactivation', async ({ page }) => {

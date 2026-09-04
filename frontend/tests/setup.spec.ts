@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { installApiMocks } from './fixtures/test-helpers';
 
+test('redirects the root page directly to setup when no admin exists yet', async ({ page }) => {
+  await installApiMocks(page, { needsSetup: true });
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/setup$/, { timeout: 30000 });
+  await expect(page.getByRole('heading', { name: 'Set up your workspace' })).toBeVisible();
+});
+
 test('redirects to setup when no admin exists yet', async ({ page }) => {
   await installApiMocks(page, { needsSetup: true });
   await page.goto('/login');

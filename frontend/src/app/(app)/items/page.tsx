@@ -3,6 +3,7 @@
 import { FormEvent, useDeferredValue, useEffect, useState } from 'react';
 import { AlertTriangle, Boxes, CircleDollarSign, PackageCheck, Pencil, Plus, Power, Ruler, Search, Tags, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
+import { ItemForm, ItemFormPayload } from '@/components/items/item-form';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Modal } from '@/components/ui/modal';
@@ -35,11 +36,6 @@ type ItemRecord = {
   isActive: boolean;
 };
 
-const initialForm = {
-  code: '', name: '', description: '', manufacturerPartNumber: '', barcode: '', salesDescription: '', purchaseDescription: '', salesEnabled: true, purchaseEnabled: true, categoryId: '', uomId: '', itemType: 'component',
-  standardCost: 0, sellingPrice: 0, hsnSac: '', taxPercent: 0, reorderLevel: 0, leadTimeDays: 0,
-  defaultSupplierId: '', isStockItem: true, isActive: true,
-};
 const initialCategoryForm = { code: '', name: '' };
 const initialUomForm = { code: '', name: '', conversionFactor: 1 };
 
@@ -63,7 +59,6 @@ export default function ItemsPage() {
   const [editingCategoryId, setEditingCategoryId] = useState('');
   const [editingUomId, setEditingUomId] = useState('');
   const [error, setError] = useState('');
-  const [form, setForm] = useState(initialForm);
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [uomForm, setUomForm] = useState(initialUomForm);
   const deferredSearch = useDeferredValue(search.trim());
@@ -97,22 +92,21 @@ export default function ItemsPage() {
     return () => window.clearTimeout(timeout);
   }, [deferredSearch, typeFilter]);
 
-  async function handleCreate(event: FormEvent) {
-    event.preventDefault();
+  async function handleSaveItem(payload: ItemFormPayload) {
     setSaving(true);
     setError('');
     try {
-      const payload = { ...form, defaultSupplierId: form.defaultSupplierId || undefined };
       if (editingItem) {
         const { code: _code, ...updatePayload } = payload;
         await api.patch(`/items/${editingItem._id}`, updatePayload);
       } else await api.post('/items', payload);
       setCreateOpen(false);
       setEditingItem(null);
-      setForm(initialForm);
       await loadData();
+      return true;
     } catch (err: any) {
       setError(err.message || 'Failed to create item');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -162,13 +156,7 @@ export default function ItemsPage() {
 
   function openEditItem(item: ItemRecord) {
     setEditingItem(item);
-    setForm({
-      code: item.code, name: item.name, description: item.description || '', manufacturerPartNumber: item.manufacturerPartNumber || '', barcode: item.barcode || '', salesDescription: item.salesDescription || '', purchaseDescription: item.purchaseDescription || '', salesEnabled: item.salesEnabled ?? true, purchaseEnabled: item.purchaseEnabled ?? true,
-      categoryId: item.categoryId?._id || '', uomId: item.uomId?._id || '', itemType: item.itemType,
-      standardCost: item.standardCost, sellingPrice: item.sellingPrice, hsnSac: item.hsnSac || '',
-      taxPercent: item.taxPercent || 0, reorderLevel: item.reorderLevel, leadTimeDays: item.leadTimeDays,
-      defaultSupplierId: item.defaultSupplierId?._id || '', isStockItem: item.isStockItem, isActive: item.isActive,
-    });
+    setError('');
     setCreateOpen(true);
   }
 
@@ -201,7 +189,6 @@ export default function ItemsPage() {
   const stockItems = items.filter((item) => item.isActive && item.isStockItem).length;
   const reorderItems = items.filter((item) => item.isActive && item.isStockItem && item.reorderLevel > 0).length;
   const averageStandardCost = activeItems ? items.filter((item) => item.isActive).reduce((sum, item) => sum + item.standardCost, 0) / activeItems : 0;
-
   return (
     <>
       <PageHeader
@@ -280,30 +267,8 @@ export default function ItemsPage() {
         </div>
       )}
 
-      {createOpen && <Modal title={editingItem ? 'Edit item' : 'Create item'} onClose={() => { setCreateOpen(false); setEditingItem(null); setForm(initialForm); }} size="lg">
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleCreate}>
-          <label className="text-sm font-medium text-fg">Item code<input className="input-field mt-1.5" required disabled={!!editingItem} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} /></label>
-          <label className="text-sm font-medium text-fg">Item name<input className="input-field mt-1.5" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-          <label className="text-sm font-medium text-fg">Category<select className="input-field mt-1.5" required value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}><option value="">Select category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.code} — {category.name}</option>)}</select></label>
-          <label className="text-sm font-medium text-fg">UOM<select className="input-field mt-1.5" required value={form.uomId} onChange={(e) => setForm({ ...form, uomId: e.target.value })}><option value="">Select UOM</option>{uoms.map((uom) => <option key={uom._id} value={uom._id}>{uom.code} — {uom.name}</option>)}</select></label>
-          <label className="text-sm font-medium text-fg">Item type<select className="input-field mt-1.5" value={form.itemType} onChange={(e) => setForm({ ...form, itemType: e.target.value })}><option value="raw">Raw material</option><option value="component">Component</option><option value="assembly">Assembly</option><option value="service">Service</option></select></label>
-          <label className="text-sm font-medium text-fg">Manufacturer part number<input className="input-field mt-1.5" value={form.manufacturerPartNumber} onChange={(e) => setForm({ ...form, manufacturerPartNumber: e.target.value })} placeholder="OEM / MPN identifier" /></label>
-          <label className="text-sm font-medium text-fg">Barcode / EAN / UPC<input className="input-field mt-1.5" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="Scan or enter identifier" /></label>
-          <label className="text-sm font-medium text-fg">Standard cost<input className="input-field mt-1.5" type="number" min="0" value={form.standardCost} onChange={(e) => setForm({ ...form, standardCost: Number(e.target.value) })} /></label>
-          <label className="text-sm font-medium text-fg">Selling price<input className="input-field mt-1.5" type="number" min="0" value={form.sellingPrice} onChange={(e) => setForm({ ...form, sellingPrice: Number(e.target.value) })} /></label>
-          <label className="text-sm font-medium text-fg">HSN / SAC<input className="input-field mt-1.5" value={form.hsnSac} onChange={(e) => setForm({ ...form, hsnSac: e.target.value })} /></label>
-          <label className="text-sm font-medium text-fg">Tax rate (%)<input className="input-field mt-1.5" type="number" min="0" max="100" value={form.taxPercent} onChange={(e) => setForm({ ...form, taxPercent: Number(e.target.value) })} /></label>
-          <label className="text-sm font-medium text-fg">Reorder level<input className="input-field mt-1.5" type="number" min="0" value={form.reorderLevel} onChange={(e) => setForm({ ...form, reorderLevel: Number(e.target.value) })} /></label>
-          <label className="text-sm font-medium text-fg">Lead time (days)<input className="input-field mt-1.5" type="number" min="0" value={form.leadTimeDays} onChange={(e) => setForm({ ...form, leadTimeDays: Number(e.target.value) })} /></label>
-          <label className="text-sm font-medium text-fg">Preferred supplier<select className="input-field mt-1.5" value={form.defaultSupplierId} onChange={(e) => setForm({ ...form, defaultSupplierId: e.target.value })}><option value="">No preferred supplier</option>{suppliers.map((supplier) => <option key={supplier._id} value={supplier._id}>{supplier.code} — {supplier.name}</option>)}</select></label>
-          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-fg"><input type="checkbox" checked={form.isStockItem} onChange={(e) => setForm({ ...form, isStockItem: e.target.checked })} /> Stock-controlled item</label>
-          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-fg"><input type="checkbox" checked={form.salesEnabled} onChange={(e) => setForm({ ...form, salesEnabled: e.target.checked })} /> Available on sales documents</label>
-          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-fg"><input type="checkbox" checked={form.purchaseEnabled} onChange={(e) => setForm({ ...form, purchaseEnabled: e.target.checked })} /> Available on purchase documents</label>
-          <label className="text-sm font-medium text-fg sm:col-span-2">Description<textarea className="input-field mt-1.5 min-h-24" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
-          <label className="text-sm font-medium text-fg">Sales description<textarea className="input-field mt-1.5 min-h-20" value={form.salesDescription} onChange={(e) => setForm({ ...form, salesDescription: e.target.value })} placeholder="Default description on quotes and invoices" /></label>
-          <label className="text-sm font-medium text-fg">Purchase description<textarea className="input-field mt-1.5 min-h-20" value={form.purchaseDescription} onChange={(e) => setForm({ ...form, purchaseDescription: e.target.value })} placeholder="Default description on purchase orders" /></label>
-          <div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => { setCreateOpen(false); setEditingItem(null); setForm(initialForm); }}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editingItem ? 'Save changes' : 'Create item'}</button></div>
-        </form>
+      {createOpen && <Modal title={editingItem ? `Edit ${editingItem.name}` : 'Create item'} onClose={() => { setCreateOpen(false); setEditingItem(null); setError(''); }} size="xl" noPadding>
+        <ItemForm initialValues={editingItem} categories={categories} uoms={uoms} suppliers={suppliers} saving={saving} error={error} onSubmit={handleSaveItem} onCancel={() => { setCreateOpen(false); setEditingItem(null); setError(''); }} />
       </Modal>}
 
       {categoryOpen && <Modal title="Manage item categories" onClose={() => { setCategoryOpen(false); setEditingCategoryId(''); setCategoryForm(initialCategoryForm); }}>

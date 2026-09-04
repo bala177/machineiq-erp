@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class ZohoParityMasterData202609040001 implements MigrationInterface {
-  name = 'ZohoParityMasterData202609040001';
+export class ZohoParityMasterData2026090400001 implements MigrationInterface {
+  name = 'ZohoParityMasterData2026090400001';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

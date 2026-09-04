@@ -106,10 +106,12 @@ export default function ProjectsPage() {
           {/* Mobile cards */}
           <div className="space-y-3 sm:hidden">
             {projects.map((project) => (
-              <Link key={project._id} href={`/projects/${project._id}`} className="card-hover block p-4">
+              <article key={project._id} className="card-hover p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-fg">{project.name}</p>
+                    <Link href={`/projects/${project._id}`} className="block truncate text-sm font-semibold text-fg hover:text-brand-600">
+                      {project.name}
+                    </Link>
                     {project.projectNo && (
                       <p className="font-mono text-[10px] text-fg-muted">{project.projectNo}</p>
                     )}
@@ -127,7 +129,7 @@ export default function ProjectsPage() {
                   <StatusBadge status={project.stage} size="sm" />
                   <span className="text-xs text-fg-muted">Due: {formatDate(project.targetDeliveryDate)}</span>
                 </div>
-              </Link>
+              </article>
             ))}
           </div>
 

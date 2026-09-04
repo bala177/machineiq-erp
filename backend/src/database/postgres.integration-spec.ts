@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { Release1PostgresFoundation2026082800001 } from './migrations/202608280001-Release1PostgresFoundation';
 import { ImmutableAuditLogs2026090100001 } from './migrations/2026090100001-ImmutableAuditLogs';
 import { DepartmentManagementPermission2026090100002 } from './migrations/2026090100002-DepartmentManagementPermission';
+import { ZohoParityMasterData2026090400001 } from './migrations/202609040001-ZohoParityMasterData';
 
 const testDatabaseUrl = process.env.POSTGRES_TEST_DATABASE_URL;
 
@@ -17,7 +18,7 @@ describe('Release 1 PostgreSQL migration', () => {
     synchronize: false,
     migrationsRun: false,
     entities: [join(__dirname, 'entities', '*.entity.{ts,js}')],
-    migrations: [Release1PostgresFoundation2026082800001, ImmutableAuditLogs2026090100001, DepartmentManagementPermission2026090100002],
+    migrations: [Release1PostgresFoundation2026082800001, ImmutableAuditLogs2026090100001, DepartmentManagementPermission2026090100002, ZohoParityMasterData2026090400001],
   });
 
   beforeAll(async () => {
@@ -46,6 +47,7 @@ describe('Release 1 PostgreSQL migration', () => {
   });
 
   it('reverts cleanly and can apply the baseline again', async () => {
+    await dataSource.undoLastMigration({ transaction: 'all' });
     await dataSource.undoLastMigration({ transaction: 'all' });
     await dataSource.undoLastMigration({ transaction: 'all' });
     await dataSource.undoLastMigration({ transaction: 'all' });
