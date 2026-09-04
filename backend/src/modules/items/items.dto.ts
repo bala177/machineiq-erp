@@ -32,7 +32,7 @@ export class UpdateUomDto {
 }
 
 export class CreateItemDto {
-  @Transform(upper) @IsString() @IsNotEmpty() @MaxLength(50) code: string;
+  @Transform(upper) @IsOptional() @IsString() @IsNotEmpty() @MaxLength(50) code?: string;
   @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(200) name: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(1000) description?: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(120) manufacturerPartNumber?: string;

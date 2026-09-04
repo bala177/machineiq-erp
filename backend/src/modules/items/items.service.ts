@@ -3,6 +3,7 @@ import { InjectPgModel } from '../../database/postgres-document.module';
 import { Model } from '../../database/postgres-document.model';
 import { DatabaseId } from '../../database/postgres-document.types';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { SequencesService } from '../sequences/sequences.service';
 import { Item, ItemCategory, Uom } from '../../schemas/item.schema';
 import { CreateItemCategoryDto, CreateItemDto, CreateUomDto, UpdateItemCategoryDto, UpdateItemDto, UpdateUomDto } from './items.dto';
 
@@ -13,13 +14,15 @@ export class ItemsService {
     @InjectPgModel(ItemCategory.name) private categoryModel: Model<ItemCategory>,
     @InjectPgModel(Uom.name) private uomModel: Model<Uom>,
     private auditLogService: AuditLogService,
+    private sequencesService: SequencesService,
   ) {}
 
   async createItem(dto: CreateItemDto, userId: string) {
-    await this.assertCodeAvailable(this.itemModel, dto.code, 'Item');
+    const code = dto.code || await this.generateCode();
+    await this.assertCodeAvailable(this.itemModel, code, 'Item');
     await this.requireActive(this.categoryModel, dto.categoryId, 'Item category');
     await this.requireActive(this.uomModel, dto.uomId, 'UOM');
-    const item = await this.itemModel.create(dto);
+    const item = await this.itemModel.create({ ...dto, code });
     await this.auditLogService.log({ action: 'create', entityType: 'Item', entityId: item._id, performedBy: userId, newValues: item.toObject() });
     return item.populate([{ path: 'categoryId', select: 'code name' }, { path: 'uomId', select: 'code name' }]);
   }
@@ -124,6 +127,11 @@ export class ItemsService {
 
   private async assertCodeAvailable(model: Model<any>, code: string, label: string) {
     if (await model.exists({ code: code.toUpperCase(), deletedAt: null })) throw new ConflictException(`${label} code already exists`);
+  }
+
+  private async generateCode() {
+    const value = await this.sequencesService.next('item');
+    return `ITM-${String(value).padStart(5, '0')}`;
   }
 
   private async requireActive(model: Model<any>, id: string, label: string) {

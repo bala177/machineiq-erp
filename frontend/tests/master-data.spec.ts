@@ -4,36 +4,92 @@ import { installApiMocks, setAuthenticatedSession } from './fixtures/test-helper
 const category = { _id: '11111111-1111-4111-8111-111111111111', code: 'ELEC', name: 'Electrical' };
 const uom = { _id: '22222222-2222-4222-8222-222222222222', code: 'EA', name: 'Each', conversionFactor: 1 };
 const supplier = {
-  _id: '33333333-3333-4333-8333-333333333333', code: 'SUP-00001', name: 'Precision Drives',
-  contactPerson: 'Priya Shah', email: 'priya@example.com', phone: '+91 90000 00000', address: 'Pune',
-  category: 'Motion Control', paymentTerms: 'Net 30', taxRegistrationNumber: 'GST-1', currencyCode: 'INR',
+  _id: '33333333-3333-4333-8333-333333333333',
+  code: 'SUP-00001',
+  name: 'Precision Drives',
+  contactPerson: 'Priya Shah',
+  email: 'priya@example.com',
+  phone: '+91 90000 00000',
+  address: 'Pune',
+  category: 'Motion Control',
+  paymentTerms: 'Net 30',
+  taxRegistrationNumber: 'GST-1',
+  currencyCode: 'INR',
   bankDetails: { bankName: 'Industry Bank', accountName: 'Precision Drives', accountNumber: '1234', ifscSwiftCode: 'TEST0001' },
-  qualificationStatus: 'qualified', defaultLeadTimeDays: 21, isActive: true,
+  qualificationStatus: 'qualified',
+  defaultLeadTimeDays: 21,
+  isActive: true,
 };
 
 async function installMasterDataMocks(page: import('@playwright/test').Page) {
   await installApiMocks(page);
-  const customers = [{
-    _id: 'customer-1', code: 'CUS-00001', name: 'Atlas Automation', displayName: 'Atlas Automation',
-    accountType: 'active', customerType: 'business', companySize: '51-200', industry: 'Industrial Automation',
-    contactPerson: '', email: 'marta@atlas.example', phone: '+498912345678', mobile: '',
-    country: 'Germany', city: 'Munich', stateProvince: 'Bavaria', postalCode: '80331', address: '1 Factory Road',
-    secondaryContactName: '', secondaryContactEmail: 'legacy-invalid-email', secondaryContactPhone: '', shippingAddress: '',
-    shippingCity: '', shippingStateProvince: '', shippingPostalCode: '', shippingCountry: '', website: '',
-    designation: '', department: '', vatNumber: '', taxTreatment: '', placeOfSupply: '', registrationNumber: '',
-    paymentTerms: '', currencyCode: 'EUR', creditLimit: '', priceList: '', deliveryTerms: '', notes: null,
-  }];
+  const customers = [
+    {
+      _id: 'customer-1',
+      code: 'CUS-00001',
+      name: 'Atlas Automation',
+      displayName: 'Atlas Automation',
+      accountType: 'active',
+      customerType: 'business',
+      companySize: '51-200',
+      industry: 'Industrial Automation',
+      contactPerson: '',
+      email: 'marta@atlas.example',
+      phone: '+498912345678',
+      mobile: '',
+      country: 'Germany',
+      city: 'Munich',
+      stateProvince: 'Bavaria',
+      postalCode: '80331',
+      address: '1 Factory Road',
+      secondaryContactName: '',
+      secondaryContactEmail: 'legacy-invalid-email',
+      secondaryContactPhone: '',
+      shippingAddress: '',
+      shippingCity: '',
+      shippingStateProvince: '',
+      shippingPostalCode: '',
+      shippingCountry: '',
+      website: '',
+      designation: '',
+      department: '',
+      vatNumber: '',
+      taxTreatment: '',
+      placeOfSupply: '',
+      registrationNumber: '',
+      paymentTerms: '',
+      currencyCode: 'EUR',
+      creditLimit: '',
+      priceList: '',
+      deliveryTerms: '',
+      notes: null,
+    },
+  ];
   const suppliers = [{ ...supplier, bankDetails: { ...supplier.bankDetails } }];
-  const items = [{
-    _id: '44444444-4444-4444-8444-444444444444', code: 'DRV-001', name: 'Servo Drive', description: 'Axis drive',
-    categoryId: category, uomId: uom, itemType: 'component', standardCost: 1200, sellingPrice: 1600,
-    hsnSac: '8504', taxPercent: 18, isStockItem: true, reorderLevel: 2, defaultSupplierId: supplier,
-    leadTimeDays: 21, isActive: true,
-  }];
+  const items = [
+    {
+      _id: '44444444-4444-4444-8444-444444444444',
+      code: 'DRV-001',
+      name: 'Servo Drive',
+      description: 'Axis drive',
+      categoryId: category,
+      uomId: uom,
+      itemType: 'component',
+      standardCost: 1200,
+      sellingPrice: 1600,
+      hsnSac: '8504',
+      taxPercent: 18,
+      isStockItem: true,
+      reorderLevel: 2,
+      defaultSupplierId: supplier,
+      leadTimeDays: 21,
+      isActive: true,
+    },
+  ];
 
   await page.route('http://localhost:4051/api/items', async (route) => {
     if (route.request().method() === 'POST') {
-      const created = { _id: 'item-new', isActive: true, ...route.request().postDataJSON(), categoryId: category, uomId: uom };
+      const created = { _id: 'item-new', code: 'ITM-00002', isActive: true, ...route.request().postDataJSON(), categoryId: category, uomId: uom };
       items.push(created);
       await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(created) });
       return;
@@ -129,7 +185,12 @@ test('completes item fields and supports edit and deactivation', async ({ page }
   await page.getByRole('button', { name: 'Cancel' }).click();
   await page.locator('button[title="Deactivate item"]:visible').first().click();
   await expect(page.locator('span.badge-gray:visible').filter({ hasText: /^Inactive$/ })).toBeVisible();
-  await expect(page.locator('div').filter({ hasText: /^Active items0$/ }).first()).toBeVisible();
+  await expect(
+    page
+      .locator('div')
+      .filter({ hasText: /^Active items0$/ })
+      .first(),
+  ).toBeVisible();
 });
 
 test('validates and creates a new item through the tabbed form', async ({ page }) => {
@@ -142,9 +203,9 @@ test('validates and creates a new item through the tabbed form', async ({ page }
   await page.getByRole('button', { name: 'Create item' }).click();
   await expect(page.getByText('Item name is required.')).toBeVisible();
   await page.getByLabel('Item name').fill('Safety relay');
-  await page.getByLabel(/Item code \/ SKU/).fill('REL-SAFE-01');
-  await page.locator('label').filter({ hasText: /^Category/ }).locator('select').selectOption(category._id);
-  await page.locator('label').filter({ hasText: /^Base unit/ }).locator('select').selectOption(uom._id);
+  await expect(page.getByLabel(/Item code \/ SKU/)).toHaveAttribute('placeholder', 'Assigned automatically');
+  await expect(page.locator('label').filter({ hasText: /^Category/ }).locator('select')).toHaveValue(category._id);
+  await expect(page.locator('label').filter({ hasText: /^Base unit/ }).locator('select')).toHaveValue(uom._id);
 
   await page.getByRole('button', { name: 'Sales & Purchase' }).click();
   await page.getByLabel('Selling price').fill('850');
@@ -152,12 +213,12 @@ test('validates and creates a new item through the tabbed form', async ({ page }
   await page.getByRole('button', { name: 'Create item' }).click();
 
   await expect(page.locator('p:visible').filter({ hasText: /^Safety relay$/ })).toBeVisible();
-  await expect(page.locator('p:visible').filter({ hasText: /^REL-SAFE-01$/ })).toBeVisible();
+  await expect(page.locator('p:visible').filter({ hasText: /^ITM-00002$/ })).toBeVisible();
 });
 
 test('guides missing item references into the full item form', async ({ page }) => {
-  let categories: typeof category[] = [];
-  let uoms: typeof uom[] = [];
+  let categories: (typeof category)[] = [];
+  let uoms: (typeof uom)[] = [];
   await page.route('http://localhost:4051/api/items/categories', async (route) => {
     if (route.request().method() === 'POST') categories = [{ ...category, ...route.request().postDataJSON() }];
     await route.fulfill({ status: route.request().method() === 'POST' ? 201 : 200, contentType: 'application/json', body: JSON.stringify(route.request().method() === 'POST' ? categories[0] : categories) });
@@ -199,7 +260,12 @@ test('persists full supplier details and supports edit and deactivation', async 
   await expect(page.getByText('30 days', { exact: true }).first()).toBeVisible();
   await page.locator('button[title="Deactivate supplier"]:visible').first().click();
   await expect(page.locator('span.badge-gray:visible').filter({ hasText: /^Inactive$/ })).toBeVisible();
-  await expect(page.locator('div').filter({ hasText: /^Active suppliers0$/ }).first()).toBeVisible();
+  await expect(
+    page
+      .locator('div')
+      .filter({ hasText: /^Active suppliers0$/ })
+      .first(),
+  ).toBeVisible();
 });
 
 test('guides supplier creation and restores a draft from every section', async ({ page }) => {

@@ -20,6 +20,13 @@ describe('CreateItemDto', () => {
     expect(dto.code).toBe('SRV-MTR-2KW');
   });
 
+  it('allows the service to assign an item code', async () => {
+    const { code: _code, ...payload } = validPayload;
+    const dto = plainToInstance(CreateItemDto, payload);
+    expect(await validate(dto)).toHaveLength(0);
+    expect(dto.code).toBeUndefined();
+  });
+
   it('rejects negative costs', async () => {
     const dto = plainToInstance(CreateItemDto, { ...validPayload, standardCost: -1 });
     const errors = await validate(dto);

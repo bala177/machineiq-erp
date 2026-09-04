@@ -11,7 +11,7 @@ type ItemTab = 'Overview' | 'Sales & Purchase' | 'Inventory & Tax';
 const TABS: ItemTab[] = ['Overview', 'Sales & Purchase', 'Inventory & Tax'];
 
 export type ItemFormPayload = {
-  code: string;
+  code?: string;
   name: string;
   description: string;
   manufacturerPartNumber: string;
@@ -44,7 +44,8 @@ type ItemInitialValues = Partial<Omit<ItemFormPayload, 'standardCost' | 'selling
   defaultSupplierId?: Reference | string | null;
 };
 
-type ItemFormValues = Omit<ItemFormPayload, 'standardCost' | 'sellingPrice' | 'taxPercent' | 'reorderLevel' | 'leadTimeDays'> & {
+type ItemFormValues = Omit<ItemFormPayload, 'code' | 'standardCost' | 'sellingPrice' | 'taxPercent' | 'reorderLevel' | 'leadTimeDays'> & {
+  code: string;
   standardCost: string;
   sellingPrice: string;
   taxPercent: string;
@@ -65,8 +66,12 @@ function referenceId(value: Reference | string | null | undefined) {
   return typeof value === 'string' ? value : value?._id || '';
 }
 
-function normalize(values?: ItemInitialValues): ItemFormValues {
-  if (!values) return { ...emptyItem };
+function normalize(values: ItemInitialValues | undefined, categories: Reference[] = [], uoms: Reference[] = []): ItemFormValues {
+  if (!values) return {
+    ...emptyItem,
+    categoryId: categories.length === 1 ? categories[0]._id : '',
+    uomId: uoms.length === 1 ? uoms[0]._id : '',
+  };
   return {
     ...emptyItem,
     ...values,
@@ -84,7 +89,6 @@ function normalize(values?: ItemInitialValues): ItemFormValues {
 function validate(values: ItemFormValues): FieldErrors {
   const errors: FieldErrors = {};
   if (!values.name.trim()) errors.name = 'Item name is required.';
-  if (!values.code.trim()) errors.code = 'Item code / SKU is required.';
   if (!values.categoryId) errors.categoryId = 'Select an item category.';
   if (!values.uomId) errors.uomId = 'Select the unit used to measure this item.';
   if (!values.salesEnabled && !values.purchaseEnabled) errors.availability = 'Enable sales information, purchase information, or both.';
@@ -104,7 +108,7 @@ function validate(values: ItemFormValues): FieldErrors {
 function prepare(values: ItemFormValues): ItemFormPayload {
   return {
     ...values,
-    code: values.code.trim().toUpperCase(),
+    code: values.code.trim().toUpperCase() || undefined,
     name: values.name.trim(),
     description: values.description.trim(),
     manufacturerPartNumber: values.manufacturerPartNumber.trim(),
@@ -143,12 +147,12 @@ type Props = {
 export function ItemForm({ initialValues, categories, uoms, suppliers, saving = false, error, onSubmit, onCancel }: Props) {
   const isCreate = !initialValues;
   const [activeTab, setActiveTab] = useState<ItemTab>('Overview');
-  const [form, setForm] = useState<ItemFormValues>(() => normalize(initialValues || undefined));
+  const [form, setForm] = useState<ItemFormValues>(() => normalize(initialValues || undefined, categories, uoms));
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const isService = form.itemType === 'service';
 
   useEffect(() => {
-    setForm(normalize(initialValues || undefined));
+    setForm(normalize(initialValues || undefined, categories, uoms));
     setActiveTab('Overview');
     setFieldErrors({});
   }, [initialValues]);
@@ -166,7 +170,7 @@ export function ItemForm({ initialValues, categories, uoms, suppliers, saving = 
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       const fields = Object.keys(errors);
-      if (fields.some((field) => ['name', 'code', 'categoryId', 'uomId'].includes(field))) setActiveTab('Overview');
+      if (fields.some((field) => ['name', 'categoryId', 'uomId'].includes(field))) setActiveTab('Overview');
       else if (fields.some((field) => ['availability', 'sellingPrice', 'standardCost', 'leadTimeDays'].includes(field))) setActiveTab('Sales & Purchase');
       else setActiveTab('Inventory & Tax');
       return;
@@ -192,7 +196,7 @@ export function ItemForm({ initialValues, categories, uoms, suppliers, saving = 
           <p className="mt-1.5 text-xs text-fg-muted">Goods are physical items. Services represent labour, expertise, or other non-physical work.</p>
         </fieldset>
         <label className="md:col-span-2"><FieldLabel required>Item name</FieldLabel><input className={fc('name')} autoFocus value={form.name} onChange={(event) => set('name', event.target.value)} placeholder={isService ? 'e.g. Commissioning support' : 'e.g. Servo drive 2 kW'} />{err('name')}</label>
-        <label><FieldLabel required tooltip="A unique internal identifier, equivalent to an SKU.">Item code / SKU</FieldLabel><input className={fc('code')} disabled={!isCreate} value={form.code} onChange={(event) => set('code', event.target.value.toUpperCase())} placeholder="e.g. DRV-002KW" />{err('code')}</label>
+        <label><FieldLabel tooltip="Leave blank to assign the next MachineIQ item number.">Item code / SKU</FieldLabel><input className={fc('code')} disabled={!isCreate} value={form.code} onChange={(event) => set('code', event.target.value.toUpperCase())} placeholder="Assigned automatically" /><p className="mt-1 text-xs text-fg-muted">Optional. Enter your own SKU only when one already exists.</p>{err('code')}</label>
         <label><FieldLabel required tooltip="How this item is grouped for search, reporting, and procurement.">Category</FieldLabel><select className={fc('categoryId')} value={form.categoryId} onChange={(event) => set('categoryId', event.target.value)}><option value="">Select category</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.code} — {category.name}</option>)}</select>{err('categoryId')}</label>
         <label><FieldLabel required tooltip="Unit of measure: how the quantity is counted or measured.">Base unit</FieldLabel><select className={fc('uomId')} value={form.uomId} onChange={(event) => set('uomId', event.target.value)}><option value="">Select unit</option>{uoms.map((uom) => <option key={uom._id} value={uom._id}>{uom.code} — {uom.name}</option>)}</select><p className="mt-1 text-xs text-fg-muted">For example: EA = each, M = metre, KG = kilogram, HR = hour.</p>{err('uomId')}</label>
         {!isService && <label><FieldLabel required tooltip="The item's role in engineering and manufacturing workflows.">Goods classification</FieldLabel><select className="input-field" value={form.itemType} onChange={(event) => set('itemType', event.target.value as ItemType)}><option value="raw">Raw material</option><option value="component">Bought-out component</option><option value="assembly">Manufactured assembly</option></select></label>}
@@ -243,7 +247,7 @@ export function ItemForm({ initialValues, categories, uoms, suppliers, saving = 
     </div>
 
     <div className="flex flex-col gap-3 border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs text-fg-muted">Required: item name, item code, category, and base unit.</p>
+      <p className="text-xs text-fg-muted">Required: item name, category, and base unit.</p>
       <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={onCancel}>Cancel</button><button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : isCreate ? 'Create item' : 'Save changes'}</button></div>
     </div>
   </form>;
