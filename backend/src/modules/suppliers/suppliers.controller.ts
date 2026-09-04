@@ -17,6 +17,9 @@ export class SuppliersController {
   @Get() @Roles(Role.ADMIN, Role.MANAGER, Role.LEADERSHIP)
   findAll(@Query() query: { search?: string; qualificationStatus?: string }) { return this.suppliersService.findAll(query); }
 
+  @Get(':id') @Roles(Role.ADMIN, Role.MANAGER, Role.LEADERSHIP)
+  findOne(@Param('id') id: string) { return this.suppliersService.findById(id); }
+
   @Post() @Roles(Role.ADMIN, Role.MANAGER)
   @RequirePermissions('suppliers.manage')
   create(@Body() dto: CreateSupplierDto, @CurrentUser('userId') userId: string) { return this.suppliersService.create(dto, userId); }

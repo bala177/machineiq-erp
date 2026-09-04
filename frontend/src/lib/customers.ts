@@ -1,3 +1,5 @@
+import { CountryCode, getCountries, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
+
 export const ACCOUNT_TYPES = ['prospect', 'active', 'inactive', 'churned'] as const;
 export type CustomerAccountType = (typeof ACCOUNT_TYPES)[number];
 
@@ -6,6 +8,22 @@ export type CustomerType = (typeof CUSTOMER_TYPES)[number];
 
 export const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-1000', '1001+'] as const;
 export type CustomerCompanySize = (typeof COMPANY_SIZES)[number] | '';
+
+export const INDUSTRY_OPTIONS = [
+  'Automotive', 'Consumer Goods', 'Electrical Equipment', 'Electronics', 'Food & Beverage',
+  'Industrial Automation', 'Machinery Manufacturing', 'Medical Devices', 'Metal Fabrication',
+  'Packaging', 'Pharmaceuticals', 'Plastics & Rubber', 'Process Industries', 'Renewable Energy',
+  'Robotics', 'Semiconductors', 'Textiles', 'Warehousing & Logistics',
+] as const;
+
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+export const COUNTRY_OPTIONS = getCountries()
+  .map((code) => ({ code, name: regionNames.of(code) || code }))
+  .sort((left, right) => left.name.localeCompare(right.name));
+
+export function countryCodeForName(name: string): CountryCode | undefined {
+  return COUNTRY_OPTIONS.find((country) => country.name.toLowerCase() === name.trim().toLowerCase())?.code;
+}
 
 export const ACCOUNT_TYPE_LABELS: Record<CustomerAccountType, string> = {
   prospect: 'Prospect',
@@ -118,16 +136,26 @@ function normalizeWebsite(value: string) {
   return `https://${value}`;
 }
 
+function normalizePhone(value: string, countryName: string) {
+  if (!value.trim()) return '';
+  return parsePhoneNumberFromString(value, countryCodeForName(countryName))?.number || value.trim();
+}
+
 export function normalizeCustomerFormValues(values?: Partial<CustomerFormValues>): CustomerFormValues {
   const normalized = {
     ...emptyCustomerForm,
     ...values,
-  };
-  return {
-    ...normalized,
-    creditLimit: normalized.creditLimit === undefined || normalized.creditLimit === null ? '' : String(normalized.creditLimit),
-    currencyCode: normalized.currencyCode || 'INR',
-  };
+  } as CustomerFormValues;
+
+  for (const field of Object.keys(emptyCustomerForm) as (keyof CustomerFormValues)[]) {
+    if (normalized[field] === undefined || normalized[field] === null) {
+      (normalized as Record<keyof CustomerFormValues, string>)[field] = emptyCustomerForm[field];
+    }
+  }
+
+  normalized.creditLimit = String(normalized.creditLimit);
+  normalized.currencyCode = normalized.currencyCode || 'INR';
+  return normalized;
 }
 
 export function prepareCustomerPayload(values: CustomerFormValues): Partial<CustomerFormValues> {
@@ -146,6 +174,12 @@ export function prepareCustomerPayload(values: CustomerFormValues): Partial<Cust
   if (result.currencyCode) {
     result.currencyCode = result.currencyCode.toUpperCase();
   }
+  for (const field of ['email', 'secondaryContactEmail'] as const) {
+    if (result[field]) result[field] = result[field]!.toLowerCase();
+  }
+  for (const field of ['phone', 'mobile', 'secondaryContactPhone'] as const) {
+    if (result[field]) result[field] = normalizePhone(result[field]!, result.country || values.country);
+  }
   if (result.creditLimit) {
     (result as any).creditLimit = Number(result.creditLimit);
   }
@@ -153,7 +187,10 @@ export function prepareCustomerPayload(values: CustomerFormValues): Partial<Cust
   return result;
 }
 
-export function validateCustomerForm(values: CustomerFormValues): CustomerFieldErrors {
+export function validateCustomerForm(
+  values: CustomerFormValues,
+  { requireComplete = true }: { requireComplete?: boolean } = {},
+): CustomerFieldErrors {
   const errors: CustomerFieldErrors = {};
   const name = values.name.trim();
   const email = values.email.trim();
@@ -167,19 +204,19 @@ export function validateCustomerForm(values: CustomerFormValues): CustomerFieldE
     errors.name = 'Customer name should be at least 2 characters.';
   }
 
-  if (!values.contactPerson.trim()) {
+  if (requireComplete && !values.contactPerson.trim()) {
     errors.contactPerson = 'Add a primary contact name.';
   }
 
-  if (!values.industry.trim()) {
+  if (requireComplete && !values.industry.trim()) {
     errors.industry = 'Industry helps sales and project teams.';
   }
 
-  if (!values.country.trim()) {
+  if (requireComplete && !values.country.trim()) {
     errors.country = 'Country is required.';
   }
 
-  if (!email && !phone && !mobile) {
+  if (requireComplete && !email && !phone && !mobile) {
     errors.email = 'Provide at least one contact method.';
     errors.phone = 'Provide at least one contact method.';
     errors.mobile = 'Provide at least one contact method.';
@@ -189,18 +226,12 @@ export function validateCustomerForm(values: CustomerFormValues): CustomerFieldE
     errors.email = 'Enter a valid email address.';
   }
 
-  if (phone) {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 7) {
-      errors.phone = 'Enter a valid phone number.';
-    }
+  if (phone && !isValidPhoneNumber(phone, countryCodeForName(values.country))) {
+    errors.phone = 'Enter a valid international phone number.';
   }
 
-  if (mobile) {
-    const digits = mobile.replace(/\D/g, '');
-    if (digits.length < 7) {
-      errors.mobile = 'Enter a valid mobile number.';
-    }
+  if (mobile && !isValidPhoneNumber(mobile, countryCodeForName(values.country))) {
+    errors.mobile = 'Enter a valid international mobile number.';
   }
 
   if (values.creditLimit.trim() && Number(values.creditLimit) < 0) {
@@ -209,6 +240,10 @@ export function validateCustomerForm(values: CustomerFormValues): CustomerFieldE
 
   if (secondaryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(secondaryEmail)) {
     errors.secondaryContactEmail = 'Enter a valid email address.';
+  }
+
+  if (values.secondaryContactPhone.trim() && !isValidPhoneNumber(values.secondaryContactPhone, countryCodeForName(values.country))) {
+    errors.secondaryContactPhone = 'Enter a valid international phone number.';
   }
 
   if (values.website.trim()) {

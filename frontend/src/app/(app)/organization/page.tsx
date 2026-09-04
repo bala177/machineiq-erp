@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { Building2, Check, Circle, Factory, MapPin, Plus, Save, Warehouse } from 'lucide-react';
+import { Building2, Check, Circle, Factory, MapPin, Pencil, Plus, Save, Trash2, Warehouse } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Modal } from '@/components/ui/modal';
@@ -11,23 +11,24 @@ import { DepartmentManagement } from '@/components/organization/department-manag
 type Company = {
   _id: string; code: string; name: string; email?: string; phone?: string; website?: string;
   taxRegistrationNumber?: string; registrationNumber?: string; baseCurrency: string; timezone: string;
+  industry?: string; fiscalYearStartMonth?: string; dateFormat?: string; languageCode?: string;
   address?: string; city?: string; stateProvince?: string; postalCode?: string; country?: string;
 };
-type Branch = { _id: string; code: string; name: string; companyId: Company; city?: string; stateProvince?: string; taxRegistrationNumber?: string; isActive: boolean };
-type Location = { _id: string; code: string; name: string; branchId: Branch; type: 'office' | 'warehouse' | 'factory' | 'service'; city?: string; stateProvince?: string; isActive: boolean };
+type Branch = { _id: string; code: string; name: string; companyId: Company; email?: string; phone?: string; address?: string; city?: string; stateProvince?: string; postalCode?: string; country?: string; taxRegistrationNumber?: string; isActive: boolean };
+type Location = { _id: string; code: string; name: string; branchId: Branch; type: 'office' | 'warehouse' | 'factory' | 'service'; address?: string; city?: string; stateProvince?: string; postalCode?: string; country?: string; isActive: boolean };
 type OrganizationSection = 'company' | 'branches' | 'locations' | 'departments';
 const organizationSections: OrganizationSection[] = ['company', 'branches', 'locations', 'departments'];
 
-const emptyCompany = { code: 'MIQ', name: '', email: '', phone: '', website: '', taxRegistrationNumber: '', registrationNumber: '', baseCurrency: 'INR', timezone: 'Asia/Kolkata', address: '', city: '', stateProvince: '', postalCode: '', country: 'India' };
+const emptyCompany = { code: 'MIQ', name: '', email: '', phone: '', website: '', industry: '', taxRegistrationNumber: '', registrationNumber: '', baseCurrency: 'INR', timezone: 'Asia/Kolkata', fiscalYearStartMonth: 'april', dateFormat: 'dd/MM/yyyy', languageCode: 'en', address: '', city: '', stateProvince: '', postalCode: '', country: 'India' };
 const emptyBranch = { code: '', name: '', taxRegistrationNumber: '', email: '', phone: '', address: '', city: '', stateProvince: '', postalCode: '', country: 'India' };
 const emptyLocation = { code: '', name: '', branchId: '', type: 'office', address: '', city: '', stateProvince: '', postalCode: '', country: 'India' };
 
 function companyToForm(company: Company | null) {
   if (!company) return emptyCompany;
   return {
-    code: company.code, name: company.name, email: company.email || '', phone: company.phone || '', website: company.website || '',
+    code: company.code, name: company.name, email: company.email || '', phone: company.phone || '', website: company.website || '', industry: company.industry || '',
     taxRegistrationNumber: company.taxRegistrationNumber || '', registrationNumber: company.registrationNumber || '',
-    baseCurrency: company.baseCurrency, timezone: company.timezone, address: company.address || '', city: company.city || '',
+    baseCurrency: company.baseCurrency, timezone: company.timezone, fiscalYearStartMonth: company.fiscalYearStartMonth || 'april', dateFormat: company.dateFormat || 'dd/MM/yyyy', languageCode: company.languageCode || 'en', address: company.address || '', city: company.city || '',
     stateProvince: company.stateProvince || '', postalCode: company.postalCode || '', country: company.country || '',
   };
 }
@@ -53,6 +54,8 @@ export default function OrganizationPage() {
   const [saving, setSaving] = useState(false);
   const [branchOpen, setBranchOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -92,14 +95,14 @@ export default function OrganizationPage() {
 
   async function createBranch(event: FormEvent) {
     event.preventDefault(); if (!company) return; setSaving(true); setError('');
-    try { await api.post('/organization/branches', { ...branchForm, companyId: company._id }); setBranchOpen(false); setBranchForm(emptyBranch); await load(); }
+    try { if (editingBranch) await api.patch(`/organization/branches/${editingBranch._id}`, branchForm); else await api.post('/organization/branches', { ...branchForm, companyId: company._id }); setBranchOpen(false); setEditingBranch(null); setBranchForm(emptyBranch); await load(); }
     catch (err: any) { setError(err.message || 'Failed to create branch'); }
     finally { setSaving(false); }
   }
 
   async function createLocation(event: FormEvent) {
     event.preventDefault(); setSaving(true); setError('');
-    try { await api.post('/organization/locations', locationForm); setLocationOpen(false); setLocationForm(emptyLocation); await load(); }
+    try { if (editingLocation) await api.patch(`/organization/locations/${editingLocation._id}`, locationForm); else await api.post('/organization/locations', locationForm); setLocationOpen(false); setEditingLocation(null); setLocationForm(emptyLocation); await load(); }
     catch (err: any) { setError(err.message || 'Failed to create location'); }
     finally { setSaving(false); }
   }
@@ -110,6 +113,8 @@ export default function OrganizationPage() {
       return;
     }
     setMessage('');
+    setEditingBranch(null);
+    setBranchForm(emptyBranch);
     setBranchOpen(true);
   }
 
@@ -119,7 +124,27 @@ export default function OrganizationPage() {
       return;
     }
     setMessage('');
+    setEditingLocation(null);
+    setLocationForm(emptyLocation);
     setLocationOpen(true);
+  }
+
+  function editBranch(branch: Branch) {
+    setEditingBranch(branch);
+    setBranchForm({ code: branch.code, name: branch.name, taxRegistrationNumber: branch.taxRegistrationNumber || '', email: branch.email || '', phone: branch.phone || '', address: branch.address || '', city: branch.city || '', stateProvince: branch.stateProvince || '', postalCode: branch.postalCode || '', country: branch.country || 'India' });
+    setBranchOpen(true);
+  }
+
+  function editLocation(location: Location) {
+    setEditingLocation(location);
+    setLocationForm({ code: location.code, name: location.name, branchId: location.branchId?._id || '', type: location.type, address: location.address || '', city: location.city || '', stateProvince: location.stateProvince || '', postalCode: location.postalCode || '', country: location.country || 'India' });
+    setLocationOpen(true);
+  }
+
+  async function deleteOrganizationRecord(kind: 'branches' | 'locations', id: string, name: string) {
+    if (!window.confirm(`Remove ${name}? This keeps its audit history.`)) return;
+    try { await api.delete(`/organization/${kind}/${id}`); await load(); }
+    catch (err: any) { setError(err.message || `Failed to remove ${kind === 'branches' ? 'branch' : 'location'}`); }
   }
 
   if (loading) return <LoadingSpinner />;
@@ -149,12 +174,15 @@ export default function OrganizationPage() {
           <Field label="Email"><input type="email" className="input-field" value={companyForm.email} onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })} /></Field>
           <Field label="Phone"><input className="input-field" value={companyForm.phone} onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} /></Field>
           <Field label="Website"><input type="url" className="input-field" placeholder="https://example.com" value={companyForm.website} onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })} /></Field>
-          <div className="hidden sm:block" />
+          <Field label="Industry"><input className="input-field" placeholder="Machinery manufacturing" value={companyForm.industry} onChange={(e) => setCompanyForm({ ...companyForm, industry: e.target.value })} /></Field>
           <SectionTitle title="Registration and regional settings" description="Used by commercial documents and ERP transactions." />
           <Field label="Tax registration"><input className="input-field" value={companyForm.taxRegistrationNumber} onChange={(e) => setCompanyForm({ ...companyForm, taxRegistrationNumber: e.target.value })} /></Field>
           <Field label="Company registration"><input className="input-field" value={companyForm.registrationNumber} onChange={(e) => setCompanyForm({ ...companyForm, registrationNumber: e.target.value })} /></Field>
           <Field label="Base currency"><input required className="input-field" value={companyForm.baseCurrency} onChange={(e) => setCompanyForm({ ...companyForm, baseCurrency: e.target.value.toUpperCase() })} /></Field>
           <Field label="Timezone"><input required className="input-field" value={companyForm.timezone} onChange={(e) => setCompanyForm({ ...companyForm, timezone: e.target.value })} /></Field>
+          <Field label="Fiscal year starts"><select className="input-field capitalize" value={companyForm.fiscalYearStartMonth} onChange={(e) => setCompanyForm({ ...companyForm, fiscalYearStartMonth: e.target.value })}>{['january','february','march','april','may','june','july','august','september','october','november','december'].map(month => <option key={month} value={month}>{month}</option>)}</select></Field>
+          <Field label="Date format"><select className="input-field" value={companyForm.dateFormat} onChange={(e) => setCompanyForm({ ...companyForm, dateFormat: e.target.value })}><option value="dd/MM/yyyy">DD/MM/YYYY</option><option value="MM/dd/yyyy">MM/DD/YYYY</option><option value="yyyy-MM-dd">YYYY-MM-DD</option><option value="dd MMM yyyy">DD MMM YYYY</option></select></Field>
+          <Field label="Language"><select className="input-field" value={companyForm.languageCode} onChange={(e) => setCompanyForm({ ...companyForm, languageCode: e.target.value })}><option value="en">English</option><option value="de">German</option><option value="fr">French</option><option value="es">Spanish</option><option value="it">Italian</option><option value="pt">Portuguese</option></select></Field>
           <SectionTitle title="Registered address" description="Legal address for company records." />
           <Field label="Address"><input className="input-field" value={companyForm.address} onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} /></Field>
           <Field label="City"><input className="input-field" value={companyForm.city} onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} /></Field>
@@ -166,8 +194,8 @@ export default function OrganizationPage() {
       </form>
 
       <div id={activeSection === 'branches' ? 'branches-panel' : 'locations-panel'} role="tabpanel" className={activeSection === 'branches' ? 'space-y-6 [&>section:nth-child(2)]:hidden' : activeSection === 'locations' ? 'space-y-6 [&>section:first-child]:hidden' : 'hidden'}>
-        <section className="card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="font-semibold text-fg">Branches</h2><p className="text-sm text-fg-muted">{branches.length ? `${branches.length} operating entities` : 'Create after the company profile'}</p></div><button className="btn-secondary" onClick={openBranch}><Plus className="h-4 w-4" />Add</button></div><div className="divide-y divide-border">{branches.map((branch) => <div key={branch._id} className="flex items-start gap-3 p-4"><div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300"><Factory className="h-4 w-4" /></div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-fg">{branch.name}</p><span className="badge-blue">{branch.code}</span></div><p className="mt-1 text-sm text-fg-muted">{[branch.city, branch.stateProvince].filter(Boolean).join(', ') || 'Address pending'}</p></div></div>)}</div></section>
-        <section className="card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="font-semibold text-fg">Locations</h2><p className="text-sm text-fg-muted">{locations.length ? `${locations.length} physical locations` : 'Create after the first branch'}</p></div><button className="btn-secondary" onClick={openLocation}><Plus className="h-4 w-4" />Add</button></div><div className="divide-y divide-border">{locations.map((location) => <div key={location._id} className="flex items-start gap-3 p-4"><div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">{location.type === 'warehouse' ? <Warehouse className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-fg">{location.name}</p><span className="badge-gray capitalize">{location.type}</span></div><p className="mt-1 text-sm text-fg-muted">{location.branchId?.name} · {location.code}</p></div></div>)}</div></section>
+        <section className="card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="font-semibold text-fg">Branches</h2><p className="text-sm text-fg-muted">{branches.length ? `${branches.length} operating entities` : 'Create after the company profile'}</p></div><button className="btn-secondary" onClick={openBranch}><Plus className="h-4 w-4" />Add</button></div><div className="divide-y divide-border">{branches.map((branch) => <div key={branch._id} className="flex items-start gap-3 p-4"><div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300"><Factory className="h-4 w-4" /></div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-fg">{branch.name}</p><span className="badge-blue">{branch.code}</span></div><p className="mt-1 text-sm text-fg-muted">{[branch.city, branch.stateProvince].filter(Boolean).join(', ') || 'Address pending'}</p></div><div className="ml-auto flex gap-1"><button className="btn-ghost p-2" title="Edit branch" onClick={() => editBranch(branch)}><Pencil className="h-4 w-4" /></button><button className="btn-ghost p-2 text-red-600" title="Remove branch" onClick={() => void deleteOrganizationRecord('branches', branch._id, branch.name)}><Trash2 className="h-4 w-4" /></button></div></div>)}</div></section>
+        <section className="card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="font-semibold text-fg">Locations</h2><p className="text-sm text-fg-muted">{locations.length ? `${locations.length} physical locations` : 'Create after the first branch'}</p></div><button className="btn-secondary" onClick={openLocation}><Plus className="h-4 w-4" />Add</button></div><div className="divide-y divide-border">{locations.map((location) => <div key={location._id} className="flex items-start gap-3 p-4"><div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">{location.type === 'warehouse' ? <Warehouse className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium text-fg">{location.name}</p><span className="badge-gray capitalize">{location.type}</span></div><p className="mt-1 text-sm text-fg-muted">{location.branchId?.name} · {location.code}</p></div><div className="ml-auto flex gap-1"><button className="btn-ghost p-2" title="Edit location" onClick={() => editLocation(location)}><Pencil className="h-4 w-4" /></button><button className="btn-ghost p-2 text-red-600" title="Remove location" onClick={() => void deleteOrganizationRecord('locations', location._id, location.name)}><Trash2 className="h-4 w-4" /></button></div></div>)}</div></section>
       </div>
     </div>
 

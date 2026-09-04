@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { LocationType } from '../../schemas/organization.schema';
-import { CreateBranchDto, CreateLocationDto } from './organization.dto';
+import { CreateBranchDto, CreateLocationDto, UpdateCompanyDto } from './organization.dto';
 
 describe('Organization DTOs', () => {
   it('normalizes branch codes', async () => {
@@ -22,6 +22,11 @@ describe('Organization DTOs', () => {
     const dto = plainToInstance(CreateLocationDto, {
       code: 'WH-01', name: 'Main warehouse', branchId: '8ac46d21-62eb-4e41-96d6-d2d5e516fdd1', type: LocationType.WAREHOUSE,
     });
+    expect(await validate(dto)).toHaveLength(0);
+  });
+
+  it('accepts fiscal and regional organization settings', async () => {
+    const dto = plainToInstance(UpdateCompanyDto, { code: 'MIQ', name: 'MachineIQ', baseCurrency: 'INR', timezone: 'Asia/Kolkata', industry: 'Machinery Manufacturing', fiscalYearStartMonth: 'april', dateFormat: 'dd/MM/yyyy', languageCode: 'en' });
     expect(await validate(dto)).toHaveLength(0);
   });
 });

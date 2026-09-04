@@ -2,14 +2,19 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { clsx } from 'clsx';
+import { Check, Info, Save, Trash2 } from 'lucide-react';
+import { getCountryCallingCode, parsePhoneNumberFromString } from 'libphonenumber-js';
 import {
   ACCOUNT_TYPES,
   ACCOUNT_TYPE_LABELS,
   COMPANY_SIZES,
+  COUNTRY_OPTIONS,
   CUSTOMER_TYPES,
   CustomerFieldErrors,
   CustomerFormValues,
   emptyCustomerForm,
+  INDUSTRY_OPTIONS,
+  countryCodeForName,
   normalizeCustomerFormValues,
   prepareCustomerPayload,
   validateCustomerForm,
@@ -18,17 +23,79 @@ import {
 export type { CustomerFormValues, CustomerRecord } from '@/lib/customers';
 
 interface CustomerFormProps {
-  initialValues?: Partial<CustomerFormValues>;
+  initialValues?: Partial<CustomerFormValues> & { code?: string };
   submitLabel: string;
   savingLabel: string;
   error?: string;
   saving?: boolean;
-  onSubmit: (values: Partial<CustomerFormValues>) => Promise<void> | void;
+  onSubmit: (values: Partial<CustomerFormValues>) => Promise<boolean | void> | boolean | void;
   onCancel?: () => void;
+  draftStorageKey?: string;
 }
 
 const TABS = ['Overview', 'Contacts', 'Address', 'Commercial'] as const;
 type FormTab = (typeof TABS)[number];
+
+type CustomerDraft = {
+  version: 1;
+  values: CustomerFormValues;
+  activeTab: FormTab;
+  savedAt: string;
+};
+
+const DEFAULT_DRAFT_STORAGE_KEY = 'machineiq:customer-draft:v1';
+
+function hasDraftContent(values: CustomerFormValues) {
+  return (Object.keys(values) as (keyof CustomerFormValues)[])
+    .some((field) => values[field] !== emptyCustomerForm[field]);
+}
+
+function FieldLabel({ children, required, tooltip }: { children: React.ReactNode; required?: boolean; tooltip?: string }) {
+  return <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-fg-secondary">
+    <span>{children}{required && <span className="text-red-500"> *</span>}</span>
+    {tooltip && <span title={tooltip} aria-label={tooltip} className="inline-flex cursor-help text-fg-muted"><Info className="h-3.5 w-3.5" /></span>}
+  </label>;
+}
+
+function PhoneField({ label, field, value, countryName, error, onChange }: {
+  label: string;
+  field: keyof CustomerFormValues;
+  value: string;
+  countryName: string;
+  error?: string;
+  onChange: (field: keyof CustomerFormValues, value: string) => void;
+}) {
+  const parsed = value ? parsePhoneNumberFromString(value) : undefined;
+  const countryCode = parsed?.country || countryCodeForName(countryName) || 'IN';
+  const callingCode = getCountryCallingCode(countryCode);
+  const prefix = `+${callingCode}`;
+  const nationalValue = parsed?.nationalNumber || (value.startsWith(prefix) ? value.slice(prefix.length).trim() : value);
+
+  return <div>
+    <FieldLabel tooltip="Select the dialing code, then enter the national number. It is saved in international E.164 format.">{label}</FieldLabel>
+    <div className="grid grid-cols-[128px_1fr] gap-2">
+      <select
+        className={clsx('input-field px-2', error && 'border-red-300')}
+        value={countryCode}
+        onChange={(event) => onChange(field, nationalValue ? `+${getCountryCallingCode(event.target.value as typeof countryCode)} ${nationalValue}` : '')}
+        aria-label={`${label} country code`}
+      >
+        {COUNTRY_OPTIONS.map((country) => <option key={country.code} value={country.code}>{country.code} +{getCountryCallingCode(country.code)}</option>)}
+      </select>
+      <input
+        className={clsx('input-field min-w-0', error && 'border-red-300 focus:border-red-500 focus:ring-red-500/20')}
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel-national"
+        value={nationalValue}
+        onChange={(event) => onChange(field, event.target.value.trim() ? `${prefix} ${event.target.value}` : '')}
+        placeholder="National number"
+        aria-invalid={!!error}
+      />
+    </div>
+    {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+  </div>;
+}
 
 export function CustomerForm({
   initialValues,
@@ -38,35 +105,107 @@ export function CustomerForm({
   saving = false,
   onSubmit,
   onCancel,
+  draftStorageKey = DEFAULT_DRAFT_STORAGE_KEY,
 }: CustomerFormProps) {
   const [activeTab, setActiveTab] = useState<FormTab>('Overview');
-  const [form, setForm] = useState<CustomerFormValues>({
-    ...emptyCustomerForm,
-    ...initialValues,
-  });
+  const [form, setForm] = useState<CustomerFormValues>(() => normalizeCustomerFormValues(initialValues));
   const [fieldErrors, setFieldErrors] = useState<CustomerFieldErrors>({});
+  const [dirtyFields, setDirtyFields] = useState<Set<keyof CustomerFormValues>>(() => new Set());
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSaveError, setDraftSaveError] = useState('');
+  const [draftIsCurrent, setDraftIsCurrent] = useState(false);
+  const isCreate = !initialValues?.code;
+  const missingRequired = [
+    !form.name.trim() && 'company name',
+    !form.industry.trim() && 'industry',
+    !form.contactPerson.trim() && 'primary contact',
+    !(form.email.trim() || form.phone.trim() || form.mobile.trim()) && 'contact method',
+    !form.country.trim() && 'billing country',
+  ].filter(Boolean) as string[];
+  const createReady = missingRequired.length === 0;
 
   useEffect(() => {
+    if (isCreate) {
+      try {
+        const storedDraft = window.localStorage.getItem(draftStorageKey);
+        if (storedDraft) {
+          const parsed = JSON.parse(storedDraft) as Partial<CustomerDraft>;
+          if (parsed.version === 1 && parsed.values && typeof parsed.values === 'object') {
+            setForm(normalizeCustomerFormValues(parsed.values));
+            if (parsed.activeTab && TABS.includes(parsed.activeTab)) setActiveTab(parsed.activeTab);
+            setDraftSavedAt(typeof parsed.savedAt === 'string' ? parsed.savedAt : null);
+            setDraftRestored(true);
+            setDraftIsCurrent(true);
+            setFieldErrors({});
+            setDirtyFields(new Set());
+            return;
+          }
+        }
+      } catch {
+        window.localStorage.removeItem(draftStorageKey);
+      }
+    }
+
     setForm(normalizeCustomerFormValues(initialValues));
     setFieldErrors({});
-  }, [initialValues]);
+    setDirtyFields(new Set());
+    setDraftSavedAt(null);
+    setDraftRestored(false);
+    setDraftIsCurrent(false);
+  }, [draftStorageKey, initialValues, isCreate]);
 
   const set = (field: keyof CustomerFormValues, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setDirtyFields((prev) => new Set(prev).add(field));
+    setDraftIsCurrent(false);
+    setDraftSaveError('');
     setFieldErrors((prev) => {
       const next = { ...prev };
       delete next[field];
-      if (field === 'email' || field === 'phone') {
+      if (field === 'email' || field === 'phone' || field === 'mobile') {
         delete next.email;
         delete next.phone;
+        delete next.mobile;
       }
       return next;
     });
   };
 
+  const saveDraft = () => {
+    const savedAt = new Date().toISOString();
+    const draft: CustomerDraft = { version: 1, values: form, activeTab, savedAt };
+    try {
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
+      setDraftSavedAt(savedAt);
+      setDraftRestored(false);
+      setDraftIsCurrent(true);
+      setDraftSaveError('');
+    } catch {
+      setDraftSaveError('Draft could not be saved in this browser.');
+    }
+  };
+
+  const discardDraft = () => {
+    window.localStorage.removeItem(draftStorageKey);
+    setForm(normalizeCustomerFormValues(initialValues));
+    setActiveTab('Overview');
+    setFieldErrors({});
+    setDirtyFields(new Set());
+    setDraftSavedAt(null);
+    setDraftRestored(false);
+    setDraftIsCurrent(false);
+    setDraftSaveError('');
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const errors = validateCustomerForm(form);
+    const validationErrors = validateCustomerForm(form, { requireComplete: isCreate });
+    const errors = isCreate
+      ? validationErrors
+      : Object.fromEntries(
+          Object.entries(validationErrors).filter(([field]) => dirtyFields.has(field as keyof CustomerFormValues)),
+        ) as CustomerFieldErrors;
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       // Switch to tab with first error
@@ -80,7 +219,16 @@ export function CustomerForm({
       else setActiveTab('Commercial');
       return;
     }
-    await onSubmit(prepareCustomerPayload(form));
+    const prepared = prepareCustomerPayload(form);
+    const payload = isCreate
+      ? prepared
+      : Object.fromEntries(
+          Object.entries(prepared).filter(([field]) => dirtyFields.has(field as keyof CustomerFormValues)),
+        ) as Partial<CustomerFormValues>;
+    const submitted = await onSubmit(payload);
+    if (isCreate && submitted !== false) {
+      window.localStorage.removeItem(draftStorageKey);
+    }
   };
 
   const fc = (field: keyof CustomerFormValues) =>
@@ -90,10 +238,19 @@ export function CustomerForm({
     fieldErrors[field] ? <p className="mt-1 text-xs text-red-600">{fieldErrors[field]}</p> : null;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-0">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-0">
       {error && (
         <div className="mx-6 mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400">
           {error}
+        </div>
+      )}
+
+      {isCreate && draftRestored && (
+        <div className="mx-6 mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-brand-800 dark:border-brand-800 dark:bg-brand-950/30 dark:text-brand-200">
+          <span>Your saved draft was restored, including details from every section.</span>
+          <button type="button" onClick={discardDraft} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold hover:bg-brand-100 dark:hover:bg-brand-900/50">
+            <Trash2 className="h-3.5 w-3.5" /> Discard draft
+          </button>
         </div>
       )}
 
@@ -103,7 +260,7 @@ export function CustomerForm({
           <button
             key={tab}
             type="button"
-            onClick={() => setActiveTab(tab)}
+            onClick={() => { setActiveTab(tab); setDraftIsCurrent(false); }}
             className={clsx(
               'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
               activeTab === tab
@@ -122,9 +279,7 @@ export function CustomerForm({
         {activeTab === 'Overview' && (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1.5 block text-sm font-medium text-fg-secondary">
-                Company Name <span className="text-red-500">*</span>
-              </label>
+              <FieldLabel required>Company Name</FieldLabel>
               <input className={fc('name')} value={form.name}
                 onChange={(e) => set('name', e.target.value)}
                 placeholder="e.g. Atlas Beverage Systems" />
@@ -159,6 +314,16 @@ export function CustomerForm({
             </div>
 
             <div>
+              <FieldLabel tooltip="Customer numbers are generated from the central sequence when the record is created and cannot be changed here.">Customer Number</FieldLabel>
+              <input
+                className="input-field bg-surface-secondary text-fg-muted"
+                value={initialValues?.code || 'Assigned automatically on creation'}
+                readOnly
+                aria-label="Customer Number"
+              />
+            </div>
+
+            <div>
               <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Company Size</label>
               <select className="input-field" value={form.companySize}
                 onChange={(e) => set('companySize', e.target.value)}>
@@ -170,12 +335,11 @@ export function CustomerForm({
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-fg-secondary">
-                Industry <span className="text-red-500">*</span>
-              </label>
-              <input className={fc('industry')} value={form.industry}
+              <FieldLabel required tooltip="Used for customer segmentation and dashboard reporting. Choose a suggestion or enter a specific industry.">Industry</FieldLabel>
+              <input className={fc('industry')} value={form.industry} list="customer-industry-options"
                 onChange={(e) => set('industry', e.target.value)}
-                placeholder="Food & Beverage, Automotive, Pharma…" />
+                placeholder="Select or enter an industry" />
+              <datalist id="customer-industry-options">{INDUSTRY_OPTIONS.map((industry) => <option key={industry} value={industry} />)}</datalist>
               {err('industry')}
             </div>
 
@@ -218,27 +382,14 @@ export function CustomerForm({
 
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Email</label>
-                  <input type="email" className={fc('email')} value={form.email}
+                  <input type="email" inputMode="email" autoComplete="email" className={fc('email')} value={form.email}
                     onChange={(e) => set('email', e.target.value)}
-                    placeholder="contact@customer.com" />
+                    placeholder="name@company.com" aria-invalid={!!fieldErrors.email} />
                   {err('email')}
                 </div>
 
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Phone</label>
-                  <input className={fc('phone')} value={form.phone}
-                    onChange={(e) => set('phone', e.target.value)}
-                    placeholder="+1 555 010 2450" />
-                  {err('phone')}
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Mobile</label>
-                  <input className={fc('mobile')} value={form.mobile}
-                    onChange={(e) => set('mobile', e.target.value)}
-                    placeholder="+1 555 010 2452" />
-                  {err('mobile')}
-                </div>
+                <PhoneField label="Work phone" field="phone" value={form.phone} countryName={form.country} error={fieldErrors.phone} onChange={set} />
+                <PhoneField label="Mobile" field="mobile" value={form.mobile} countryName={form.country} error={fieldErrors.mobile} onChange={set} />
 
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Designation</label>
@@ -271,19 +422,13 @@ export function CustomerForm({
 
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Email</label>
-                  <input type="email" className={fc('secondaryContactEmail')} value={form.secondaryContactEmail}
+                  <input type="email" inputMode="email" autoComplete="email" className={fc('secondaryContactEmail')} value={form.secondaryContactEmail}
                     onChange={(e) => set('secondaryContactEmail', e.target.value)}
-                    placeholder="secondary@customer.com" />
+                    placeholder="name@company.com" aria-invalid={!!fieldErrors.secondaryContactEmail} />
                   {err('secondaryContactEmail')}
                 </div>
 
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Phone</label>
-                  <input className={fc('secondaryContactPhone')} value={form.secondaryContactPhone}
-                    onChange={(e) => set('secondaryContactPhone', e.target.value)}
-                    placeholder="+1 555 010 2451" />
-                  {err('secondaryContactPhone')}
-                </div>
+                <PhoneField label="Phone" field="secondaryContactPhone" value={form.secondaryContactPhone} countryName={form.country} error={fieldErrors.secondaryContactPhone} onChange={set} />
               </div>
             </div>
           </div>
@@ -297,39 +442,38 @@ export function CustomerForm({
                 <p className="text-xs font-semibold uppercase tracking-wide text-fg-muted">Billing Address</p>
               </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-fg-secondary">
-                Country <span className="text-red-500">*</span>
-              </label>
-              <input className={fc('country')} value={form.country}
+              <FieldLabel required tooltip="Country drives phone validation and future tax and currency defaults.">Country</FieldLabel>
+              <input className={fc('country')} value={form.country} list="customer-country-options" autoComplete="country-name"
                 onChange={(e) => set('country', e.target.value)}
-                placeholder="Germany" />
+                placeholder="Select a country" />
+              <datalist id="customer-country-options">{COUNTRY_OPTIONS.map((country) => <option key={country.code} value={country.name} />)}</datalist>
               {err('country')}
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-fg-secondary">City</label>
-              <input className={fc('city')} value={form.city}
+              <input className={fc('city')} value={form.city} autoComplete="address-level2"
                 onChange={(e) => set('city', e.target.value)}
                 placeholder="Munich" />
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-fg-secondary">State / Province</label>
-              <input className={fc('stateProvince')} value={form.stateProvince}
+              <input className={fc('stateProvince')} value={form.stateProvince} autoComplete="address-level1"
                 onChange={(e) => set('stateProvince', e.target.value)}
                 placeholder="Bavaria" />
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Postal Code</label>
-              <input className={fc('postalCode')} value={form.postalCode}
+              <input className={fc('postalCode')} value={form.postalCode} autoComplete="postal-code"
                 onChange={(e) => set('postalCode', e.target.value)}
                 placeholder="80331" />
             </div>
 
             <div className="md:col-span-2">
               <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Street Address</label>
-              <textarea className={clsx(fc('address'), 'min-h-20')} value={form.address}
+              <textarea className={clsx(fc('address'), 'min-h-20')} value={form.address} autoComplete="street-address"
                 onChange={(e) => set('address', e.target.value)}
                 placeholder="Street, building, district, or site details" />
             </div>
@@ -343,14 +487,25 @@ export function CustomerForm({
                 <button
                   type="button"
                   className="btn-ghost px-3 py-1.5 text-xs"
-                  onClick={() => setForm((prev) => ({
-                    ...prev,
-                    shippingAddress: prev.address,
-                    shippingCity: prev.city,
-                    shippingStateProvince: prev.stateProvince,
-                    shippingPostalCode: prev.postalCode,
-                    shippingCountry: prev.country,
-                  }))}
+                  onClick={() => {
+                    setForm((prev) => ({
+                      ...prev,
+                      shippingAddress: prev.address,
+                      shippingCity: prev.city,
+                      shippingStateProvince: prev.stateProvince,
+                      shippingPostalCode: prev.postalCode,
+                      shippingCountry: prev.country,
+                    }));
+                    setDirtyFields((prev) => new Set([
+                      ...prev,
+                      'shippingAddress',
+                      'shippingCity',
+                      'shippingStateProvince',
+                      'shippingPostalCode',
+                      'shippingCountry',
+                    ]));
+                    setDraftIsCurrent(false);
+                  }}
                 >
                   Copy Billing
                 </button>
@@ -358,7 +513,7 @@ export function CustomerForm({
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Country</label>
-                <input className={fc('shippingCountry')} value={form.shippingCountry}
+                <input className={fc('shippingCountry')} value={form.shippingCountry} list="customer-country-options" autoComplete="country-name"
                   onChange={(e) => set('shippingCountry', e.target.value)}
                   placeholder="Germany" />
               </div>
@@ -466,15 +621,49 @@ export function CustomerForm({
 
       </div>
 
-      <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+      <div className="flex flex-col gap-3 border-t border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 text-xs text-fg-muted" aria-live="polite">
+          {draftSaveError ? (
+            <span className="text-red-600 dark:text-red-400">{draftSaveError}</span>
+          ) : draftIsCurrent && draftSavedAt ? (
+            <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
+              <Check className="h-3.5 w-3.5" /> Draft saved in this browser
+            </span>
+          ) : isCreate ? (
+            createReady
+              ? <span className="text-emerald-700 dark:text-emerald-300">Required customer information is complete.</span>
+              : <span>{missingRequired.length} required {missingRequired.length === 1 ? 'item' : 'items'} remaining: {missingRequired.join(', ')}.</span>
+          ) : (
+            <span>Customer number is retained when changes are saved.</span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
         {onCancel && (
           <button type="button" onClick={onCancel} className="btn-ghost">
             Cancel
           </button>
         )}
-        <button type="submit" disabled={saving} className="btn-primary">
+        {isCreate && (
+          <button
+            type="button"
+            onClick={saveDraft}
+            disabled={saving || !hasDraftContent(form) || draftIsCurrent}
+            className="btn-secondary whitespace-nowrap"
+            title={!hasDraftContent(form) ? 'Enter at least one detail to save a draft' : 'Save all fields from every section in this browser'}
+          >
+            {draftIsCurrent ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+            {draftIsCurrent ? 'Draft saved' : 'Save draft'}
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={saving || (isCreate && !createReady)}
+          className="btn-primary whitespace-nowrap"
+          title={isCreate && !createReady ? 'Complete the required fields in Overview, Contacts, and Address' : undefined}
+        >
           {saving ? savingLabel : submitLabel}
         </button>
+        </div>
       </div>
     </form>
   );

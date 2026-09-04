@@ -142,8 +142,13 @@ describe('CreateCustomerDto — email fields', () => {
 
 describe('CreateCustomerDto — phone constraints', () => {
   it('accepts a valid phone number', async () => {
-    const errors = await validate(makeCreate({ phone: '+1-555-867-5309' }));
+    const errors = await validate(makeCreate({ phone: '+14155552671' }));
     expect(errors).toHaveLength(0);
+  });
+
+  it('rejects a phone number without a valid international format', async () => {
+    const errors = await validate(makeCreate({ phone: '12345' }));
+    expect(errorFor(errors, 'phone')).toBe(true);
   });
 
   it('rejects a phone over 30 characters (schema intent: no huge strings)', async () => {
@@ -152,7 +157,7 @@ describe('CreateCustomerDto — phone constraints', () => {
   });
 
   it('accepts a secondary phone', async () => {
-    const errors = await validate(makeCreate({ secondaryContactPhone: '+44 7700 900123' }));
+    const errors = await validate(makeCreate({ secondaryContactPhone: '+447911123456' }));
     expect(errors).toHaveLength(0);
   });
 

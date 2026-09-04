@@ -115,7 +115,7 @@ export class ItemsService {
     return { message: 'UOM deleted' };
   }
 
-  private async findItem(id: string) {
+  async findItem(id: string) {
     if (!DatabaseId.isValid(id)) throw new NotFoundException('Item not found');
     const item = await this.itemModel.findOne({ _id: id, deletedAt: null });
     if (!item) throw new NotFoundException('Item not found');

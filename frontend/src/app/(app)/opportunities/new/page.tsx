@@ -531,8 +531,10 @@ export default function NewOpportunityPage() {
       await loadCustomers();
       setCustomerId(created._id);
       setNewCustomerOpen(false);
+      return true;
     } catch (err: any) {
       setCustomerFormError(err.message || 'Failed to create customer');
+      return false;
     } finally {
       setSavingCustomer(false);
     }

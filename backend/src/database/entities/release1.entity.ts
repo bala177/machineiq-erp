@@ -76,10 +76,14 @@ export class CompanyEntity extends MigratedEntity {
   @Column({ type: 'varchar', length: 320, nullable: true }) email: string | null;
   @Column({ type: 'varchar', length: 40, nullable: true }) phone: string | null;
   @Column({ type: 'varchar', length: 500, nullable: true }) website: string | null;
+  @Column({ type: 'varchar', length: 160, nullable: true }) industry: string | null;
   @Column({ name: 'tax_registration_number', type: 'varchar', length: 80, nullable: true }) taxRegistrationNumber: string | null;
   @Column({ name: 'registration_number', type: 'varchar', length: 80, nullable: true }) registrationNumber: string | null;
   @Column({ name: 'base_currency', type: 'varchar', length: 8, default: 'INR' }) baseCurrency: string;
   @Column({ type: 'varchar', length: 80, default: 'Asia/Kolkata' }) timezone: string;
+  @Column({ name: 'fiscal_year_start_month', type: 'varchar', length: 20, default: 'april' }) fiscalYearStartMonth: string;
+  @Column({ name: 'date_format', type: 'varchar', length: 40, default: 'dd/MM/yyyy' }) dateFormat: string;
+  @Column({ name: 'language_code', type: 'varchar', length: 12, default: 'en' }) languageCode: string;
   @Column({ type: 'text', nullable: true }) address: string | null;
   @Column({ type: 'varchar', length: 120, nullable: true }) city: string | null;
   @Column({ name: 'state_province', type: 'varchar', length: 120, nullable: true }) stateProvince: string | null;
@@ -172,17 +176,29 @@ export class CustomerEntity extends MigratedEntity {
 export class SupplierEntity extends MigratedEntity {
   @Column({ type: 'varchar', length: 40, unique: true }) code: string;
   @Column({ type: 'varchar', length: 200 }) name: string;
+  @Column({ name: 'display_name', type: 'varchar', length: 200, nullable: true }) displayName: string | null;
   @Column({ name: 'contact_person', type: 'varchar', length: 200, nullable: true }) contactPerson: string | null;
   @Column({ type: 'varchar', length: 320, nullable: true }) email: string | null;
   @Column({ type: 'varchar', length: 40, nullable: true }) phone: string | null;
+  @Column({ type: 'varchar', length: 40, nullable: true }) mobile: string | null;
+  @Column({ type: 'varchar', length: 160, nullable: true }) designation: string | null;
+  @Column({ type: 'varchar', length: 160, nullable: true }) department: string | null;
+  @Column({ type: 'varchar', length: 500, nullable: true }) website: string | null;
   @Column({ type: 'text', nullable: true }) address: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) city: string | null;
+  @Column({ name: 'state_province', type: 'varchar', length: 120, nullable: true }) stateProvince: string | null;
+  @Column({ name: 'postal_code', type: 'varchar', length: 24, nullable: true }) postalCode: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) country: string | null;
   @Column({ type: 'varchar', length: 160, nullable: true }) category: string | null;
   @Column({ name: 'payment_terms', type: 'varchar', length: 120, nullable: true }) paymentTerms: string | null;
   @Column({ name: 'tax_registration_number', type: 'varchar', length: 80, nullable: true }) taxRegistrationNumber: string | null;
+  @Column({ name: 'tax_treatment', type: 'varchar', length: 120, nullable: true }) taxTreatment: string | null;
+  @Column({ name: 'place_of_supply', type: 'varchar', length: 120, nullable: true }) placeOfSupply: string | null;
   @Column({ name: 'currency_code', type: 'varchar', length: 8, default: 'INR' }) currencyCode: string;
   @Column({ name: 'bank_details', type: 'jsonb', default: () => "'{}'::jsonb" }) bankDetails: Record<string, string>;
   @Column({ name: 'qualification_status', type: 'varchar', length: 20, default: 'pending' }) qualificationStatus: string;
   @Column({ name: 'default_lead_time_days', type: 'integer', default: 0 }) defaultLeadTimeDays: number;
+  @Column({ type: 'text', nullable: true }) notes: string | null;
   @Column({ name: 'is_active', default: true }) isActive: boolean;
 }
 
@@ -216,6 +232,12 @@ export class ItemEntity extends MigratedEntity {
   @Column({ type: 'varchar', length: 40, unique: true }) code: string;
   @Column({ type: 'varchar', length: 200 }) name: string;
   @Column({ type: 'text', nullable: true }) description: string | null;
+  @Column({ name: 'manufacturer_part_number', type: 'varchar', length: 120, nullable: true }) manufacturerPartNumber: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) barcode: string | null;
+  @Column({ name: 'sales_description', type: 'text', nullable: true }) salesDescription: string | null;
+  @Column({ name: 'purchase_description', type: 'text', nullable: true }) purchaseDescription: string | null;
+  @Column({ name: 'sales_enabled', default: true }) salesEnabled: boolean;
+  @Column({ name: 'purchase_enabled', default: true }) purchaseEnabled: boolean;
   @Column({ name: 'category_id', type: 'uuid' }) categoryId: string;
   @ManyToOne(() => ItemCategoryEntity, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'category_id' }) category: ItemCategoryEntity;

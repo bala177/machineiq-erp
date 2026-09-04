@@ -3,7 +3,7 @@
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { clsx } from 'clsx';
-import { Building2, BookOpen, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, X } from 'lucide-react';
+import { Building2, BookOpen, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, Upload, X } from 'lucide-react';
 import { generateCustomerTemplate } from '@/lib/generate-customer-template';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -58,6 +58,7 @@ export default function CustomersPage() {
   const [error, setError] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<CustomerRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomerRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [activeSearch, setActiveSearch] = useState('');
@@ -107,8 +108,10 @@ export default function CustomersPage() {
       await api.post('/customers', values);
       setCreateOpen(false);
       await loadCustomers(activeSearch);
+      return true;
     } catch (err: any) {
       setError(err.message || 'Failed to create customer');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -126,6 +129,21 @@ export default function CustomersPage() {
       setDeleteError(err.message || 'Failed to delete customer');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleEdit = async (values: Partial<CustomerFormValues>) => {
+    if (!editTarget) return;
+    setSaving(true);
+    setError('');
+    try {
+      await api.patch(`/customers/${editTarget._id}`, values);
+      setEditTarget(null);
+      await loadCustomers(activeSearch);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update customer');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -214,7 +232,7 @@ export default function CustomersPage() {
                   <th>Primary Contact</th>
                   <th>Location</th>
                   <th>Industry</th>
-                  <th className="w-20" />
+                  <th className="w-28"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -246,6 +264,15 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-5 py-4 text-fg-secondary">{customer.industry || '—'}</td>
                       <td className="px-5 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => { setError(''); setEditTarget(customer); }}
+                          className="inline-flex items-center justify-center rounded-lg p-2 text-fg-muted hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-950/20 transition-colors"
+                          aria-label={`Edit ${customer.name}`}
+                          title="Edit customer"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => setDeleteTarget(customer)}
                           className="inline-flex items-center justify-center rounded-lg p-2 text-fg-muted hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-colors"
@@ -253,6 +280,7 @@ export default function CustomersPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -273,6 +301,20 @@ export default function CustomersPage() {
             error={error}
             onSubmit={handleCreate}
             onCancel={() => setCreateOpen(false)}
+          />
+        </Modal>
+      )}
+
+      {editTarget && (
+        <Modal title={`Edit ${editTarget.name}`} onClose={() => setEditTarget(null)} size="lg" noPadding>
+          <CustomerForm
+            initialValues={editTarget}
+            submitLabel="Save changes"
+            savingLabel="Saving…"
+            saving={saving}
+            error={error}
+            onSubmit={handleEdit}
+            onCancel={() => setEditTarget(null)}
           />
         </Modal>
       )}

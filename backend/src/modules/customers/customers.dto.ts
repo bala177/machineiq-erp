@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import { IsEmail, IsIn, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString, IsUrl, MaxLength, Min } from 'class-validator';
 
 const ACCOUNT_TYPES = ['prospect', 'active', 'inactive', 'churned'] as const;
 const CUSTOMER_TYPES = ['business', 'individual'] as const;
@@ -67,13 +67,13 @@ export class CreateCustomerDto {
 
   @Transform(({ value }) => optionalTrimmedString(value))
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber()
   @MaxLength(30)
   phone?: string;
 
   @Transform(({ value }) => optionalTrimmedString(value))
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber()
   @MaxLength(30)
   mobile?: string;
 
@@ -104,7 +104,7 @@ export class CreateCustomerDto {
 
   @Transform(({ value }) => optionalTrimmedString(value))
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber()
   @MaxLength(30)
   secondaryContactPhone?: string;
 
@@ -283,13 +283,13 @@ export class UpdateCustomerDto {
 
   @Transform(({ value }) => optionalTrimmedString(value))
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber()
   @MaxLength(30)
   phone?: string;
 
   @Transform(({ value }) => optionalTrimmedString(value))
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber()
   @MaxLength(30)
   mobile?: string;
 
@@ -319,7 +319,7 @@ export class UpdateCustomerDto {
 
   @Transform(({ value }) => optionalTrimmedString(value))
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber()
   @MaxLength(30)
   secondaryContactPhone?: string;
 

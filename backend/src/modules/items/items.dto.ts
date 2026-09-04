@@ -35,6 +35,12 @@ export class CreateItemDto {
   @Transform(upper) @IsString() @IsNotEmpty() @MaxLength(50) code: string;
   @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(200) name: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(1000) description?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(120) manufacturerPartNumber?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(120) barcode?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(2000) salesDescription?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(2000) purchaseDescription?: string;
+  @IsOptional() @IsBoolean() salesEnabled?: boolean;
+  @IsOptional() @IsBoolean() purchaseEnabled?: boolean;
   @IsUUID('4') categoryId: string;
   @IsUUID('4') uomId: string;
   @IsEnum(ItemType) itemType: ItemType;
@@ -51,6 +57,12 @@ export class CreateItemDto {
 export class UpdateItemDto {
   @Transform(trim) @IsOptional() @IsString() @IsNotEmpty() @MaxLength(200) name?: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(1000) description?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(120) manufacturerPartNumber?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(120) barcode?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(2000) salesDescription?: string;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(2000) purchaseDescription?: string;
+  @IsOptional() @IsBoolean() salesEnabled?: boolean;
+  @IsOptional() @IsBoolean() purchaseEnabled?: boolean;
   @IsOptional() @IsUUID('4') categoryId?: string;
   @IsOptional() @IsUUID('4') uomId?: string;
   @IsOptional() @IsEnum(ItemType) itemType?: ItemType;

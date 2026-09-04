@@ -19,4 +19,9 @@ describe('CreateSupplierDto', () => {
     const dto = plainToInstance(CreateSupplierDto, { name: 'Precision Drives', qualificationStatus: 'approved' });
     expect(await validate(dto)).not.toHaveLength(0);
   });
+
+  it('accepts structured contact, address, tax, and notes fields', async () => {
+    const dto = plainToInstance(CreateSupplierDto, { name: 'Precision Drives', displayName: 'Precision', website: 'https://precision.example', mobile: '+919876543210', designation: 'Account Manager', department: 'Sales', city: 'Pune', stateProvince: 'Maharashtra', postalCode: '411001', country: 'India', taxTreatment: 'Registered business', placeOfSupply: 'Maharashtra', notes: 'ISO 9001 certified' });
+    expect(await validate(dto)).toHaveLength(0);
+  });
 });

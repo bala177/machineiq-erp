@@ -64,6 +64,13 @@ export class Item extends Document {
   @Prop({ trim: true })
   description: string;
 
+  @Prop({ trim: true }) manufacturerPartNumber: string;
+  @Prop({ trim: true }) barcode: string;
+  @Prop({ trim: true }) salesDescription: string;
+  @Prop({ trim: true }) purchaseDescription: string;
+  @Prop({ default: true }) salesEnabled: boolean;
+  @Prop({ default: true }) purchaseEnabled: boolean;
+
   @Prop({ type: DatabaseId, ref: 'ItemCategory', required: true })
   categoryId: DatabaseId;
 

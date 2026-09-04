@@ -25,4 +25,10 @@ describe('CreateItemDto', () => {
     const errors = await validate(dto);
     expect(errors.some((error) => error.property === 'standardCost')).toBe(true);
   });
+
+  it('accepts Zoho-aligned sales, purchase, and product identifiers', async () => {
+    const dto = plainToInstance(CreateItemDto, { ...validPayload, manufacturerPartNumber: ' MPN-200 ', barcode: '8901234567890', salesDescription: 'Customer-facing description', purchaseDescription: 'Vendor-facing specification', salesEnabled: true, purchaseEnabled: true });
+    expect(await validate(dto)).toHaveLength(0);
+    expect(dto.manufacturerPartNumber).toBe('MPN-200');
+  });
 });

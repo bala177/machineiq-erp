@@ -19,6 +19,9 @@ export class Company extends Document {
   website: string;
 
   @Prop({ trim: true })
+  industry: string;
+
+  @Prop({ trim: true })
   taxRegistrationNumber: string;
 
   @Prop({ trim: true })
@@ -29,6 +32,15 @@ export class Company extends Document {
 
   @Prop({ trim: true, default: 'Asia/Kolkata' })
   timezone: string;
+
+  @Prop({ trim: true, default: 'april' })
+  fiscalYearStartMonth: string;
+
+  @Prop({ trim: true, default: 'dd/MM/yyyy' })
+  dateFormat: string;
+
+  @Prop({ trim: true, default: 'en' })
+  languageCode: string;
 
   @Prop({ trim: true })
   address: string;

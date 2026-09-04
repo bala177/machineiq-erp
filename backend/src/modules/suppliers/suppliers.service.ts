@@ -33,6 +33,13 @@ export class SuppliersService {
     return this.supplierModel.find(filter).sort({ code: 1 }).exec();
   }
 
+  async findById(id: string) {
+    if (!DatabaseId.isValid(id)) throw new NotFoundException('Supplier not found');
+    const supplier = await this.supplierModel.findOne({ _id: id, deletedAt: null });
+    if (!supplier) throw new NotFoundException('Supplier not found');
+    return supplier;
+  }
+
   async update(id: string, dto: UpdateSupplierDto, userId: string) {
     if (!DatabaseId.isValid(id)) throw new NotFoundException('Supplier not found');
     const existing = await this.supplierModel.findOne({ _id: id, deletedAt: null });

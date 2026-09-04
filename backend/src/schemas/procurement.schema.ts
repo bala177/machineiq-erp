@@ -8,6 +8,9 @@ export class ProcurementItem extends Document {
   name: string;
 
   @Prop({ trim: true })
+  displayName: string;
+
+  @Prop({ trim: true })
   description: string;
 
   @Prop({ type: DatabaseId, ref: 'Project', required: true })
@@ -62,7 +65,24 @@ export class Supplier extends Document {
   phone: string;
 
   @Prop({ trim: true })
+  mobile: string;
+
+  @Prop({ trim: true })
+  designation: string;
+
+  @Prop({ trim: true })
+  department: string;
+
+  @Prop({ trim: true })
+  website: string;
+
+  @Prop({ trim: true })
   address: string;
+
+  @Prop({ trim: true }) city: string;
+  @Prop({ trim: true }) stateProvince: string;
+  @Prop({ trim: true }) postalCode: string;
+  @Prop({ trim: true }) country: string;
 
   @Prop({ trim: true })
   category: string;
@@ -72,6 +92,9 @@ export class Supplier extends Document {
 
   @Prop({ trim: true })
   taxRegistrationNumber: string;
+
+  @Prop({ trim: true }) taxTreatment: string;
+  @Prop({ trim: true }) placeOfSupply: string;
 
   @Prop({ trim: true, uppercase: true, default: 'INR' })
   currencyCode: string;
@@ -85,6 +108,8 @@ export class Supplier extends Document {
   @Prop({ type: Number, default: 0, min: 0 })
   defaultLeadTimeDays: number;
 
+  @Prop({ trim: true }) notes: string;
+
   @Prop({ default: true })
   isActive: boolean;
 
@@ -95,4 +120,3 @@ export class Supplier extends Document {
 export const SupplierSchema = SchemaFactory.createForClass(Supplier);
 SupplierSchema.index({ code: 1 }, { unique: true, sparse: true });
 SupplierSchema.index({ name: 1 });
-

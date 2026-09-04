@@ -91,4 +91,9 @@ export class ItemsController {
   deleteUom(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     return this.itemsService.deleteUom(id, userId);
   }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.itemsService.findItem(id);
+  }
 }
