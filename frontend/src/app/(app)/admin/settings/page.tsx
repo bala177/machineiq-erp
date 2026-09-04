@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Building2, Bell, FileCog, FileText, Info, KeyRound, ShieldCheck, Plus, Pencil, Trash2, Check, X, Save, AlertTriangle, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
-import { APP_VERSION } from '@/lib/app-meta';
+import { APP_VERSION, SHORT_GIT_COMMIT } from '@/lib/app-meta';
 import { ROLE_DEFINITIONS, ROLE_KEYS, roleLabel } from '@/lib/roles';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1105,7 +1105,8 @@ function PlatformTab() {
   const rows: { label: string; value: string }[] = [
     { label: 'Product', value: 'MachineIQ — ERP for Machine Builders' },
     { label: 'Version', value: APP_VERSION },
-    { label: 'Status', value: 'In development — not yet released' },
+    { label: 'Git commit', value: SHORT_GIT_COMMIT },
+    { label: 'Status', value: 'Release candidate — deployed' },
     { label: 'Support', value: 'support@machineiq.com' },
   ];
 

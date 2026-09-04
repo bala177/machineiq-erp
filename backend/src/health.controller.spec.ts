@@ -15,6 +15,7 @@ describe('HealthController', () => {
 
     expect(response.status).toBe('ok');
     expect(response.version).toBe(packageMetadata.version);
+    expect(response.commit).toBeTruthy();
     expect(response.database).toBe('ready');
     expect(response.migrations).toBe('current');
   });

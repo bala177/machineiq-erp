@@ -12,6 +12,8 @@ export const APP_BY = 'Quorin Tech';
 
 export const APP_VERSION = packageMetadata.version;
 export const BUILD_TIME = process.env.NEXT_PUBLIC_BUILD_TIME || '';
+export const GIT_COMMIT = process.env.NEXT_PUBLIC_GIT_COMMIT || 'local';
+export const SHORT_GIT_COMMIT = GIT_COMMIT === 'local' ? 'local' : GIT_COMMIT.slice(0, 7);
 export const RELEASE_CHANNEL = APP_VERSION.includes('beta')
   ? 'Beta'
   : APP_VERSION.includes('alpha')
@@ -20,6 +22,7 @@ export const RELEASE_CHANNEL = APP_VERSION.includes('beta')
       ? 'Release candidate'
       : 'Stable';
 export const VERSION_LABEL = `${RELEASE_CHANNEL} · v${APP_VERSION}`;
+export const DEPLOYMENT_LABEL = `v${APP_VERSION} · ${SHORT_GIT_COMMIT}`;
 
 export const SUPPORT_EMAIL = 'support@machineiq.tech';
 
@@ -36,8 +39,11 @@ export const RELEASES: Release[] = [
   {
     version: APP_VERSION,
     channel: RELEASE_CHANNEL,
-    date: '2026-08-25',
+    date: '2026-09-04',
     entries: [
+      { type: 'feature', text: 'Clear item creation sections for identity, sales and purchasing, inventory, units of measure, tax, costing, and planning.' },
+      { type: 'fix', text: 'Empty installations now route directly to first-time workspace setup.' },
+      { type: 'fix', text: 'Modal overlays cover the complete application shell without clipping the top navigation.' },
       { type: 'feature', text: 'End-to-end flow from customer and machine inquiry intake through projects, tasks, machines, and procurement.' },
       { type: 'feature', text: 'Five role-aware workspaces: Admin, Manager, Sales, Designer, and Leadership.' },
       { type: 'feature', text: 'Structured machine inquiry review, feasibility, approval, rejection, and project conversion.' },

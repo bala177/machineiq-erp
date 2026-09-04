@@ -8,6 +8,8 @@ const nextConfig = {
     // Inlined into the client bundle at build time for the About page.
     // The app version is imported directly from package.json.
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+    NEXT_PUBLIC_GIT_COMMIT:
+      process.env.RENDER_GIT_COMMIT || process.env.NEXT_PUBLIC_GIT_COMMIT || 'local',
   },
   webpack: (config, { dev }) => {
     if (dev) {

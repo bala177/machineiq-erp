@@ -9,7 +9,7 @@ import {
   UserCheck, PackageCheck, FolderKanban, ListTodo, Wrench, FileText,
 } from 'lucide-react';
 import {
-  APP_NAME, APP_BY, APP_VERSION, BUILD_TIME, RELEASE_CHANNEL,
+  APP_NAME, APP_BY, APP_VERSION, BUILD_TIME, RELEASE_CHANNEL, SHORT_GIT_COMMIT,
   SUPPORT_EMAIL,
 } from '@/lib/app-meta';
 
@@ -149,7 +149,7 @@ export default function AboutPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 font-mono text-xs font-bold text-brand-700 dark:border-brand-800 dark:bg-brand-950/30 dark:text-brand-300">
-              <Tag className="h-3 w-3" />{RELEASE_CHANNEL} · v{APP_VERSION}
+              <Tag className="h-3 w-3" />{RELEASE_CHANNEL} · v{APP_VERSION} · {SHORT_GIT_COMMIT}
             </span>
             <Link
               href="/about/release-notes"

@@ -95,12 +95,12 @@ test('support pages share current release-candidate identity and fit the viewpor
   await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
 
   await page.goto('/about');
-  await expect(page.getByText(/Release candidate · v2\.1\.0-rc\.1/).first()).toBeVisible();
+  await expect(page.getByText(/Release candidate · v2\.1\.0-rc\.2/).first()).toBeVisible();
   await expect(page.getByText('Currently in Release candidate')).toBeVisible();
 
   await page.goto('/about/release-notes');
   await expect(page.getByRole('heading', { name: 'Release Notes' })).toBeVisible();
-  await expect(page.getByText('v2.1.0-rc.1')).toBeVisible();
+  await expect(page.getByText('v2.1.0-rc.2', { exact: true })).toBeVisible();
 
   for (const route of ['/help', '/about', '/about/release-notes']) {
     await page.goto(route);

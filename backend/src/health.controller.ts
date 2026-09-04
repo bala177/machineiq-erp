@@ -25,6 +25,7 @@ export class HealthController {
         status: 'ok',
         service: 'machineiq-api',
         version: packageMetadata.version,
+        commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'local',
         database: 'ready',
         migrations: 'current',
         timestamp: new Date().toISOString(),

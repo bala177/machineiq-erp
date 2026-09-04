@@ -7,7 +7,7 @@ import { clsx } from 'clsx';
 import { useAuth } from '@/providers/auth-provider';
 import { useTheme } from '@/providers/theme-provider';
 import { LayoutDashboard, Building2, Bell, Users, Settings, Menu, X, LogOut, Search, ScrollText, Sun, Moon, ChevronDown, UserCircle, HelpCircle, PanelLeftClose, PanelLeftOpen, ChevronsLeft, Sparkles, Info, Boxes, Truck } from 'lucide-react';
-import { VERSION_LABEL } from '@/lib/app-meta';
+import { DEPLOYMENT_LABEL } from '@/lib/app-meta';
 import { roleColor, roleLabel } from '@/lib/roles';
 
 /* ─────────────── nav config ─────────────── */
@@ -76,6 +76,7 @@ function Wordmark({ collapsed }: { collapsed: boolean }) {
             Machine<span className="text-brand-600">IQ</span>
           </p>
           <p className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-widest text-fg-muted">ERP Platform</p>
+          <p className="mt-1 truncate font-mono text-[9px] text-fg-muted" title="Application version and deployed Git commit">{DEPLOYMENT_LABEL}</p>
         </div>
       )}
     </div>
@@ -137,7 +138,7 @@ function ProfileDropdown({ user, theme, setTheme, logout, onClose }: { user: any
       <div className="px-1.5 py-1.5">
         <div className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] text-fg-muted">
           <span>MachineIQ</span>
-          <span className="font-mono font-semibold text-fg-secondary">{VERSION_LABEL}</span>
+          <span className="font-mono font-semibold text-fg-secondary">{DEPLOYMENT_LABEL}</span>
         </div>
       </div>
 

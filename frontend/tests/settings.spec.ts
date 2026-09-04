@@ -207,12 +207,13 @@ test.describe('Settings — Platform tab', () => {
 
   test('displays stack information rows', async ({ page }) => {
     await expect(page.getByText('MachineIQ — ERP for Machine Builders')).toBeVisible();
-    await expect(page.getByText('2.1.0-rc.1')).toBeVisible();
+    await expect(page.getByRole('row', { name: /Version/ }).getByRole('cell').nth(1)).toHaveText('2.1.0-rc.2');
+    await expect(page.getByRole('row', { name: /Git commit/ }).getByRole('cell').nth(1)).toHaveText('local');
     await expect(page.getByText('support@machineiq.com')).toBeVisible();
   });
 
   test('displays release status', async ({ page }) => {
-    await expect(page.getByText('In development — not yet released')).toBeVisible();
+    await expect(page.getByText('Release candidate — deployed')).toBeVisible();
   });
 });
 
