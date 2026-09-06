@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectPgModel } from '../../database/postgres-document.module';
 import { Model } from '../../database/postgres-document.model';
 import { DatabaseId } from '../../database/postgres-document.types';
@@ -6,6 +6,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { SequencesService } from '../sequences/sequences.service';
 import { Item, ItemCategory, Uom } from '../../schemas/item.schema';
 import { CreateItemCategoryDto, CreateItemDto, CreateUomDto, UpdateItemCategoryDto, UpdateItemDto, UpdateUomDto } from './items.dto';
+import { pricePerBaseUom, quantityInBaseUom } from './uom-conversion';
 
 @Injectable()
 export class ItemsService {
@@ -35,7 +36,8 @@ export class ItemsService {
     }
     if (query.categoryId && DatabaseId.isValid(query.categoryId)) filter.categoryId = query.categoryId;
     if (query.itemType) filter.itemType = query.itemType;
-    return this.itemModel.find(filter).populate('categoryId', 'code name').populate('uomId', 'code name').populate('defaultSupplierId', 'code name').sort({ code: 1 }).exec();
+    const items = await this.itemModel.find(filter).populate('categoryId', 'code name').populate('uomId', 'code name baseUomId conversionFactor').populate('defaultSupplierId', 'code name').sort({ code: 1 }).exec();
+    return Promise.all(items.map((item: any) => this.withUomCalculations(item)));
   }
 
   async updateItem(id: string, dto: UpdateItemDto, userId: string) {
@@ -88,8 +90,8 @@ export class ItemsService {
 
   async createUom(dto: CreateUomDto, userId: string) {
     await this.assertCodeAvailable(this.uomModel, dto.code, 'UOM');
-    if (dto.baseUomId) await this.requireActive(this.uomModel, dto.baseUomId, 'Base UOM');
-    const uom = await this.uomModel.create(dto);
+    const payload = await this.normalizeUom(dto);
+    const uom = await this.uomModel.create(payload);
     await this.auditLogService.log({ action: 'create', entityType: 'Uom', entityId: uom._id, performedBy: userId, newValues: uom.toObject() });
     return uom;
   }
@@ -100,11 +102,8 @@ export class ItemsService {
 
   async updateUom(id: string, dto: UpdateUomDto, userId: string) {
     const existing = await this.requireDocument(this.uomModel, id, 'UOM');
-    if (dto.baseUomId) {
-      if (dto.baseUomId === id) throw new ConflictException('A UOM cannot be its own base');
-      await this.requireActive(this.uomModel, dto.baseUomId, 'Base UOM');
-    }
-    const uom = await this.uomModel.findByIdAndUpdate(id, { $set: dto }, { new: true });
+    const payload = await this.normalizeUom(dto, existing, id);
+    const uom = await this.uomModel.findByIdAndUpdate(id, { $set: payload }, { new: true });
     await this.auditLogService.log({ action: 'update', entityType: 'Uom', entityId: id, performedBy: userId, previousValues: existing.toObject(), newValues: dto });
     return uom;
   }
@@ -143,5 +142,47 @@ export class ItemsService {
     const document = await model.findOne({ _id: id, deletedAt: null });
     if (!document) throw new NotFoundException(`${label} not found`);
     return document;
+  }
+
+  private async normalizeUom(dto: CreateUomDto | UpdateUomDto, existing?: any, id?: string) {
+    const baseUomId = dto.baseUomId === undefined ? (existing?.baseUomId ?? null) : dto.baseUomId;
+    const conversionFactor = dto.conversionFactor === undefined
+      ? Number(existing?.conversionFactor ?? 1)
+      : Number(dto.conversionFactor);
+
+    if (!baseUomId) {
+      if (conversionFactor !== 1) throw new BadRequestException('A base UOM must have a conversion factor of 1');
+      return { ...dto, baseUomId: null, conversionFactor: 1 };
+    }
+    if (baseUomId === id) throw new ConflictException('A UOM cannot be its own base');
+    if (id && !existing?.baseUomId && await this.uomModel.exists({ baseUomId: id, deletedAt: null })) {
+      throw new ConflictException('This base UOM is already used by converted units');
+    }
+    const base = await this.requireDocument(this.uomModel, baseUomId, 'Base UOM');
+    if (!base.isActive) throw new NotFoundException('Base UOM not found');
+    if (base.baseUomId) throw new BadRequestException('Select a base UOM, not another converted unit');
+    return { ...dto, baseUomId, conversionFactor };
+  }
+
+  private async withUomCalculations(item: any) {
+    const plain = item.toObject ? item.toObject() : { ...item };
+    const uom = plain.uomId;
+    if (!uom || typeof uom === 'string' || !uom.baseUomId) {
+      return {
+        ...plain,
+        reorderLevelInBaseUom: Number(plain.reorderLevel || 0),
+        standardCostPerBaseUom: Number(plain.standardCost || 0),
+        sellingPricePerBaseUom: Number(plain.sellingPrice || 0),
+      };
+    }
+    const base = await this.uomModel.findOne({ _id: uom.baseUomId, deletedAt: null });
+    const conversion = { baseUomId: uom.baseUomId, conversionFactor: Number(uom.conversionFactor) };
+    return {
+      ...plain,
+      uomId: { ...uom, baseUomId: base ? { _id: base._id, code: base.code, name: base.name } : uom.baseUomId },
+      reorderLevelInBaseUom: quantityInBaseUom(plain.reorderLevel, conversion),
+      standardCostPerBaseUom: pricePerBaseUom(plain.standardCost, conversion),
+      sellingPricePerBaseUom: pricePerBaseUom(plain.sellingPrice, conversion),
+    };
   }
 }

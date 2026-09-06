@@ -42,6 +42,7 @@ export default function OpportunitiesPage() {
   const [deleteTarget, setDeleteTarget]   = useState<any | null>(null);
   const [deleteBusy, setDeleteBusy]       = useState(false);
   const [deleteError, setDeleteError]     = useState('');
+  const [loadError, setLoadError]         = useState('');
 
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
 
@@ -64,7 +65,10 @@ export default function OpportunitiesPage() {
       setTotal(Array.isArray(res) ? res.length : (res.total ?? rows.length));
       setOpportunities((prev) => replace ? rows : [...prev, ...rows]);
       setSkip(newSkip);
-    } catch { /* keep current list */ }
+      setLoadError('');
+    } catch (err: any) {
+      setLoadError(err.message || 'Machine inquiries could not be loaded.');
+    }
     finally {
       if (replace) setLoading(false); else setLoadingMore(false);
     }
@@ -125,6 +129,13 @@ export default function OpportunitiesPage() {
           ) : undefined
         }
       />
+
+      {loadError && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{loadError}</span>
+          <button className="font-semibold underline underline-offset-2" onClick={() => void fetchOpportunities(0, true)}>Retry</button>
+        </div>
+      )}
 
       {/* Filter bar */}
       <div className="mb-6 card p-4">

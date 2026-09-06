@@ -18,7 +18,10 @@ export function postgresOptions(databaseUrl = process.env.DATABASE_URL): TypeOrm
     entities: [...RELEASE1_ENTITIES, RuntimeDocumentEntity],
     migrations: [Release1PostgresFoundation2026082800001, ImmutableAuditLogs2026090100001, DepartmentManagementPermission2026090100002, ZohoParityMasterData2026090400001],
     synchronize: false,
-    migrationsRun: false,
+    // Client/local installations do not have Render's pre-deploy hook. Keep
+    // their schema aligned with the application instead of starting an API
+    // that returns 500s for every newly added column.
+    migrationsRun: process.env.RUN_MIGRATIONS_ON_STARTUP !== 'false',
     ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : false,
     retryAttempts: 10,
     retryDelay: 3000,

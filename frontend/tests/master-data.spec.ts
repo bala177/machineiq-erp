@@ -164,6 +164,32 @@ test.beforeEach(async ({ page }) => {
   await setAuthenticatedSession(page);
 });
 
+test('selects a common UOM and saves an operative base conversion', async ({ page }) => {
+  let submitted: Record<string, unknown> | undefined;
+  await page.route('http://localhost:4051/api/items/uoms', async (route) => {
+    if (route.request().method() === 'POST') {
+      submitted = route.request().postDataJSON();
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ _id: 'uom-dozen', ...submitted }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([uom]) });
+  });
+
+  await page.goto('/items');
+  await page.getByRole('button', { name: 'New UOM' }).click();
+  await page.getByLabel('Choose a common unit').selectOption('DOZ');
+
+  await expect(page.getByLabel('UOM code')).toHaveValue('DOZ');
+  await expect(page.getByLabel('UOM name')).toHaveValue('Dozen');
+  await expect(page.getByLabel('Unit relationship')).toHaveValue('converted');
+  await expect(page.getByLabel('Base unit', { exact: true })).toHaveValue(uom._id);
+  await expect(page.getByLabel('Base units per DOZ')).toHaveValue('12');
+  await expect(page.getByText(/1 DOZ = 12 EA/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Create UOM' }).click();
+  expect(submitted).toMatchObject({ code: 'DOZ', name: 'Dozen', baseUomId: uom._id, conversionFactor: 12 });
+});
+
 test('completes item fields and supports edit and deactivation', async ({ page }) => {
   await page.goto('/items');
   await expect(page.getByText('Avg. standard cost')).toBeVisible();

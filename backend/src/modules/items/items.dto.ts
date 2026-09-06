@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsUUID, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsUUID, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { ItemType } from '../../schemas/item.schema';
 
 const trim = ({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value;
@@ -14,7 +14,7 @@ export class CreateItemCategoryDto {
 export class CreateUomDto {
   @Transform(upper) @IsString() @IsNotEmpty() @MaxLength(20) code: string;
   @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(80) name: string;
-  @IsOptional() @IsUUID('4') baseUomId?: string;
+  @IsOptional() @ValidateIf((_object, value) => value !== null) @IsUUID('4') baseUomId?: string | null;
   @IsOptional() @IsNumber() @Min(0.000001) conversionFactor?: number;
 }
 
@@ -26,7 +26,7 @@ export class UpdateItemCategoryDto {
 
 export class UpdateUomDto {
   @Transform(trim) @IsOptional() @IsString() @IsNotEmpty() @MaxLength(80) name?: string;
-  @IsOptional() @IsUUID('4') baseUomId?: string;
+  @IsOptional() @ValidateIf((_object, value) => value !== null) @IsUUID('4') baseUomId?: string | null;
   @IsOptional() @IsNumber() @Min(0.000001) conversionFactor?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
 }

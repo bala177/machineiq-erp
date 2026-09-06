@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/modal';
 import { api } from '@/lib/api';
 
 type Reference = { _id: string; code: string; name: string };
-type UomReference = Reference & { conversionFactor: number };
+type UomReference = Reference & { conversionFactor: number; baseUomId?: Reference | string | null };
 type ItemRecord = {
   _id: string;
   code: string;
@@ -23,7 +23,7 @@ type ItemRecord = {
   salesEnabled: boolean;
   purchaseEnabled: boolean;
   categoryId: Reference;
-  uomId: Reference;
+  uomId: UomReference;
   itemType: 'raw' | 'component' | 'assembly' | 'service';
   standardCost: number;
   sellingPrice: number;
@@ -34,10 +34,35 @@ type ItemRecord = {
   defaultSupplierId?: Reference | null;
   leadTimeDays: number;
   isActive: boolean;
+  reorderLevelInBaseUom?: number;
+  standardCostPerBaseUom?: number;
 };
 
 const initialCategoryForm = { code: '', name: '' };
-const initialUomForm = { code: '', name: '', conversionFactor: 1 };
+const initialUomForm = { code: '', name: '', baseUomId: '', conversionFactor: 1 };
+
+const UOM_PRESETS = [
+  { code: 'EA', name: 'Each' },
+  { code: 'PCS', name: 'Pieces' },
+  { code: 'SET', name: 'Set' },
+  { code: 'LOT', name: 'Lot' },
+  { code: 'KG', name: 'Kilogram' },
+  { code: 'G', name: 'Gram', baseCode: 'KG', factor: 0.001 },
+  { code: 'T', name: 'Tonne', baseCode: 'KG', factor: 1000 },
+  { code: 'L', name: 'Litre' },
+  { code: 'ML', name: 'Millilitre', baseCode: 'L', factor: 0.001 },
+  { code: 'M', name: 'Metre' },
+  { code: 'CM', name: 'Centimetre', baseCode: 'M', factor: 0.01 },
+  { code: 'MM', name: 'Millimetre', baseCode: 'M', factor: 0.001 },
+  { code: 'SQM', name: 'Square metre' },
+  { code: 'DOZ', name: 'Dozen', baseCode: 'EA', factor: 12 },
+  { code: 'BOX', name: 'Box', baseCode: 'EA', factor: 1 },
+  { code: 'HR', name: 'Hour' },
+  { code: 'DAY', name: 'Day' },
+] as const;
+
+const referenceId = (value: Reference | string | null | undefined) =>
+  typeof value === 'string' ? value : value?._id || '';
 
 function money(value: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value || 0);
@@ -140,8 +165,9 @@ export default function ItemsPage() {
     setSaving(true);
     setError('');
     try {
-      if (editingUomId) await api.patch(`/items/uoms/${editingUomId}`, { name: uomForm.name, conversionFactor: uomForm.conversionFactor });
-      else await api.post('/items/uoms', uomForm);
+      const payload = { ...uomForm, baseUomId: uomForm.baseUomId || null };
+      if (editingUomId) await api.patch(`/items/uoms/${editingUomId}`, { name: payload.name, baseUomId: payload.baseUomId, conversionFactor: payload.conversionFactor });
+      else await api.post('/items/uoms', payload);
       setUomOpen(false);
       setEditingUomId('');
       setUomForm(initialUomForm);
@@ -185,6 +211,18 @@ export default function ItemsPage() {
     setEditingItem(item);
     setError('');
     setCreateOpen(true);
+  }
+
+  function applyUomPreset(code: string) {
+    const preset = UOM_PRESETS.find((item) => item.code === code);
+    if (!preset) return;
+    const base = 'baseCode' in preset ? uoms.find((uom) => uom.code === preset.baseCode && !uom.baseUomId) : undefined;
+    setUomForm({
+      code: preset.code,
+      name: preset.name,
+      baseUomId: base?._id || '',
+      conversionFactor: 'factor' in preset ? preset.factor : 1,
+    });
   }
 
   async function toggleItem(item: ItemRecord) {
@@ -279,9 +317,9 @@ export default function ItemsPage() {
                   <td className="px-4 py-3"><p className="font-semibold text-fg">{item.name}</p><p className="font-mono text-xs text-fg-muted">{item.code}</p></td>
                   <td className="px-4 py-3 text-fg-secondary">{item.categoryId?.name || '—'}</td>
                   <td className="px-4 py-3"><span className="badge-blue capitalize">{item.itemType}</span></td>
-                  <td className="px-4 py-3 text-fg-secondary">{item.uomId?.code || '—'}</td>
-                  <td className="px-4 py-3 font-medium text-fg">{money(item.standardCost)}</td>
-                  <td className="px-4 py-3 text-fg-secondary">{item.reorderLevel}</td>
+                  <td className="px-4 py-3 text-fg-secondary"><p>{item.uomId?.code || '—'}</p>{item.uomId?.baseUomId && typeof item.uomId.baseUomId === 'object' && <p className="text-xs text-fg-muted">1 {item.uomId.code} = {item.uomId.conversionFactor} {item.uomId.baseUomId.code}</p>}</td>
+                  <td className="px-4 py-3 font-medium text-fg"><p>{money(item.standardCost)} / {item.uomId?.code}</p>{item.uomId?.baseUomId && typeof item.uomId.baseUomId === 'object' && <p className="text-xs font-normal text-fg-muted">{money(item.standardCostPerBaseUom ?? item.standardCost)} / {item.uomId.baseUomId.code}</p>}</td>
+                  <td className="px-4 py-3 text-fg-secondary"><p>{item.reorderLevel} {item.uomId?.code}</p>{item.uomId?.baseUomId && typeof item.uomId.baseUomId === 'object' && <p className="text-xs text-fg-muted">{item.reorderLevelInBaseUom} {item.uomId.baseUomId.code}</p>}</td>
                   <td className="px-4 py-3"><span className={item.isActive ? 'badge-green' : 'badge-gray'}>{item.isActive ? 'Active' : 'Inactive'}</span></td>
                   <td className="px-4 py-3"><div className="flex justify-end gap-1"><button className="btn-ghost p-2" title="Edit item" onClick={() => openEditItem(item)}><Pencil className="h-4 w-4" /></button><button className="btn-ghost p-2" title={item.isActive ? 'Deactivate item' : 'Activate item'} onClick={() => void toggleItem(item)}><Power className="h-4 w-4" /></button><button className="btn-ghost p-2 text-red-600" title="Remove item" onClick={() => void removeItem(item)}><Trash2 className="h-4 w-4" /></button></div></td>
                 </tr>)}
@@ -311,10 +349,13 @@ export default function ItemsPage() {
       {uomOpen && <Modal title={guidedSetup ? 'Set up item master' : 'Manage units of measure'} onClose={closeUom}>
         <form className="space-y-4" onSubmit={handleCreateUom}>
           {guidedSetup && <ReferenceSetupProgress step={2} title="Define how items are measured" description="Add the base unit used for item quantities. A common first unit is EA — Each." />}
+          {!editingUomId && <label className="block text-sm font-medium text-fg">Choose a common unit<select className="input-field mt-1.5" value={UOM_PRESETS.some((preset) => preset.code === uomForm.code) ? uomForm.code : ''} onChange={(event) => applyUomPreset(event.target.value)}><option value="">Custom unit</option>{UOM_PRESETS.map((preset) => <option key={preset.code} value={preset.code}>{preset.code} — {preset.name}</option>)}</select><span className="mt-1.5 block text-xs font-normal text-fg-muted">Based on common accounting and Indian UQC-style unit codes.</span></label>}
           <label className="block text-sm font-medium text-fg">UOM code<input className="input-field mt-1.5" required autoFocus disabled={!!editingUomId} value={uomForm.code} onChange={(event) => setUomForm({ ...uomForm, code: event.target.value.toUpperCase() })} placeholder="e.g. EA" /></label>
           <label className="block text-sm font-medium text-fg">UOM name<input className="input-field mt-1.5" required value={uomForm.name} onChange={(event) => setUomForm({ ...uomForm, name: event.target.value })} placeholder="e.g. Each" /></label>
-          <label className="block text-sm font-medium text-fg">Conversion factor<input className="input-field mt-1.5" type="number" min="0.000001" step="any" required value={uomForm.conversionFactor} onChange={(event) => setUomForm({ ...uomForm, conversionFactor: Number(event.target.value) })} /><span className="mt-1.5 block text-xs font-normal text-fg-muted">Keep this at 1 for a base unit such as Each.</span></label>
-          <div className="max-h-48 divide-y divide-border overflow-y-auto border-y border-border">{uoms.map((uom) => <div key={uom._id} className="flex items-center gap-2 py-2"><span className="min-w-0 flex-1 truncate text-sm">{uom.code} — {uom.name}</span><button type="button" className="btn-ghost p-2" title="Edit UOM" onClick={() => { setEditingUomId(uom._id); setUomForm({ code: uom.code, name: uom.name, conversionFactor: uom.conversionFactor }); }}><Pencil className="h-4 w-4" /></button><button type="button" className="btn-ghost p-2 text-red-600" title="Remove UOM" onClick={() => void removeReference('uoms', uom._id)}><Trash2 className="h-4 w-4" /></button></div>)}</div>
+          <label className="block text-sm font-medium text-fg">Unit relationship<select className="input-field mt-1.5" value={uomForm.baseUomId ? 'converted' : 'base'} onChange={(event) => setUomForm({ ...uomForm, baseUomId: event.target.value === 'base' ? '' : (uoms.find((uom) => !uom.baseUomId && uom._id !== editingUomId)?._id || ''), conversionFactor: 1 })}><option value="base">Base unit</option><option value="converted" disabled={!uoms.some((uom) => !uom.baseUomId && uom._id !== editingUomId)}>Converted unit</option></select></label>
+          {uomForm.baseUomId ? <div className="grid gap-4 sm:grid-cols-2"><div><label htmlFor="uom-base" className="block text-sm font-medium text-fg">Base unit</label><select id="uom-base" className="input-field mt-1.5" required value={uomForm.baseUomId} onChange={(event) => setUomForm({ ...uomForm, baseUomId: event.target.value })}>{uoms.filter((uom) => !uom.baseUomId && uom._id !== editingUomId).map((uom) => <option key={uom._id} value={uom._id}>{uom.code} — {uom.name}</option>)}</select></div><div><label htmlFor="uom-factor" className="block text-sm font-medium text-fg">Base units per {uomForm.code || 'unit'}</label><input id="uom-factor" className="input-field mt-1.5" type="number" min="0.000001" step="any" required value={uomForm.conversionFactor} onChange={(event) => setUomForm({ ...uomForm, conversionFactor: Number(event.target.value) })} /></div></div> : <input type="hidden" value="1" />}
+          <div className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">{uomForm.baseUomId ? <>1 <strong>{uomForm.code || 'converted unit'}</strong> = <strong>{uomForm.conversionFactor || 0} {uoms.find((uom) => uom._id === uomForm.baseUomId)?.code || 'base units'}</strong>. Quantities are multiplied and per-unit rates are divided by this factor.</> : <><strong>{uomForm.code || 'This unit'}</strong> is a base unit. Its conversion factor is fixed at 1.</>}</div>
+          <div className="max-h-48 divide-y divide-border overflow-y-auto border-y border-border">{uoms.map((uom) => <div key={uom._id} className="flex items-center gap-2 py-2"><span className="min-w-0 flex-1 truncate text-sm">{uom.code} — {uom.name}{uom.baseUomId ? ` · 1 ${uom.code} = ${uom.conversionFactor} ${typeof uom.baseUomId === 'string' ? 'base units' : uom.baseUomId.code}` : ' · Base unit'}</span><button type="button" className="btn-ghost p-2" title="Edit UOM" onClick={() => { setEditingUomId(uom._id); setUomForm({ code: uom.code, name: uom.name, baseUomId: referenceId(uom.baseUomId), conversionFactor: uom.baseUomId ? uom.conversionFactor : 1 }); }}><Pencil className="h-4 w-4" /></button><button type="button" className="btn-ghost p-2 text-red-600" title="Remove UOM" onClick={() => void removeReference('uoms', uom._id)}><Trash2 className="h-4 w-4" /></button></div>)}</div>
           <div className="flex justify-end gap-2"><button type="button" className="btn-ghost" onClick={() => { setEditingUomId(''); setUomForm(initialUomForm); }}>{editingUomId ? 'Cancel edit' : 'Clear'}</button><button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editingUomId ? 'Save changes' : guidedSetup ? 'Save & create item' : 'Create UOM'}</button></div>
         </form>
       </Modal>}
