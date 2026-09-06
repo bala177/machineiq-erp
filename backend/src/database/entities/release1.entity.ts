@@ -282,6 +282,42 @@ export class SystemSettingEntity extends MigratedEntity {
   @Column({ type: 'jsonb' }) value: unknown;
 }
 
+@Entity('feedback')
+@Index(['status', 'createdAt'])
+@Index(['userId', 'createdAt'])
+@Index(['urgency'])
+export class FeedbackEntity extends MigratedEntity {
+  @Column({ name: 'user_id', type: 'uuid' }) userId: string;
+  @ManyToOne(() => UserEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'user_id' }) submitter: UserEntity;
+  @Column({ type: 'varchar', length: 24 }) type: string;
+  @Column({ type: 'varchar', length: 20, default: 'important' }) urgency: string;
+  @Column({ type: 'varchar', length: 20, default: 'new' }) status: string;
+  @Column({ type: 'text' }) message: string;
+  @Column({ name: 'contact_allowed', default: true }) contactAllowed: boolean;
+  @Column({ name: 'page_path', type: 'varchar', length: 500 }) pagePath: string;
+  @Column({ name: 'page_title', type: 'varchar', length: 200, nullable: true }) pageTitle: string | null;
+  @Column({ name: 'app_version', type: 'varchar', length: 40, nullable: true }) appVersion: string | null;
+  @Column({ name: 'git_commit', type: 'varchar', length: 80, nullable: true }) gitCommit: string | null;
+  @Column({ type: 'varchar', length: 500, nullable: true }) browser: string | null;
+  @Column({ name: 'device_type', type: 'varchar', length: 20, nullable: true }) deviceType: string | null;
+  @Column({ name: 'viewport_width', type: 'integer', nullable: true }) viewportWidth: number | null;
+  @Column({ name: 'viewport_height', type: 'integer', nullable: true }) viewportHeight: number | null;
+  @Column({ type: 'varchar', length: 80, nullable: true }) timezone: string | null;
+  @Column({ name: 'recent_api_error', type: 'jsonb', nullable: true }) recentApiError: Record<string, unknown> | null;
+  @Column({ name: 'screenshot_data_url', type: 'text', nullable: true, select: false }) screenshotDataUrl: string | null;
+  @Column({ name: 'customer_response', type: 'text', nullable: true }) customerResponse: string | null;
+  @Column({ name: 'internal_notes', type: 'text', nullable: true, select: false }) internalNotes: string | null;
+  @Column({ name: 'assignee_id', type: 'uuid', nullable: true }) assigneeId: string | null;
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'assignee_id' }) assignee: UserEntity | null;
+  @Column({ name: 'target_release', type: 'varchar', length: 80, nullable: true }) targetRelease: string | null;
+  @Column({ name: 'duplicate_of_id', type: 'uuid', nullable: true }) duplicateOfId: string | null;
+  @ManyToOne(() => FeedbackEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'duplicate_of_id' }) duplicateOf: FeedbackEntity | null;
+  @Column({ name: 'resolved_at', type: 'timestamptz', nullable: true }) resolvedAt: Date | null;
+}
+
 @Entity('audit_logs')
 @Index(['entityType', 'entityId'])
 @Index(['performedBy'])
@@ -318,5 +354,6 @@ export const RELEASE1_ENTITIES = [
   DocumentTypeEntity,
   SequenceEntity,
   SystemSettingEntity,
+  FeedbackEntity,
   AuditLogEntity,
 ] as const;

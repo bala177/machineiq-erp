@@ -41,6 +41,7 @@ export const RELEASES: Release[] = [
     channel: RELEASE_CHANNEL,
     date: '2026-09-04',
     entries: [
+      { type: 'feature', text: 'In-app customer feedback with safe diagnostic context, screenshot support, personal tracking, and an administrator triage inbox.' },
       { type: 'feature', text: 'Clear item creation sections for identity, sales and purchasing, inventory, units of measure, tax, costing, and planning.' },
       { type: 'fix', text: 'Empty installations now route directly to first-time workspace setup.' },
       { type: 'fix', text: 'Modal overlays cover the complete application shell without clipping the top navigation.' },

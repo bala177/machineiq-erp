@@ -3,6 +3,9 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 const nextConfig = {
   reactStrictMode: true,
+  // Use the compiler API for type checking. The CLI path starts a detached
+  // child process and can lose its captured --showConfig output in containers.
+  experimental: { useTypeScriptCli: false },
   distDir: isDev ? '.next-dev' : '.next',
   env: {
     // Inlined into the client bundle at build time for the About page.

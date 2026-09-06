@@ -1,6 +1,19 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4051/api';
 const REQUEST_TIMEOUT_MS = 20_000;
 
+export interface SafeApiErrorContext { path: string; status?: number; message: string; at: string }
+let recentApiError: SafeApiErrorContext | null = null;
+export function getRecentApiError() {
+  if (!recentApiError || Date.now() - new Date(recentApiError.at).getTime() > 10 * 60_000) return null;
+  return recentApiError;
+}
+
+function rememberApiError(path: string, message: string, status?: number) {
+  // Store only diagnostic metadata. Query strings, headers, bodies, tokens and
+  // form values are deliberately excluded from feedback context.
+  recentApiError = { path: path.split('?')[0], status, message: message.slice(0, 500), at: new Date().toISOString() };
+}
+
 function friendlyNetworkError(error: unknown): Error {
   if (error instanceof DOMException && error.name === 'AbortError') {
     return new Error('The server took too long to respond. Please try again.');
@@ -38,7 +51,9 @@ class ApiClient {
         signal: options.signal ?? controller.signal,
       });
     } catch (error) {
-      throw friendlyNetworkError(error);
+      const friendly = friendlyNetworkError(error);
+      rememberApiError(path, friendly.message);
+      throw friendly;
     } finally {
       clearTimeout(timeout);
     }
@@ -57,9 +72,11 @@ class ApiClient {
       const error = await res.json().catch(() => ({ message: 'Request failed' }));
       const message = Array.isArray(error.message) ? error.message.join('. ') : error.message;
       const isGenericServerError = res.status >= 500 && (!message || message === 'Internal server error');
-      throw new Error(isGenericServerError
+      const friendlyMessage = isGenericServerError
         ? 'The server could not complete this request. Please try again.'
-        : (message || `Request failed (${res.status})`));
+        : (message || `Request failed (${res.status})`);
+      rememberApiError(path, friendlyMessage, res.status);
+      throw new Error(friendlyMessage);
     }
 
     if (res.status === 204) return null as T;

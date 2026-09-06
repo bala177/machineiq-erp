@@ -6,9 +6,11 @@ import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useAuth } from '@/providers/auth-provider';
 import { useTheme } from '@/providers/theme-provider';
-import { LayoutDashboard, Building2, Bell, Users, Settings, Menu, X, LogOut, Search, ScrollText, Sun, Moon, ChevronDown, UserCircle, HelpCircle, PanelLeftClose, PanelLeftOpen, ChevronsLeft, Sparkles, Info, Boxes, Truck } from 'lucide-react';
+import { LayoutDashboard, Building2, Bell, Users, Settings, Menu, X, LogOut, Search, ScrollText, Sun, Moon, ChevronDown, UserCircle, HelpCircle, PanelLeftOpen, ChevronsLeft, Sparkles, Info, Boxes, Truck, MessageSquare } from 'lucide-react';
 import { DEPLOYMENT_LABEL } from '@/lib/app-meta';
 import { roleColor, roleLabel } from '@/lib/roles';
+import { api } from '@/lib/api';
+import { FeedbackWidget } from '@/components/feedback/feedback-widget';
 
 /* ─────────────── nav config ─────────────── */
 
@@ -162,13 +164,15 @@ function ProfileDropdown({ user, theme, setTheme, logout, onClose }: { user: any
 
 /* ─────────────── NavLink (sidebar) ─────────────── */
 
-function NavLink({ item, active, collapsed, onClick }: { item: { label: string; href: string; icon: React.ElementType }; active: boolean; collapsed: boolean; onClick?: () => void }) {
+function NavLink({ item, active, collapsed, onClick, badge }: { item: { label: string; href: string; icon: React.ElementType }; active: boolean; collapsed: boolean; onClick?: () => void; badge?: number }) {
   return (
     <Link href={item.href} onClick={onClick} title={collapsed ? item.label : undefined} className={clsx('group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150', collapsed && 'justify-center px-2', active ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/30 dark:text-brand-300' : 'text-fg-secondary hover:bg-surface-secondary hover:text-fg')}>
       {/* Active indicator pill */}
       {active && !collapsed && <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r-full bg-brand-600" />}
       <item.icon className={clsx('shrink-0 transition-colors', collapsed ? 'h-5 w-5' : 'h-[17px] w-[17px]', active ? 'text-brand-600 dark:text-brand-400' : 'text-fg-tertiary group-hover:text-fg-secondary')} />
       {!collapsed && <span className="truncate">{item.label}</span>}
+      {!!badge && !collapsed && <span className="ml-auto min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold text-white">{badge > 99 ? '99+' : badge}</span>}
+      {!!badge && collapsed && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />}
     </Link>
   );
 }
@@ -179,6 +183,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [feedbackEnabled, setFeedbackEnabled] = useState(false);
+  const [feedbackCount, setFeedbackCount] = useState(0);
   const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -188,6 +194,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const role = user?.role ?? '';
   const visibleNavItems = navItems.filter((item) => item.roles.includes(role));
   const visibleMobileNavItems = mobileNavItems.filter((item) => item.roles.includes(role));
+
+  const refreshFeedbackCount = () => {
+    if (isAdmin) api.get<{ new: number }>('/feedback/admin/count').then((result) => setFeedbackCount(result.new)).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    api.get<{ enabled: boolean }>('/feedback/config').then(({ enabled }) => {
+      setFeedbackEnabled(enabled);
+      if (enabled && isAdmin) api.get<{ new: number }>('/feedback/admin/count').then((result) => setFeedbackCount(result.new)).catch(() => {});
+    }).catch(() => setFeedbackEnabled(false));
+  }, [user, isAdmin]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -245,6 +263,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               {adminItems.map((item) => (
                 <NavLink key={item.href} item={item} active={pathname.startsWith(item.href)} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />
               ))}
+              {feedbackEnabled && <NavLink item={{ label: 'Feedback', href: '/admin/feedback', icon: MessageSquare }} active={pathname.startsWith('/admin/feedback')} collapsed={collapsed} badge={feedbackCount} onClick={() => setSidebarOpen(false)} />}
             </div>
           )}
 
@@ -255,6 +274,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {supportItems.map((item) => (
               <NavLink key={item.href} item={item} active={pathname === item.href} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />
             ))}
+            {feedbackEnabled && <NavLink item={{ label: 'My Feedback', href: '/feedback', icon: MessageSquare }} active={pathname === '/feedback'} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />}
           </div>
         </nav>
       </aside>
@@ -332,6 +352,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           })}
         </div>
       </nav>
+      <FeedbackWidget enabled={feedbackEnabled} onSubmitted={refreshFeedbackCount} />
     </div>
   );
 }

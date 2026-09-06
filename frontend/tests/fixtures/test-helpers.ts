@@ -29,6 +29,7 @@ type MockOptions = {
   empty?: Partial<Record<'dashboard' | 'opportunities' | 'projects' | 'tasks' | 'machines' | 'procurement' | 'documents' | 'decisions' | 'notifications' | 'users' | 'components' | 'deliverables', boolean>>;
   formFailures?: Partial<Record<'opportunity' | 'project', string>>;
   detailNotFound?: Partial<Record<'opportunity' | 'project', boolean>>;
+  feedbackEnabled?: boolean;
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -44,6 +45,7 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
   const mutableOpportunities = seedOpportunities.map((item) => ({ ...item }));
   const mutableProjects = seedProjects.map((item) => ({ ...item }));
   const mutableTasks = seedTasks.map((item) => ({ ...item }));
+  const mutableFeedback: any[] = [];
   const procurementItems = seedProcurementItems.map((item) => ({ ...item }));
   const mutableComponents: any[] = seedComponents.map((item) => ({
     ...item,
@@ -171,6 +173,41 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
 
     if (path === '/auth/setup' && method === 'POST') {
       await route.fulfill(jsonResponse({ access_token: 'token-admin', user: adminUser }));
+      return;
+    }
+
+    if (path === '/feedback/config' && method === 'GET') {
+      await route.fulfill(jsonResponse({ enabled: options.feedbackEnabled ?? false }));
+      return;
+    }
+
+    if (path === '/feedback' && method === 'POST') {
+      const payload = request.postDataJSON();
+      const created = { _id: `feedback-${mutableFeedback.length + 1}`, status: 'new', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), submitter: adminUser, ...payload };
+      mutableFeedback.unshift(created);
+      await route.fulfill(jsonResponse(created, 201));
+      return;
+    }
+
+    if (path === '/feedback/mine' && method === 'GET') {
+      await route.fulfill(jsonResponse(mutableFeedback));
+      return;
+    }
+
+    if (path === '/feedback/admin/count' && method === 'GET') {
+      await route.fulfill(jsonResponse({ new: mutableFeedback.filter((item) => item.status === 'new').length, blocking: mutableFeedback.filter((item) => item.status === 'new' && item.urgency === 'blocking').length }));
+      return;
+    }
+
+    if (path === '/feedback/admin' && method === 'GET') {
+      await route.fulfill(jsonResponse(mutableFeedback));
+      return;
+    }
+
+    if (path.match(/^\/feedback\/[^/]+$/) && method === 'PATCH') {
+      const item = mutableFeedback.find((entry) => entry._id === path.split('/')[2]);
+      Object.assign(item, request.postDataJSON(), { updatedAt: new Date().toISOString() });
+      await route.fulfill(jsonResponse(item));
       return;
     }
 

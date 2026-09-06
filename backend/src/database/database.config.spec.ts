@@ -1,5 +1,6 @@
 import { postgresOptions } from './database.config';
 import { ZohoParityMasterData2026090400001 } from './migrations/202609040001-ZohoParityMasterData';
+import { FeedbackSystem2026090600001 } from './migrations/202609060001-FeedbackSystem';
 
 describe('postgresOptions', () => {
   const originalMigrationSetting = process.env.RUN_MIGRATIONS_ON_STARTUP;
@@ -30,5 +31,6 @@ describe('postgresOptions', () => {
   it('registers the latest production migration', () => {
     const options = postgresOptions('postgresql://machineiq:machineiq@localhost:5432/machineiq');
     expect(options.migrations).toContain(ZohoParityMasterData2026090400001);
+    expect(options.migrations).toContain(FeedbackSystem2026090600001);
   });
 });

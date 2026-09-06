@@ -65,6 +65,11 @@ services:
       - key: JWT_EXPIRATION
         value: 8h
 
+      # Customer UAT feedback collection. Set false after UAT to hide all
+      # feedback routes and UI while retaining the submitted records.
+      - key: FEEDBACK_ENABLED
+        value: "true"
+
       - key: CORS_ORIGIN
         value: https://www.machineiq.tech,https://machineiq.tech,https://machineiq-web.onrender.com
 

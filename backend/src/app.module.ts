@@ -30,6 +30,7 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { DocumentTypesModule } from './modules/document-types/document-types.module';
 import { HealthController } from './health.controller';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 import { postgresOptions } from './database/database.config';
 
 @Module({
@@ -67,6 +68,7 @@ import { postgresOptions } from './database/database.config';
     ItemsModule,
     OrganizationModule,
     SuppliersModule,
+    FeedbackModule,
   ],
   controllers: [HealthController],
   providers: [
