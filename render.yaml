@@ -25,7 +25,14 @@ databases:
     postgresMajorVersion: "16"
     databaseName: machineiq
     user: machineiq
-    ipAllowList: []
+    # External access is open so developers and the UAT team can connect
+    # psql / IDE clients directly. The only thing guarding the database is
+    # the generated `machineiq` password — rotate it in the Render dashboard
+    # if it is ever pasted somewhere shared, and narrow this list to specific
+    # office/home CIDRs once UAT connection patterns settle.
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: open to all — password auth only
 
 services:
   # ─── Backend API ───────────────────────────────────────────────
