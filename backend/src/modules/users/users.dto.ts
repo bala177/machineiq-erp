@@ -1,5 +1,6 @@
 import { IsString, IsOptional, IsEnum, IsBoolean, MaxLength } from 'class-validator';
 import { Role } from '../../common/enums';
+import { IsOptionalUuid } from '../../common/optional-uuid';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -16,9 +17,8 @@ export class UpdateUserDto {
   @IsEnum(Role)
   role?: Role;
 
-  @IsOptional()
-  @IsString()
-  departmentId?: string;
+  @IsOptionalUuid('departmentId must be a valid department id')
+  departmentId?: string | null;
 
   @IsOptional()
   @IsString()

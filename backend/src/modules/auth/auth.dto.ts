@@ -1,5 +1,6 @@
 import { IsEmail, IsString, MinLength, MaxLength, IsOptional, IsEnum, Matches } from 'class-validator';
 import { Role } from '../../common/enums';
+import { IsOptionalUuid } from '../../common/optional-uuid';
 
 export class RegisterDto {
   @IsEmail()
@@ -26,9 +27,8 @@ export class RegisterDto {
   @IsEnum(Role)
   role?: Role;
 
-  @IsOptional()
-  @IsString()
-  departmentId?: string;
+  @IsOptionalUuid('departmentId must be a valid department id')
+  departmentId?: string | null;
 }
 
 export class LoginDto {

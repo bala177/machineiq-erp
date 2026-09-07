@@ -20,7 +20,7 @@ export class AuthService {
     private auditLogService: AuditLogService,
   ) {}
 
-  async register(dto: { email: string; password: string; firstName: string; lastName: string; role?: string; departmentId?: string }, performedBy: string) {
+  async register(dto: { email: string; password: string; firstName: string; lastName: string; role?: string; departmentId?: string | null }, performedBy: string) {
     const email = dto.email.trim().toLowerCase();
     const existing = await this.users.findOne({ where: { email } });
     if (existing) {
