@@ -4,6 +4,7 @@ import { Release1PostgresFoundation2026082800001 } from './migrations/2026082800
 import { ImmutableAuditLogs2026090100001 } from './migrations/2026090100001-ImmutableAuditLogs';
 import { DepartmentManagementPermission2026090100002 } from './migrations/2026090100002-DepartmentManagementPermission';
 import { ZohoParityMasterData2026090400001 } from './migrations/202609040001-ZohoParityMasterData';
+import { AdminPermissionsBackfill2026090700002 } from './migrations/202609070002-AdminPermissionsBackfill';
 
 const testDatabaseUrl = process.env.POSTGRES_TEST_DATABASE_URL;
 
@@ -18,7 +19,7 @@ describe('Release 1 PostgreSQL migration', () => {
     synchronize: false,
     migrationsRun: false,
     entities: [join(__dirname, 'entities', '*.entity.{ts,js}')],
-    migrations: [Release1PostgresFoundation2026082800001, ImmutableAuditLogs2026090100001, DepartmentManagementPermission2026090100002, ZohoParityMasterData2026090400001],
+    migrations: [Release1PostgresFoundation2026082800001, ImmutableAuditLogs2026090100001, DepartmentManagementPermission2026090100002, ZohoParityMasterData2026090400001, AdminPermissionsBackfill2026090700002],
   });
 
   beforeAll(async () => {
@@ -41,12 +42,28 @@ describe('Release 1 PostgreSQL migration', () => {
     const tables = rows.map(({ table_name }) => table_name);
 
     expect(tables).toEqual(expect.arrayContaining(['migrations', 'departments', 'users', 'permissions', 'role_permissions', 'companies', 'branches', 'locations', 'customers', 'suppliers', 'item_categories', 'uoms', 'items', 'document_types', 'sequences', 'system_settings', 'audit_logs', 'runtime_documents']));
-    const [departmentPermission] = await dataSource.query(`SELECT "is_active" FROM "permissions" WHERE "code" = 'departments.manage'`);
-    expect(departmentPermission).toEqual({ is_active: true });
+    const adminPermissions = await dataSource.query(`
+      SELECT p."code"
+      FROM "permissions" p
+      INNER JOIN "role_permissions" rp ON rp."permission_id" = p."id"
+      WHERE rp."role" = 'admin' AND rp."allowed" = true
+    `);
+    expect(adminPermissions.map(({ code }: { code: string }) => code)).toEqual(expect.arrayContaining([
+      'items.manage',
+      'customers.manage',
+      'suppliers.manage',
+      'organization.manage',
+      'departments.manage',
+      'audit-logs.view',
+      'permissions.manage',
+      'document-types.manage',
+      'components.link-item',
+    ]));
     await expect(dataSource.showMigrations()).resolves.toBe(false);
   });
 
   it('reverts cleanly and can apply the baseline again', async () => {
+    await dataSource.undoLastMigration({ transaction: 'all' });
     await dataSource.undoLastMigration({ transaction: 'all' });
     await dataSource.undoLastMigration({ transaction: 'all' });
     await dataSource.undoLastMigration({ transaction: 'all' });

@@ -58,7 +58,7 @@ export class AuthService {
     };
   }
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string, ipAddress?: string) {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await this.users.createQueryBuilder('user').addSelect('user.password').where('user.email = :email', { email: normalizedEmail }).andWhere('user.deleted_at IS NULL').getOne();
     if (!user || !user.isActive) {
@@ -69,6 +69,14 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    await this.auditLogService.log({
+      action: 'login',
+      entityType: 'Account',
+      entityId: user._id,
+      performedBy: user._id,
+      ipAddress,
+    });
 
     const payload = { sub: user._id, email: user.email, role: user.role };
     return {

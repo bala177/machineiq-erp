@@ -1,4 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
@@ -10,7 +11,7 @@ import { AuthService } from './auth.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 describe('AuthService PostgreSQL setup', () => {
-  const users = { count: jest.fn() };
+  const users = { count: jest.fn(), createQueryBuilder: jest.fn() };
   const transactionUsers = { count: jest.fn(), create: jest.fn(), save: jest.fn() };
   const transactionSettings = { upsert: jest.fn() };
   const transactionPermissions = { upsert: jest.fn(), find: jest.fn() };
@@ -46,6 +47,27 @@ describe('AuthService PostgreSQL setup', () => {
     await expect(service.getSetupStatus()).resolves.toEqual({ needsSetup: true });
     await expect(service.getSetupStatus()).resolves.toEqual({ needsSetup: false });
     expect(users.count).toHaveBeenCalledWith({ withDeleted: true });
+  });
+
+  it('records a successful login with its user and source address', async () => {
+    const user = { _id: 'c40f899a-37f8-4bad-a886-7753d1561626', email: 'admin@acme.com', password: 'hash', firstName: 'Jane', lastName: 'Doe', role: Role.ADMIN, isActive: true };
+    const getOne = jest.fn().mockResolvedValue(user);
+    const andWhere = jest.fn().mockReturnValue({ getOne });
+    const where = jest.fn().mockReturnValue({ andWhere });
+    const addSelect = jest.fn().mockReturnValue({ where });
+    users.createQueryBuilder.mockReturnValue({ addSelect });
+    jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+    auditLogService.log.mockResolvedValue({});
+
+    await expect(service.login(' ADMIN@ACME.COM ', 'SecurePass1', '203.0.113.8')).resolves.toEqual(expect.objectContaining({ access_token: 'token' }));
+
+    expect(auditLogService.log).toHaveBeenCalledWith({
+      action: 'login',
+      entityType: 'Account',
+      entityId: user._id,
+      performedBy: user._id,
+      ipAddress: '203.0.113.8',
+    });
   });
 
   it('creates the first administrator and organization settings atomically', async () => {

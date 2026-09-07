@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request, Ip } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
 import { RolesGuard } from '../../guards/roles.guard';
@@ -15,8 +15,8 @@ export class AuthController {
   // 30 attempts per minute — still brute-force resistant, comfortable for active development
   @Throttle({ default: { ttl: 60000, limit: 30 } })
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
+  login(@Body() dto: LoginDto, @Ip() ipAddress: string) {
+    return this.authService.login(dto.email, dto.password, ipAddress);
   }
 
   // Public and side-effect-free — safe to call on every page load to decide

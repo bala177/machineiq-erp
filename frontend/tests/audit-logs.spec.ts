@@ -22,8 +22,18 @@ test.describe('Audit Logs', () => {
               ipAddress: '127.0.0.1',
               createdAt: '2026-09-01T10:00:00.000Z',
             },
+            {
+              _id: 'audit-2',
+              action: 'login',
+              entityType: 'Account',
+              entityId: '11111111-1111-4111-a111-111111111111',
+              performedBy: 'user-1',
+              performer: { firstName: 'Release', lastName: 'Admin', email: 'admin@machineiq.local' },
+              ipAddress: '203.0.113.8',
+              createdAt: '2026-09-01T09:00:00.000Z',
+            },
           ],
-          total: 1,
+          total: 2,
           page: 1,
           limit: 50,
           pages: 1,
@@ -34,18 +44,18 @@ test.describe('Audit Logs', () => {
     await page.goto('/admin/audit-logs');
   });
 
-  test('shows a business-friendly activity summary and field changes', async ({ page, isMobile }) => {
-    const record = page.locator('article');
+  test('shows a compact activity table with logins and expandable field changes', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Activity History' })).toBeVisible();
-    await expect(page.getByText('Protected history')).toBeVisible();
-    await expect(record.getByRole('heading', { name: 'Updated Department “Automation”' })).toBeVisible();
-    await expect(record.getByText('Release Admin')).toBeVisible();
-    await expect(record.getByText('Department', { exact: true })).toBeVisible();
-    await record.getByRole('button', { name: 'Review 1 change' }).click();
-    await expect(record.getByText(isMobile ? 'Previous' : 'Previous value', { exact: true }).first()).toBeVisible();
-    await expect(record.getByText(isMobile ? 'New' : 'New value', { exact: true }).first()).toBeVisible();
-    await expect(record.getByText('Controls')).toBeVisible();
-    await expect(record.getByText('Automation', { exact: true })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'When' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'User' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Action' })).toBeVisible();
+    const changedRecord = page.getByRole('row').filter({ hasText: 'Automation' });
+    await expect(changedRecord.getByText('Release Admin')).toBeVisible();
+    await expect(page.getByRole('row').filter({ hasText: 'Signed in' })).toBeVisible();
+    await changedRecord.getByRole('button', { name: 'View details for Updated Department “Automation”' }).click();
+    await expect(page.getByText('Previous value', { exact: true })).toBeVisible();
+    await expect(page.getByText('New value', { exact: true })).toBeVisible();
+    await expect(page.getByText('Controls')).toBeVisible();
   });
 
   test('sends entity and action filters to the API', async ({ page }) => {
