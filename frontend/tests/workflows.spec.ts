@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { installApiMocks, loginThroughUi, setAuthenticatedSession } from './fixtures/test-helpers';
+import { installApiMocks, setAuthenticatedSession } from './fixtures/test-helpers';
 
 test.describe('core workflows', () => {
   test.beforeEach(async ({ page }) => {
@@ -92,50 +92,24 @@ test.describe('core workflows', () => {
     await expect(page.getByLabel(/Feasibility notes/i)).toHaveValue('Need site photos and cycle assumptions before feasibility.');
   });
 
-  test('creates an opportunity through the form flow', async ({ page }) => {
+  // Release 2 replaced the standalone opportunity, project and quote creation
+  // forms with the Sales workspace. The old routes stay as redirects so existing
+  // bookmarks and links land on the flow that replaced them.
+  test('redirects legacy creation routes into the sales workspace', async ({ page }) => {
     await installApiMocks(page);
     await setAuthenticatedSession(page);
-    await page.goto('/opportunities/new');
 
-    // Step 1: select a customer
-    await page.getByRole('combobox', { name: 'Search by company name…' }).click();
-    await page.getByRole('button', { name: 'Atlas Foods' }).click();
-    await page.getByRole('button', { name: /Next.*Choose machine/i }).click();
+    const legacyRoutes: [string, RegExp][] = [
+      ['/opportunities/new', /\/sales\?kind=enquiry$/],
+      ['/projects/new', /\/sales\?kind=order$/],
+      ['/quotes/new', /\/sales\?kind=quote$/],
+    ];
 
-    // Step 2: leave blank request selected, add a title
-    await page.getByPlaceholder(/Custom filling line/i).fill('Bottle Handler');
-    await page.getByRole('button', { name: /Create request/i }).click();
-
-    await expect(page).toHaveURL(/\/opportunities\/opp-created$/);
-  });
-
-  test('surfaces create-opportunity backend validation errors', async ({ page }) => {
-    await installApiMocks(page, { formFailures: { opportunity: 'Title already exists' } });
-    await setAuthenticatedSession(page);
-    await page.goto('/opportunities/new');
-
-    // Step 1: select a customer
-    await page.getByRole('combobox', { name: 'Search by company name…' }).click();
-    await page.getByRole('button', { name: 'Atlas Foods' }).click();
-    await page.getByRole('button', { name: /Next.*Choose machine/i }).click();
-
-    // Step 2: submit — triggers backend failure on /opportunities/with-customer
-    await page.getByRole('button', { name: /Create request/i }).click();
-    await expect(page.getByText('Title already exists')).toBeVisible();
-  });
-
-  test('converts an opportunity into a prefilled project form and creates the project', async ({ page }) => {
-    await setAuthenticatedSession(page);
-    await page.goto('/opportunities/opp-2');
-    await page.getByRole('link', { name: 'Convert to Project' }).click();
-
-    await expect(page).toHaveURL(/\/projects\/new\?opportunityId=opp-2$/);
-    await expect(page.getByLabel('Project Name')).toHaveValue('Case Packer Revamp');
-    await expect(page.getByLabel('Customer')).toHaveValue('cust-b');
-
-    await page.getByRole('button', { name: 'Convert to Project' }).click();
-    await expect(page).toHaveURL(/\/projects\/proj-created$/);
-    await expect(page.getByText('Case Packer Revamp')).toBeVisible();
+    for (const [legacy, destination] of legacyRoutes) {
+      await page.goto(legacy);
+      await expect(page).toHaveURL(destination);
+      await expect(page.getByRole('heading', { name: 'Sales & Machine Projects' })).toBeVisible();
+    }
   });
 
   test('renders project detail execution snapshot', async ({ page }) => {

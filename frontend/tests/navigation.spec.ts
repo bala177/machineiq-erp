@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { installApiMocks, setAuthenticatedSession } from './fixtures/test-helpers';
+// Read from package.json so a version bump does not break these assertions.
+import { version as appVersion } from '../package.json';
 
 test.beforeEach(async ({ page }) => {
   await installApiMocks(page);
@@ -91,16 +93,16 @@ test('support pages share current release-candidate identity and fit the viewpor
   await setAuthenticatedSession(page);
 
   await page.goto('/help');
-  await expect(page.getByRole('heading', { name: 'Release 1 Help & FAQ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Help & FAQ', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
 
   await page.goto('/about');
-  await expect(page.getByText(/Release candidate · v2\.1\.0-rc\.2/).first()).toBeVisible();
+  await expect(page.getByText(`Release candidate · v${appVersion}`).first()).toBeVisible();
   await expect(page.getByText('Currently in Release candidate')).toBeVisible();
 
   await page.goto('/about/release-notes');
   await expect(page.getByRole('heading', { name: 'Release Notes' })).toBeVisible();
-  await expect(page.getByText('v2.1.0-rc.2', { exact: true })).toBeVisible();
+  await expect(page.getByText(`v${appVersion}`, { exact: true })).toBeVisible();
 
   for (const route of ['/help', '/about', '/about/release-notes']) {
     await page.goto(route);

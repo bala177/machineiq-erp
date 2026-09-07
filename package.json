@@ -1,6 +1,8 @@
 {
   "name": "machineiq",
-  "version": "2.1.0-rc.2",
+  "version": "2.2.0-rc.1",
+  "author": "Quorin Tech (https://www.quorintech.com)",
+  "license": "UNLICENSED",
   "private": true,
   "description": "OEM Machine Execution Platform",
   "scripts": {
@@ -21,6 +23,8 @@
     "frontend:dev": "npm --prefix frontend run dev",
     "backend:build": "npm --prefix backend run build",
     "frontend:build": "npm --prefix frontend run build",
-    "release:check": "bash scripts/release-check.sh"
+    "release:check": "bash scripts/release-check.sh",
+    "test:release2": "node scripts/test-release2.cjs",
+    "test:release2:browser": "node scripts/test-release2-browser.cjs"
   }
 }

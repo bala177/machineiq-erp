@@ -7,8 +7,10 @@ CANDIDATE="$(printf '%s' "$CANDIDATE_INPUT" | tr -cs 'A-Za-z0-9._-' '-')"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 REPORT_DIR="$ROOT_DIR/logs/release-checks/${TIMESTAMP}-${CANDIDATE}"
 SUMMARY="$REPORT_DIR/summary.md"
-SOURCE_DOC="$ROOT_DIR/docs/customer-references/Dashboard.docx"
+SOURCE_DOC="$ROOT_DIR/docs/specs/Dashboard.docx"
 EXPECTED_SOURCE_HASH="3acddd37fca8a16622147664f8cfe52ee6a5a66c5877bc70c867b196577a8df2"
+REVISED_SOURCE_DOC="$ROOT_DIR/docs/specs/MachineIQ_ERP_Product_Specification_v1.0.pdf"
+EXPECTED_REVISED_SOURCE_HASH="2b21f1ce379f43aa234fed79d3556d40e67e5014899692660dd7afec14b40c80"
 
 mkdir -p "$REPORT_DIR"
 
@@ -18,11 +20,15 @@ else
   SOURCE_REVISION="NO_COMMIT"
 fi
 
-BACKEND_VERSION="$(node -p "require('$ROOT_DIR/backend/package.json').version")"
-FRONTEND_VERSION="$(node -p "require('$ROOT_DIR/frontend/package.json').version")"
+BACKEND_VERSION="$(cd "$ROOT_DIR" && node -p "require('./backend/package.json').version")"
+FRONTEND_VERSION="$(cd "$ROOT_DIR" && node -p "require('./frontend/package.json').version")"
 ACTUAL_SOURCE_HASH="MISSING"
 if [ -f "$SOURCE_DOC" ]; then
   ACTUAL_SOURCE_HASH="$(sha256sum "$SOURCE_DOC" | awk '{print $1}')"
+fi
+ACTUAL_REVISED_SOURCE_HASH="MISSING"
+if [ -f "$REVISED_SOURCE_DOC" ]; then
+  ACTUAL_REVISED_SOURCE_HASH="$(sha256sum "$REVISED_SOURCE_DOC" | awk '{print $1}')"
 fi
 
 declare -a CHECK_NAMES=()
@@ -44,10 +50,19 @@ run_check() {
 }
 
 if [ "$ACTUAL_SOURCE_HASH" = "$EXPECTED_SOURCE_HASH" ]; then
-  CHECK_NAMES+=("Client specification hash")
+  CHECK_NAMES+=("Original client specification hash")
   CHECK_RESULTS+=("PASS")
 else
-  CHECK_NAMES+=("Client specification hash")
+  CHECK_NAMES+=("Original client specification hash")
+  CHECK_RESULTS+=("FAIL")
+  OVERALL_EXIT=1
+fi
+
+if [ "$ACTUAL_REVISED_SOURCE_HASH" = "$EXPECTED_REVISED_SOURCE_HASH" ]; then
+  CHECK_NAMES+=("Revised product specification hash")
+  CHECK_RESULTS+=("PASS")
+else
+  CHECK_NAMES+=("Revised product specification hash")
   CHECK_RESULTS+=("FAIL")
   OVERALL_EXIT=1
 fi
@@ -113,7 +128,8 @@ fi
   echo "| Source revision | $SOURCE_REVISION |"
   echo "| Backend version | $BACKEND_VERSION |"
   echo "| Frontend version | $FRONTEND_VERSION |"
-  echo "| Client specification hash | $ACTUAL_SOURCE_HASH |"
+  echo "| Original client specification hash | $ACTUAL_SOURCE_HASH |"
+  echo "| Revised product specification hash | $ACTUAL_REVISED_SOURCE_HASH |"
   echo
   echo "| Check | Result |"
   echo "|---|---|"

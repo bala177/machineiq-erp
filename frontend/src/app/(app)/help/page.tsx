@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { clsx } from 'clsx';
 import {
   AlertTriangle, ArrowRight, BookOpen, Building2, CheckCircle2, ChevronDown,
-  FileCog, HelpCircle, KeyRound, LayoutDashboard, PackageCheck, Search,
-  ShieldCheck, Truck, Users,
+  ClipboardList, FileCog, HelpCircle, KeyRound, LayoutDashboard, MessageCircle,
+  PackageCheck, Search, ShieldCheck, Truck, Users,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { FAQ, SUPPORT_EMAIL } from '@/lib/app-meta';
@@ -55,37 +55,47 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 }
 
 const SECTIONS = [
-  { id: 'start', label: 'Release 1 setup', icon: LayoutDashboard },
+  { id: 'start', label: 'Set-up order', icon: LayoutDashboard },
   { id: 'organization', label: 'Organization', icon: Building2 },
   { id: 'partners', label: 'Customers & suppliers', icon: Truck },
   { id: 'items', label: 'Items', icon: PackageCheck },
+  { id: 'sales', label: 'Sales & projects', icon: ClipboardList },
   { id: 'controls', label: 'Access & numbering', icon: ShieldCheck },
-  { id: 'scope', label: 'Release boundary', icon: AlertTriangle },
+  { id: 'scope', label: 'What is live today', icon: AlertTriangle },
   { id: 'faq', label: 'FAQ', icon: HelpCircle },
 ];
 
 const SETUP_STEPS = [
   ['1', 'Organization', 'Create the legal company, then its branches, then physical locations.', '/organization'],
   ['2', 'Access controls', 'Assign users and verify each role in Settings > Permissions.', '/admin/settings'],
-  ['3', 'Document numbering', 'Review document prefixes and sequence rules in Settings > Document Types.', '/admin/settings'],
+  ['3', 'Document numbering', 'Review master-data prefixes and sequence rules in Settings > Document Types.', '/admin/settings'],
   ['4', 'Business partners', 'Create complete customer and supplier records with generated codes.', '/customers'],
   ['5', 'Item references', 'Create item categories and units of measure before creating items.', '/items'],
-  ['6', 'Validate', 'Sign in with each working role and confirm the intended read and edit access.', '#faq'],
+  ['6', 'Sales settings', 'Set sales prefixes, currencies, tax rates, and the approver rule before the first enquiry.', '/sales?kind=enquiry'],
+  ['7', 'Validate', 'Sign in with each working role, confirm the intended access, and carry one enquiry through to a project.', '#faq'],
+] as const;
+
+const SALES_STAGES = [
+  ['1. Enquiry', 'Capture the machine, quantity, site, and the requirement summary behind the request.'],
+  ['2. Quotation', 'Price the scope with exclusions, validity, warranty, terms, and payment milestones.'],
+  ['3. Sales order', 'Record the customer PO against the accepted quotation. Nothing is re-entered.'],
+  ['4. Machine project', 'Create the project and its baseline from the confirmed order.'],
 ] as const;
 
 export default function HelpPage() {
   return (
     <div className="mx-auto max-w-5xl pb-10">
       <PageHeader
-        title="Release 1 Help & FAQ"
-        description="Follow the PostgreSQL and master-data setup in dependency order."
+        title="Help & FAQ"
+        description="Set up your master data in dependency order, then run the sales flow from enquiry to machine project."
       />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { icon: Building2, title: 'Set up organization', text: 'Company, branches, and locations.', href: '/organization' },
           { icon: PackageCheck, title: 'Build item master', text: 'Categories, UOMs, costs, prices, and items.', href: '/items' },
-          { icon: Search, title: 'Check Release 1 FAQ', text: 'Scope, permissions, numbering, and validation.', href: '#faq' },
+          { icon: ClipboardList, title: 'Run the sales flow', text: 'Enquiry, quotation, order, and machine project.', href: '/sales?kind=enquiry' },
+          { icon: Search, title: 'Check the FAQ', text: 'Scope, permissions, numbering, and validation.', href: '#faq' },
         ].map(({ icon: Icon, title, text, href }) => (
           <Link key={title} href={href} className="group rounded-xl border border-border bg-surface p-4 shadow-sm transition hover:border-brand-300 hover:shadow-md">
             <div className="flex items-center justify-between">
@@ -114,7 +124,7 @@ export default function HelpPage() {
         </aside>
 
         <div className="min-w-0 space-y-6">
-          <HelpSection id="start" icon={LayoutDashboard} title="Complete Release 1 setup" summary="Create shared records in dependency order so later transactions use clean references.">
+          <HelpSection id="start" icon={LayoutDashboard} title="Set up in dependency order" summary="Create shared records in this order so later documents reference clean master data.">
             <div className="grid gap-3 sm:grid-cols-2">
               {SETUP_STEPS.map(([number, title, text, href]) => (
                 <Link key={number} href={href} className="group rounded-xl border border-border p-4 transition hover:border-brand-300 hover:bg-surface-secondary">
@@ -154,21 +164,33 @@ export default function HelpPage() {
                 ['Item', 'Enter code, description, category, UOM, standard cost, selling price, and planning defaults.'],
               ].map(([title, text], index) => <div key={title} className="rounded-xl border border-border p-4"><span className="text-xs font-bold text-brand-600">{index + 1}</span><p className="mt-1 text-sm font-semibold text-fg">{title}</p><p className="mt-1 text-xs leading-relaxed text-fg-muted">{text}</p></div>)}
             </div>
-            <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-relaxed text-blue-800 dark:bg-blue-950/20 dark:text-blue-200"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> Release 1 links engineering components to item records. Stock balances and warehouse movements arrive in a later release.</p>
+            <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-relaxed text-blue-800 dark:bg-blue-950/20 dark:text-blue-200"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> Items are linked to engineering components and priced on quotation lines. Stock balances and warehouse movements arrive in a later release.</p>
+          </HelpSection>
+
+          <HelpSection id="sales" icon={ClipboardList} title="Run the sales flow" summary="One connected trail from customer demand to an approved machine project.">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {SALES_STAGES.map(([title, text]) => <div key={title} className="rounded-xl border border-border p-4"><p className="text-sm font-semibold text-fg">{title}</p><p className="mt-1 text-xs leading-relaxed text-fg-muted">{text}</p></div>)}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-border p-4"><p className="text-sm font-semibold text-fg">Approval and revisions</p><p className="mt-1 text-xs leading-relaxed text-fg-muted">Only drafts can be edited. A submitted, approved, or sent document is locked so the approved version stays operational — use New revision to change it, and compare revisions side by side. If Sales settings requires a separate approver, the person who submitted cannot approve.</p></div>
+              <div className="rounded-xl border border-border p-4"><p className="text-sm font-semibold text-fg">Sales settings</p><p className="mt-1 text-xs leading-relaxed text-fg-muted">Document prefixes for enquiries, quotations, orders, and projects live here, with currencies, tax rates, and the separate-approver rule. These are not in Settings &gt; Document Types.</p></div>
+            </div>
+            <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-relaxed text-blue-800 dark:bg-blue-950/20 dark:text-blue-200"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> Payment milestones record the contractual schedule against the gross contract value and carry into the project. Invoicing and payment allocation arrive in a later release.</p>
+            <Link href="/sales?kind=enquiry" className="btn-secondary inline-flex"><ClipboardList className="h-4 w-4" /> Open Sales</Link>
           </HelpSection>
 
           <HelpSection id="controls" icon={KeyRound} title="Control access and numbering" summary="Administrators configure both controls before wider UAT.">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex gap-3 rounded-xl border border-border p-4"><Users className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /><div><p className="text-sm font-semibold text-fg">Users and permissions</p><p className="mt-1 text-xs leading-relaxed text-fg-muted">Assign the correct role in Users. In Settings &gt; Permissions, save the explicit capabilities for each role, then test with that role.</p></div></div>
-              <div className="flex gap-3 rounded-xl border border-border p-4"><FileCog className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /><div><p className="text-sm font-semibold text-fg">Document types</p><p className="mt-1 text-xs leading-relaxed text-fg-muted">In Settings &gt; Document Types, review prefixes and sequence-reset rules used to generate controlled document references.</p></div></div>
+              <div className="flex gap-3 rounded-xl border border-border p-4"><FileCog className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /><div><p className="text-sm font-semibold text-fg">Document types</p><p className="mt-1 text-xs leading-relaxed text-fg-muted">In Settings &gt; Document Types, review prefixes and sequence-reset rules for master-data documents. Sales documents are numbered separately in Sales settings.</p></div></div>
             </div>
             <Link href="/admin/settings" className="btn-secondary inline-flex"><ShieldCheck className="h-4 w-4" /> Open Admin Settings</Link>
           </HelpSection>
 
-          <HelpSection id="scope" icon={AlertTriangle} title="Know the Release 1 boundary" summary="Release 1 establishes trusted master data; it is not the complete ERP transaction suite.">
+          <HelpSection id="scope" icon={AlertTriangle} title="Know what is live today" summary="Two releases are in your hands: trusted master data, and sales through to machine project initiation.">
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/20"><p className="text-xs font-bold uppercase text-emerald-700 dark:text-emerald-300">Included now</p><p className="mt-2 text-sm leading-relaxed text-emerald-900 dark:text-emerald-100">PostgreSQL system of record, organization, customers, suppliers, item master, permissions, document types, and engineering component-to-item linkage.</p></div>
-              <div className="rounded-xl bg-amber-50 p-4 dark:bg-amber-950/20"><p className="text-xs font-bold uppercase text-amber-700 dark:text-amber-300">Later releases</p><p className="mt-2 text-sm leading-relaxed text-amber-900 dark:text-amber-100">Sales orders, payments, delivery notes, inventory, purchase execution, production, quality, finance, HR, and payroll.</p></div>
+              <div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/20"><p className="text-xs font-bold uppercase text-emerald-700 dark:text-emerald-300">Live now</p><p className="mt-2 text-sm leading-relaxed text-emerald-900 dark:text-emerald-100">PostgreSQL system of record, organization, customers, suppliers, item master, permissions, and document types. Plus enquiries, quotations with revisions and approval, sales orders, machine project initiation, and the sales reports.</p></div>
+              <div className="rounded-xl bg-amber-50 p-4 dark:bg-amber-950/20"><p className="text-xs font-bold uppercase text-amber-700 dark:text-amber-300">Later releases</p><p className="mt-2 text-sm leading-relaxed text-amber-900 dark:text-amber-100">Engineering planning and document control, BOM and material planning, inventory, purchasing and goods receipt, production and quality, FAT and delivery, and finance, payroll, and after-sales service.</p></div>
             </div>
           </HelpSection>
 
@@ -184,9 +206,12 @@ export default function HelpPage() {
             <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-secondary p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-fg">Still blocked?</p>
-                <p className="mt-0.5 text-xs text-fg-muted">Include the page, record number, expected result, and a screenshot when you report an issue.</p>
+                <p className="mt-0.5 text-xs text-fg-muted">Use the Feedback button on the screen where it happened — the page, version, and browser are recorded for you. Add the record number, what you expected, and a screenshot.</p>
               </div>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="btn-secondary shrink-0">Email support</a>
+              <div className="flex shrink-0 gap-2">
+                <Link href="/feedback" className="btn-primary"><MessageCircle className="h-4 w-4" /> Review &amp; Feedback</Link>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="btn-secondary">Email support</a>
+              </div>
             </div>
           </HelpSection>
         </div>

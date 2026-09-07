@@ -4,7 +4,8 @@
 - Decision date: 2026-08-28
 - Decision owner: Product owner
 - Applies from: Release 1 / v2.1
-- Client source: `docs/customer-references/Dashboard.docx`
+- Client source: [Dashboard.docx](../specs/Dashboard.docx), original customer requirements (current location)
+- Scope alignment: [Product Specification v1.0 and baseline rules](../specification-baseline.md); this accepted database decision remains an implementation constraint, not an alternate release sequence.
 
 ## Decision
 

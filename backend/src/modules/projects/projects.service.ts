@@ -50,6 +50,7 @@ export class ProjectsService {
     const existing = await this.projectModel.findOne({ _id: id, deletedAt: null });
     if (!existing) throw new NotFoundException('Project not found');
 
+    if ((existing as any).salesRecordId) throw new BadRequestException('Manage the project baseline through Sales & Projects.');
     const previousValues = existing.toObject();
     const updated = await this.projectModel.findByIdAndUpdate(id, { $set: dto }, { new: true });
 
@@ -113,6 +114,8 @@ export class ProjectsService {
   }
 
   async softDelete(id: string, userId: string) {
+    const existing=await this.findById(id);
+    if ((existing as any).salesRecordId) throw new BadRequestException('Cancel the project through Sales & Projects to retain its baseline.');
     if (!DatabaseId.isValid(id)) throw new NotFoundException('Project not found');
     const project = await this.projectModel.findOneAndUpdate({ _id: id, deletedAt: null }, { $set: { deletedAt: new Date() } }, { new: true });
     if (!project) throw new NotFoundException('Project not found');

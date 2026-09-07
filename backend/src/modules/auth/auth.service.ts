@@ -61,7 +61,7 @@ export class AuthService {
   async login(email: string, password: string) {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await this.users.createQueryBuilder('user').addSelect('user.password').where('user.email = :email', { email: normalizedEmail }).andWhere('user.deleted_at IS NULL').getOne();
-    if (!user) {
+    if (!user || !user.isActive) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

@@ -9,6 +9,12 @@ import packageMetadata from '../../package.json';
 export const APP_NAME = 'MachineIQ';
 export const APP_TAGLINE = 'Built for the way OEM machine builders actually work.';
 export const APP_BY = 'Quorin Tech';
+export const APP_WEBSITE = 'https://www.quorintech.com';
+
+/** Copyright holder for MachineIQ. Resolved at call time so the year cannot go stale. */
+export const COPYRIGHT_HOLDER = APP_BY;
+export const copyright = () => `© ${new Date().getFullYear()} ${COPYRIGHT_HOLDER}`;
+export const copyrightLong = () => `${copyright()}. All rights reserved.`;
 
 export const APP_VERSION = packageMetadata.version;
 export const BUILD_TIME = process.env.NEXT_PUBLIC_BUILD_TIME || '';
@@ -39,8 +45,16 @@ export const RELEASES: Release[] = [
   {
     version: APP_VERSION,
     channel: RELEASE_CHANNEL,
-    date: '2026-09-04',
+    date: '2026-09-07',
     entries: [
+      { type: 'feature', text: 'Release 2 — Sales & Machine Project Initiation: enquiry, technical-commercial quotation, sales order, and machine project in one connected flow.' },
+      { type: 'feature', text: 'Quotation revisions with side-by-side comparison, internal approval, customer acceptance or rejection, and a visible conversion trail between documents.' },
+      { type: 'feature', text: 'Requirement summary, commercial scope, quotation lines, and contractual payment milestones captured against the gross contract value.' },
+      { type: 'feature', text: 'Seven sales reports — pipeline, quotation conversion, quotations by customer, orders by month and customer, pending orders, payment milestone schedule, and project intake — with CSV, Excel, and print export.' },
+      { type: 'feature', text: 'Sales settings for document prefixes, currencies, tax rates, and an optional rule requiring a different approver.' },
+      { type: 'improvement', text: 'Sales documents open on a stage flow showing where each record sits between enquiry and machine project.' },
+      { type: 'improvement', text: 'Enquiry and quotation entry split into tabbed sections with progress indicators, so long forms no longer scroll as one page.' },
+      { type: 'improvement', text: 'Review & Feedback lists every section to review, with a direct link that opens the feedback form on the right screen.' },
       { type: 'feature', text: 'In-app customer feedback with safe diagnostic context, screenshot support, personal tracking, and an administrator triage inbox.' },
       { type: 'feature', text: 'Clear item creation sections for identity, sales and purchasing, inventory, units of measure, tax, costing, and planning.' },
       { type: 'fix', text: 'Empty installations now route directly to first-time workspace setup.' },
@@ -63,12 +77,24 @@ export interface FaqGroup { id: string; label: string; items: FaqItem[] }
 
 export const FAQ: FaqGroup[] = [
   {
-    id: 'release1',
-    label: 'Release 1 scope',
+    id: 'scope',
+    label: 'What is live today',
     items: [
-      { q: 'What should we configure first in Release 1?', a: 'Configure the company, then branches and locations. Next review permissions and document types, followed by customers, suppliers, item categories, units of measure, and items.' },
-      { q: 'Which database does Release 1 use?', a: 'PostgreSQL 16 is the only released system of record. Users do not need to choose or synchronize a database in the application.' },
-      { q: 'Which ERP transactions are not part of Release 1?', a: 'Sales orders, delivery notes, customer payments, inventory transactions, purchase orders, goods receipts, production work orders, payroll, and general-ledger accounting are assigned to later releases.' },
+      { q: 'Which parts of MachineIQ can I use now?', a: 'Two releases are live. Release 1 is the master-data foundation: organization, users and permissions, customers, suppliers, and the item master. Release 2 adds sales and machine project initiation: enquiries, quotations with revisions and approval, sales orders, and machine projects created from a confirmed order.' },
+      { q: 'What should we configure first?', a: 'Configure the company, then branches and locations. Next review permissions and document types, followed by customers, suppliers, item categories, units of measure, and items. Then set your prefixes, currencies, and tax rates in Sales settings before raising the first enquiry.' },
+      { q: 'Which ERP transactions are still to come?', a: 'Engineering planning and document control, BOM and material planning, inventory and warehousing, purchasing and goods receipt, production and quality, FAT and delivery, and finance, payroll, and after-sales service are assigned to later releases.' },
+      { q: 'Which database does MachineIQ use?', a: 'PostgreSQL 16 is the only system of record. You do not need to choose or synchronize a database in the application.' },
+    ],
+  },
+  {
+    id: 'sales',
+    label: 'Sales & machine projects',
+    items: [
+      { q: 'How does an enquiry become a machine project?', a: 'Qualify the enquiry, then quote it. The quotation is submitted for approval, approved, and sent, and is marked accepted when the customer confirms. An accepted quotation creates the sales order without re-entry, and a confirmed order creates the machine project with its baseline and source references.' },
+      { q: 'Why can I no longer edit a quotation?', a: 'Only drafts are editable. Once a document is submitted, approved, or sent it is locked so the approved version stays the operational one. Use New revision to make changes: the earlier revision stays visible and the two can be compared.' },
+      { q: 'Where do I set enquiry, quotation, and order number prefixes?', a: 'In Sales settings, opened from the Sales workspace. Settings > Document Types covers master-data documents and does not control sales numbering. Sales settings also holds currencies, tax rates, and the option to require a different approver.' },
+      { q: 'Why was my approval refused?', a: 'If Sales settings requires a separate approver, whoever submitted a document cannot approve it. Ask another user with approval rights, or change that rule in Sales settings.' },
+      { q: 'What are payment milestones for?', a: 'They record the contractual payment schedule against the gross contract value, and they carry into the machine project. Invoicing and payment allocation arrive in a later release.' },
     ],
   },
   {
@@ -78,7 +104,7 @@ export const FAQ: FaqGroup[] = [
       { q: 'Why must I create a company before a branch?', a: 'Every branch belongs to the legal company. Physical locations then belong to a branch, so configure Organization in company, branch, location order.' },
       { q: 'Are customer and supplier codes entered manually?', a: 'MachineIQ generates sequential customer and supplier codes. Complete the required business, contact, tax, and commercial fields; do not invent a parallel code.' },
       { q: 'What must exist before I create an item?', a: 'Create the required item category and unit of measure first. Then create the item with its code, description, category, UOM, cost, selling price, and applicable planning defaults.' },
-      { q: 'What is an item master record?', a: 'It is the shared definition of a purchased, manufactured, or otherwise tracked item. Release 1 can link engineering components to this record; it does not create stock balances or movements.' },
+      { q: 'What is an item master record?', a: 'It is the shared definition of a purchased, manufactured, or otherwise tracked item. Engineering components and quotation lines reference it; it does not create stock balances or movements.' },
     ],
   },
   {
@@ -87,16 +113,16 @@ export const FAQ: FaqGroup[] = [
     items: [
       { q: 'Why can’t a user see or change a record?', a: 'Access depends on both the user role and its assigned permissions. An Admin should check Users first, then Settings > Permissions. Permission checks are enforced by the server.' },
       { q: 'How do I change permissions safely?', a: 'In Settings > Permissions, review one role at a time, change only the capabilities that role needs, save that role, and verify the result with a user assigned to it.' },
-      { q: 'What are document types used for?', a: 'Document types define controlled numbering rules such as prefixes and sequence behavior for supported business documents. Configure them in Settings > Document Types before relying on generated references.' },
+      { q: 'What are document types used for?', a: 'Document types define controlled numbering rules such as prefixes and sequence behavior for master-data documents. Configure them in Settings > Document Types before relying on generated references. Sales documents are numbered separately: set those prefixes in Sales settings.' },
     ],
   },
   {
     id: 'support',
     label: 'Validation and support',
     items: [
-      { q: 'How do I know Release 1 setup is complete?', a: 'Confirm the organization hierarchy, role permissions, document types, customers, suppliers, categories, UOMs, and items can all be opened and used by the intended roles without duplicate codes or missing references.' },
+      { q: 'How do I know setup is complete?', a: 'Confirm the organization hierarchy, role permissions, document types, customers, suppliers, categories, UOMs, and items can all be opened and used by the intended roles without duplicate codes or missing references. Then carry one enquiry through to a machine project to prove the sales flow end to end.' },
       { q: 'Can I delete master data that has already been used?', a: 'Production records are soft-deleted or deactivated to preserve references and audit history. Prefer correcting or deactivating a record instead of trying to remove its history.' },
-      { q: 'What should I include when reporting a problem?', a: 'Include the page name, record code, your role, the action attempted, expected result, actual message, and a screenshot without passwords, tokens, or database URLs.' },
+      { q: 'What should I include when reporting a problem?', a: 'Use the Feedback button in the bottom-right corner of the screen where it happened: it records the page, version, and browser for you. Add the record code, your role, what you expected, what happened instead, and a screenshot without passwords, tokens, or database URLs. Review & Feedback lists every section to review and tracks the replies you get.' },
     ],
   },
 ];

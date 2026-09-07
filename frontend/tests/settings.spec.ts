@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { installApiMocks, setAuthenticatedSession } from './fixtures/test-helpers';
+// Read from package.json so a version bump does not break this assertion.
+import { version as appVersion } from '../package.json';
 
 const mockDepartments = [
   { _id: 'dept-1', name: 'Mechanical Engineering', code: 'MECH', description: 'Structural and motion design', isActive: true },
@@ -207,7 +209,7 @@ test.describe('Settings — Platform tab', () => {
 
   test('displays stack information rows', async ({ page }) => {
     await expect(page.getByText('MachineIQ — ERP for Machine Builders')).toBeVisible();
-    await expect(page.getByRole('row', { name: /Version/ }).getByRole('cell').nth(1)).toHaveText('2.1.0-rc.2');
+    await expect(page.getByRole('row', { name: /Version/ }).getByRole('cell').nth(1)).toHaveText(appVersion);
     await expect(page.getByRole('row', { name: /Git commit/ }).getByRole('cell').nth(1)).toHaveText('local');
     await expect(page.getByText('support@machineiq.com')).toBeVisible();
   });

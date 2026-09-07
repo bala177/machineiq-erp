@@ -6,6 +6,7 @@ import { ImmutableAuditLogs2026090100001 } from './migrations/2026090100001-Immu
 import { DepartmentManagementPermission2026090100002 } from './migrations/2026090100002-DepartmentManagementPermission';
 import { ZohoParityMasterData2026090400001 } from './migrations/202609040001-ZohoParityMasterData';
 import { FeedbackSystem2026090600001 } from './migrations/202609060001-FeedbackSystem';
+import { Release2Sales2026090700001 } from './migrations/202609070001-Release2Sales';
 
 export function postgresOptions(databaseUrl = process.env.DATABASE_URL): TypeOrmModuleOptions {
   if (!databaseUrl) {
@@ -17,7 +18,7 @@ export function postgresOptions(databaseUrl = process.env.DATABASE_URL): TypeOrm
     url: databaseUrl,
     autoLoadEntities: true,
     entities: [...RELEASE1_ENTITIES, RuntimeDocumentEntity],
-    migrations: [Release1PostgresFoundation2026082800001, ImmutableAuditLogs2026090100001, DepartmentManagementPermission2026090100002, ZohoParityMasterData2026090400001, FeedbackSystem2026090600001],
+    migrations: [Release1PostgresFoundation2026082800001, ImmutableAuditLogs2026090100001, DepartmentManagementPermission2026090100002, ZohoParityMasterData2026090400001, FeedbackSystem2026090600001, Release2Sales2026090700001],
     synchronize: false,
     // Client/local installations do not have Render's pre-deploy hook. Keep
     // their schema aligned with the application instead of starting an API

@@ -1,0 +1,177 @@
+{
+  "date": "2026-09-07",
+  "sources": [
+    {
+      "role": "Original customer requirements",
+      "path": "docs/specs/Dashboard.docx",
+      "sha256": "3acddd37fca8a16622147664f8cfe52ee6a5a66c5877bc70c867b196577a8df2"
+    },
+    {
+      "role": "Revised product scope and release sequence",
+      "path": "docs/specs/MachineIQ_ERP_Product_Specification_v1.0.pdf",
+      "sha256": "2b21f1ce379f43aa234fed79d3556d40e67e5014899692660dd7afec14b40c80"
+    }
+  ],
+  "releases": [
+    {
+      "id": "R1",
+      "title": "Foundation & Master Data",
+      "outcome": "Trusted organization, identity and reusable business masters.",
+      "page": 8,
+      "scope": [
+        "Company profile, legal/tax details, branches, physical locations, departments, currency, timezone and fiscal settings.",
+        "Users, employee identity, roles, permissions, credentials and access assignments; active/inactive controls.",
+        "Customer and supplier codes, addresses/sites, contacts, tax data, currencies, payment terms and supplier lead times.",
+        "Items, categories, UOM, make/buy, cost, selling price, manufacturer/part number, stock flag and reorder level.",
+        "Warehouse master, configurable tax/VAT, currency, reference statuses, document types and numbering series."
+      ],
+      "reports": "Master completeness, active users/roles, customer and supplier lists, item catalogue and change history.",
+      "accept": "Administrators configure hierarchy/access without code changes; duplicate codes and invalid mandatory data are rejected; privileged changes are audited; downstream modules select consistent masters.",
+      "dependency": "Foundation for every release. Workforce operations expand in R9; stock transactions start in R5."
+    },
+    {
+      "id": "R2",
+      "title": "Sales & Machine Project Initiation",
+      "outcome": "Accepted demand becomes an approved order and a traceable machine project.",
+      "page": 9,
+      "scope": [
+        "Enquiry: machine/application, quantity, target delivery, customer site, source and attachments; requirements for use, capacity, interfaces, utilities, constraints, standards and customer-provided items.",
+        "Technical-commercial quotation: scope, exclusions, price/tax, validity, delivery, warranty and payment milestones.",
+        "Quotation revisions/comparison, internal approval, customer acceptance/rejection and conversion history.",
+        "Sales order: customer PO, ordered scope/value, delivery, payment milestones and special terms.",
+        "Project creation from accepted order: project code/owner, machine category, site, dates, value and baseline; communications, comments, attachments, activity and status dashboard."
+      ],
+      "reports": "Sales pipeline, quotation conversion, quotations by customer, orders by month/customer, pending orders, payment milestone schedule and project intake.",
+      "accept": "Accepted quote creates an order without re-entry; approved order creates a project with source references; every revision remains visible and only the current approved version is operational; required references, dates and values are validated.",
+      "dependency": "Uses R1 masters. Basic approvals ship here. Delivery execution is R8; invoices and payment allocation are R9."
+    },
+    {
+      "id": "R3",
+      "title": "Project Planning & Engineering",
+      "outcome": "Engineering responsibilities, dates, documents and changes are controlled.",
+      "page": 10,
+      "scope": [
+        "Project templates, phases, milestones, stage gates, planned dates and responsible departments.",
+        "Mechanical, electrical, controls/software and other work packages; engineer/team allocation, task ownership, dependencies, effort, dates and completion evidence.",
+        "Requirement register with source, owner, priority, verification method, status and evidence links.",
+        "Document/drawing register, revision, review, approval, release and superseded history; design-review actions and decisions.",
+        "Risk, issue and action registers; engineering changes with affected records, cost/schedule impact, approval and implementation tracking."
+      ],
+      "reports": "Timeline/project health, milestone performance, overdue tasks, workload, document status, requirement coverage, risk exposure and change impact.",
+      "accept": "Managers assign dependent work; released documents require new revisions for change; change history identifies affected records; progress derives from controlled work.",
+      "dependency": "Builds on the R2 project baseline; provides engineering ownership and release control for R4."
+    },
+    {
+      "id": "R4",
+      "title": "BOM & Material Planning",
+      "outcome": "Progressive engineering BOM becomes controlled material demand.",
+      "page": 11,
+      "scope": [
+        "Preliminary, engineering and manufacturing BOMs; multi-level assemblies, configurable sections and engineer/work-package ownership.",
+        "Lines: item, quantity/UOM, make/buy, required date, preferred supplier, manufacturer part, cost and notes; validated new-item creation during authoring.",
+        "Alternatives/substitutions, customer-supplied and non-stock items, scrap allowance and long-lead identification.",
+        "Revision comparison, line-change history, approval and partial section release before the full assembly BOM is complete.",
+        "Availability, reservations, on-order quantities, shortages and required-by dates; estimated cost versus budget; CSV/Excel import/export and CAD/BOM import preparation."
+      ],
+      "reports": "BOM cost, revision variance, shortages, long-lead items, make/buy, unreleased sections and material readiness.",
+      "accept": "Designers contribute independently; only released quantities drive demand; revisions show added/removed/changed lines; demand retains project, machine, BOM revision and required date.",
+      "dependency": "Uses R1–R3. Availability/reservation and purchase views connect progressively as R5/R6 introduce live stock and purchasing."
+    },
+    {
+      "id": "R5",
+      "title": "Inventory & Warehousing",
+      "outcome": "Available, reserved and moving stock is visible by project.",
+      "page": 12,
+      "scope": [
+        "Warehouse, zone/bin or configurable storage locations; opening balance, stock in/out, transfer, adjustment and cycle count.",
+        "Stock ledger and balances by item/location, with batch/lot and serial tracking where enabled.",
+        "Project reservation, allocation/deallocation, material issue and unused-material return.",
+        "Available-to-promise separates on-hand, reserved, available, inspection and blocked stock; minimum stock, reorder proposals and alerts.",
+        "Negative-stock policy, controlled adjustment approval, organization valuation method and complete movement history."
+      ],
+      "reports": "Current stock, reservations, movements, valuation, ABC analysis, slow-moving items, shortages, cycle-count variance and reorder list.",
+      "accept": "Posting changes balances atomically; posted records cannot be edited; reversal creates linked counter-transactions; stock conditions remain distinct; issues cannot exceed permitted availability/reservation.",
+      "dependency": "Uses R1 masters and R4 released demand. Connects inventory to R6 receipts and R7 production."
+    },
+    {
+      "id": "R6",
+      "title": "Purchase & Supplier Management",
+      "outcome": "Project shortages are procured and supplier commitments are controlled.",
+      "page": 13,
+      "scope": [
+        "Purchase requests from released BOM shortages or manual entry, with requester, project, need date and justification; module approval.",
+        "RFQs to suppliers; quotation capture for price, tax, lead time, validity, freight, terms, deviations and documents.",
+        "Technical/commercial comparison and supplier selection with justification.",
+        "PO with project/BOM references, delivery schedule, terms, approval and dispatch status; amendments/history and controlled outstanding-quantity closure.",
+        "Partial GRN, inspection/accepted/rejected quantities, purchase returns and pending balances; supplier invoice matching, payment status and AP handoff."
+      ],
+      "reports": "Open POs, pending/delayed deliveries, purchase/price history, supplier performance, pending GRN/inspection and project purchase cost.",
+      "accept": "Released shortages create requests without re-entry; selection records its reason; partial receipts update pending quantity/inspection stock; PO amendments retain prior versions and reapproval.",
+      "dependency": "Uses R4/R5. Quality inspection integrates with R7; supplier payment processing and allocation are R9."
+    },
+    {
+      "id": "R7",
+      "title": "Production, Assembly & Quality",
+      "outcome": "Machines are built with controlled material, inspection and rework records.",
+      "page": 14,
+      "scope": [
+        "Production planning by project/machine and work centre/team; work orders for mechanical, electrical, controls/software and configurable operations.",
+        "Material issue, actual consumption, returns, substitution and variance; operation ownership, planned/actual effort, blockers and completion evidence.",
+        "Production output/finished-machine serial number and as-built BOM reference.",
+        "Reusable inspection plans, characteristics, tolerances, evidence and disposition; incoming, in-process and final inspection linked to GRN/work order/output.",
+        "NCR/CAPA: containment, root cause, corrective/preventive actions, verification and closure; rework and approved deviation/concession."
+      ],
+      "reports": "Work-order status, WIP, consumption/variance, productivity, readiness, inspection results, NCR ageing, rework and supplier quality.",
+      "accept": "Blocking NCRs/mandatory inspections prevent completion; consumption/output update inventory and cost sources; failed characteristics receive disposition; serialised output retains BOM and quality traceability.",
+      "dependency": "Uses released BOM, stock and purchasing from R4–R6; supplies readiness evidence for R8."
+    },
+    {
+      "id": "R8",
+      "title": "FAT, Delivery & Commissioning",
+      "outcome": "Machines are accepted, delivered, installed and formally handed over.",
+      "page": 15,
+      "scope": [
+        "FAT plan, checklist/protocol, prerequisites, participants, dates and test evidence; deviations and customer observations.",
+        "Punch items with severity, owner/due date and closure; FAT approval/sign-off and dispatch controls.",
+        "Packing list, delivery note, partial delivery, shipment/dispatch, carrier and delivery confirmation.",
+        "Installation/site-readiness plan, engineers and site activities; SAT/commissioning checks, parameters, results, issues and customer acceptance.",
+        "Operator/maintenance training and attendance; handover manuals, drawings, certificates, backups, spares and signed records; warranty dates and project closure checklist."
+      ],
+      "reports": "Upcoming FAT/SAT, open punch items, dispatch readiness, site schedule, commissioning, handover completeness and delayed acceptance.",
+      "accept": "Dispatch reflects FAT/quality/document/commercial controls; sign-offs link to project/machine; blocking punch items prevent configured gate closure; closure requires approved handover and accountable warranty-item transfer.",
+      "dependency": "Uses R2 commercial commitments and R7 readiness. Handover supplies the installed-base/warranty inputs for R9."
+    },
+    {
+      "id": "R9",
+      "title": "Finance, Workforce & After-Sales",
+      "outcome": "Project cost, cash, people and installed-machine service history are connected.",
+      "page": 16,
+      "scope": [
+        "AR/AP registers, customer/supplier invoices, due dates, payment allocation and partial payments; milestone invoice requests and project payment visibility.",
+        "Cash, bank/reconciliation, account heads, journals, GL, assets and financial statements where full finance scope is approved.",
+        "Project material, purchase, labour, production, rework, travel and overhead costs; budget versus actual and margin.",
+        "Employee, designation/manager, attendance, leave, overtime, timesheets and project allocation; payroll for approved localization or secure provider integration/export.",
+        "Installed machines, serial/configuration/site, warranty; breakdown/service work, parts/time/travel and sign-off; preventive maintenance, due alerts, spares, retrofits and upgrades."
+      ],
+      "reports": "Cash/AR/AP and ageing, approved financial statements, project profitability, workforce utilization, attendance/leave/overtime, installed base, warranty, service SLA and maintenance due.",
+      "accept": "Milestones generate invoice requests; payment status feeds projects; costs reconcile to source transactions; finance/payroll data is restricted; delivered serialised machines have warranty/service timelines.",
+      "dependency": "Uses source transactions from prior releases. Finance depth and payroll countries/localization require explicit scope decisions."
+    },
+    {
+      "id": "R10",
+      "title": "Enterprise Integration & Intelligence",
+      "outcome": "The platform gains enterprise workflows, integration and cross-module intelligence.",
+      "page": 17,
+      "scope": [
+        "Configurable workflow/approval matrix by role, user, department, amount, organization and document type; approve/reject/return, delegation, escalation and history.",
+        "Email, dashboard and mobile/web push; optional approved WhatsApp; cross-module dashboards, drill-down, saved filters, exports and scheduled distribution.",
+        "APIs/webhooks, monitoring and controlled accounting, payroll, CAD/BOM and email integrations; approved customer/supplier portals.",
+        "AI-assisted delay, shortage, cost and risk recommendations with source evidence and user confirmation.",
+        "Reconciliation, migration, recovery, performance, security and observability hardening; end-to-end, role, integration, recovery and production-cutover acceptance."
+      ],
+      "reports": "Executive portfolio, project health, delivery, margin, procurement risk, quality, supplier performance, utilization, service and audit.",
+      "accept": "Configured approvals enforce authority/sequence; dashboard indicators drill to sources; failed integrations/notifications are visible and safely retryable; restore, performance, security and end-to-end acceptance pass.",
+      "dependency": "Extends earlier module integration and controls. Basic approvals, permissions, audit, validation and backup apply from each module’s launch."
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+import { copyright } from '@/lib/app-meta';
+
 export function LogoIcon({ size = 24, color = '#5990ff' }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -192,9 +194,7 @@ export function AuthBrandPanel() {
 
       {/* Copyright pinned bottom */}
       <div className="relative z-10 px-12 pb-8">
-        <p className="text-[16px] text-slate-600">
-          &copy; {new Date().getFullYear()} MachineIQ Platform
-        </p>
+        <p className="text-[16px] text-slate-600">{copyright()}</p>
       </div>
     </div>
   );

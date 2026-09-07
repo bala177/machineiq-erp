@@ -1,5 +1,7 @@
 # MachineIQ — OEM Machine Execution Platform
 
+**Release 2 candidate: `2.2.0-rc.1`.** Sales and Machine Project Initiation builds on Release 1, following the aligned customer requirements and revised specification. See [R2 implementation, operating rules and verification](docs/release2-implementation-and-testing.md) for the enquiry-to-project flow, reports, guided feedback and test commands. Customer UAT and production deployment remain separate release gates.
+
 A production-grade SaaS platform for OEM machine-building companies. MachineIQ connects sales handover, project kickoff, engineering task execution, procurement readiness, and management visibility in one unified system.
 
 ## The Problem
@@ -89,7 +91,10 @@ Detailed docs live in the [`docs/`](docs/) folder:
 - [Workflows](docs/workflows.md) — End-to-end business processes
 - [Data Model](docs/data-model.md) — All entities, fields, relationships, indexes
 - [API Reference](docs/api-reference.md) — Every endpoint, method, auth, and payload
-- [Specification & Release Tracker](docs/release-spec-tracker.md) — Client requirement traceability, release targets, gates, and build history
+- [Requirements & Release Baseline](docs/specification-baseline.md) — Original customer Dashboard.docx plus the revised Product Specification v1.0; source authority and open decisions
+- [Implementation Roadmap](docs/erp-implementation-roadmap.md) — Aligned R1–R10 release order, scope, dependencies and acceptance
+- [Release Plan PDF](docs/specs/MachineIQ-ERP-Release-Plan.pdf) — Client release summary and original requirement mapping
+- [Specification & Release Tracker](docs/release-spec-tracker.md) — Both-source traceability, release targets, gates, and historical build evidence
 
 ---
 

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import {
   APP_NAME, APP_BY, APP_VERSION, BUILD_TIME, RELEASE_CHANNEL, SHORT_GIT_COMMIT,
-  SUPPORT_EMAIL,
+  SUPPORT_EMAIL, copyrightLong,
 } from '@/lib/app-meta';
 
 function fmtDate(iso: string) {
@@ -325,6 +325,7 @@ export default function AboutPage() {
           <div>
             <p className="text-xs font-bold text-fg">Built by {APP_BY}</p>
             <p className="text-[11px] text-fg-muted">A product &amp; engineering studio building focused software for complex industrial workflows.</p>
+            <p className="mt-0.5 text-[11px] text-fg-muted">{copyrightLong()}</p>
             {BUILD_TIME && <p className="mt-0.5 text-[10px] text-fg-muted">Build: {fmtDate(BUILD_TIME)}</p>}
           </div>
         </div>

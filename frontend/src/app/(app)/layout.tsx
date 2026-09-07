@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import AppShell from '@/components/layout/app-shell';
 import { BackToDashboard } from '@/components/ui/back-to-dashboard';
+import { SessionTimeout } from '@/components/auth/session-timeout';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -30,6 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <BackToDashboard />
       </Suspense>
       {children}
+      <SessionTimeout />
     </AppShell>
   );
 }

@@ -32,6 +32,7 @@ import { DocumentTypesModule } from './modules/document-types/document-types.mod
 import { HealthController } from './health.controller';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { postgresOptions } from './database/database.config';
+import { SalesModule } from './modules/sales/sales.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { postgresOptions } from './database/database.config';
     OrganizationModule,
     SuppliersModule,
     FeedbackModule,
+    SalesModule,
   ],
   controllers: [HealthController],
   providers: [

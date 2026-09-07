@@ -104,6 +104,13 @@ services:
       - key: NEXT_PUBLIC_SOCKET_URL
         value: https://machineiq-api.onrender.com
 
+      # Inactivity sign-out: warn at 28 minutes idle, sign out at 30.
+      - key: NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES
+        value: "30"
+
+      - key: NEXT_PUBLIC_IDLE_WARNING_SECONDS
+        value: "120"
+
     domains:
       - www.machineiq.tech
       - machineiq.tech

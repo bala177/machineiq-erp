@@ -4,8 +4,9 @@ import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { api } from '@/lib/api';
-import { ArrowRight, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle, Clock } from 'lucide-react';
 import { AuthBrandPanel, LogoIcon } from '@/components/auth/auth-brand-panel';
+import { SIGNED_OUT_REASON_KEY } from '@/components/auth/session-timeout';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,8 +14,18 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(SIGNED_OUT_REASON_KEY) === 'idle') {
+        setTimedOut(true);
+        sessionStorage.removeItem(SIGNED_OUT_REASON_KEY);
+      }
+    } catch { /* storage unavailable */ }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,10 +73,10 @@ export default function LoginPage() {
       <AuthBrandPanel />
 
       {/* ── Right panel — form ── */}
-      <div className="flex flex-1 min-w-0 items-center justify-center bg-[#f4f6fb] p-6">
+      <div className="flex flex-1 min-w-0 items-start justify-center bg-[#f4f6fb] px-5 pt-14 pb-8 lg:items-center lg:p-6">
         <div className="w-full max-w-[420px] animate-fade-in">
-          {/* Mobile logo */}
-          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+          {/* Mobile logo — padded to share a left edge with the card's heading, not its outer border */}
+          <div className="mb-6 flex items-center gap-2.5 px-6 sm:px-8 lg:hidden">
             <LogoIcon size={22} color="#1a4fff" />
             <span className="text-[17px] font-semibold text-fg">
               Machine<span className="font-bold text-brand-600">IQ</span>
@@ -73,13 +84,20 @@ export default function LoginPage() {
           </div>
 
           {/* Form card */}
-          <div className="rounded-2xl border border-[#e2e6f0] bg-white px-8 py-10 shadow-elevated">
+          <div className="rounded-2xl border border-[#e2e6f0] bg-white px-6 py-8 shadow-elevated sm:px-8 sm:py-10">
             <div className="mb-7">
-              <h1 className="text-[1.6rem] font-bold tracking-tight text-slate-900">Welcome back</h1>
-              <p className="mt-1.5 text-[16px] text-slate-500">Enter your credentials to access your account</p>
+              <h1 className="text-[1.4rem] font-bold tracking-tight text-slate-900 sm:text-[1.6rem]">Welcome back</h1>
+              <p className="mt-1.5 text-[15px] text-slate-500 sm:text-[16px]">Enter your credentials to access your account</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {timedOut && !error && (
+                <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-sm text-amber-900">
+                  <Clock className="mt-0.5 h-4 w-4 shrink-0" />
+                  You were signed out after a period of inactivity. Sign in to pick up where you left off.
+                </div>
+              )}
+
               {error && (
                 <div className="flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-700 animate-slide-up">
                   <AlertCircle className="h-4 w-4 shrink-0" />

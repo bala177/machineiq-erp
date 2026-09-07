@@ -2,11 +2,11 @@
 
 import { ReactNode, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useAuth } from '@/providers/auth-provider';
 import { useTheme } from '@/providers/theme-provider';
-import { LayoutDashboard, Building2, Bell, Users, Settings, Menu, X, LogOut, Search, ScrollText, Sun, Moon, ChevronDown, UserCircle, HelpCircle, PanelLeftOpen, ChevronsLeft, Sparkles, Info, Boxes, Truck, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Building2, Bell, Users, Settings, Menu, X, LogOut, Search, ScrollText, Sun, Moon, ChevronDown, UserCircle, HelpCircle, PanelLeftOpen, ChevronsLeft, Sparkles, Info, Boxes, Truck, MessageSquare, ClipboardList, FileText, ShoppingCart, FolderKanban, BarChart3 } from 'lucide-react';
 import { DEPLOYMENT_LABEL } from '@/lib/app-meta';
 import { roleColor, roleLabel } from '@/lib/roles';
 import { api } from '@/lib/api';
@@ -14,8 +14,18 @@ import { FeedbackWidget } from '@/components/feedback/feedback-widget';
 
 /* ─────────────── nav config ─────────────── */
 
-const navItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'manager', 'sales', 'designer', 'leadership'] },
+const overviewItems = [{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'manager', 'sales', 'designer', 'leadership'] }];
+
+const salesItems = [
+  { label: 'Enquiries', href: '/sales?kind=enquiry', icon: ClipboardList, view: 'enquiry', roles: ['admin', 'manager', 'sales', 'leadership'] },
+  { label: 'Quotations', href: '/sales?kind=quote', icon: FileText, view: 'quote', roles: ['admin', 'manager', 'sales', 'leadership'] },
+  { label: 'Sales Orders', href: '/sales?kind=order', icon: ShoppingCart, view: 'order', roles: ['admin', 'manager', 'sales', 'leadership'] },
+  { label: 'Machine Projects', href: '/sales?kind=project', icon: FolderKanban, view: 'project', roles: ['admin', 'manager', 'sales', 'leadership'] },
+  { label: 'Sales Reports', href: '/sales?tab=reports', icon: BarChart3, view: 'reports', roles: ['admin', 'manager', 'sales', 'leadership'] },
+  { label: 'Sales Alerts', href: '/sales?tab=alerts', icon: Bell, view: 'alerts', roles: ['admin', 'manager', 'sales', 'leadership'] },
+];
+
+const masterDataItems = [
   { label: 'Organization', href: '/organization', icon: Building2, roles: ['admin', 'manager', 'leadership'] },
   { label: 'Customers', href: '/customers', icon: Building2, roles: ['admin', 'manager', 'sales', 'leadership'] },
   { label: 'Suppliers', href: '/suppliers', icon: Truck, roles: ['admin', 'manager', 'leadership'] },
@@ -36,9 +46,8 @@ const supportItems = [
 
 const mobileNavItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'manager', 'sales', 'designer', 'leadership'] },
-  { label: 'Organization', href: '/organization', icon: Building2, roles: ['admin', 'manager', 'leadership'] },
+  { label: 'Sales', href: '/sales', icon: ShoppingCart, roles: ['admin', 'manager', 'sales', 'leadership'] },
   { label: 'Customers', href: '/customers', icon: Building2, roles: ['admin', 'manager', 'sales', 'leadership'] },
-  { label: 'Suppliers', href: '/suppliers', icon: Truck, roles: ['admin', 'manager', 'leadership'] },
   { label: 'Items', href: '/items', icon: Boxes, roles: ['admin', 'manager', 'designer', 'leadership'] },
 ];
 
@@ -74,11 +83,10 @@ function Wordmark({ collapsed }: { collapsed: boolean }) {
       </div>
       {!collapsed && (
         <div className="min-w-0">
-          <p className="text-[15px] font-bold tracking-tight text-fg leading-none">
+          <p className="text-[15px] font-bold leading-none tracking-tight text-fg">
             Machine<span className="text-brand-600">IQ</span>
           </p>
-          <p className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-widest text-fg-muted">ERP Platform</p>
-          <p className="mt-1 truncate font-mono text-[9px] text-fg-muted" title="Application version and deployed Git commit">{DEPLOYMENT_LABEL}</p>
+          <p className="mt-1 truncate text-[10px] font-medium uppercase leading-none tracking-[0.15em] text-fg-muted">ERP Platform</p>
         </div>
       )}
     </div>
@@ -187,24 +195,41 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [feedbackCount, setFeedbackCount] = useState(0);
   const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
 
   const isAdmin = user?.role === 'admin';
   const role = user?.role ?? '';
-  const visibleNavItems = navItems.filter((item) => item.roles.includes(role));
+  const visibleOverviewItems = overviewItems.filter((item) => item.roles.includes(role));
+  const visibleSalesItems = salesItems.filter((item) => item.roles.includes(role));
+  const visibleMasterDataItems = masterDataItems.filter((item) => item.roles.includes(role));
   const visibleMobileNavItems = mobileNavItems.filter((item) => item.roles.includes(role));
+  const salesTab = searchParams.get('tab') ?? 'records';
+  const salesKind = searchParams.get('kind') ?? 'enquiry';
+  const salesItemActive = (view: string) => pathname === '/sales' && (view === 'reports' || view === 'alerts' ? salesTab === view : salesTab === 'records' && salesKind === view);
 
   const refreshFeedbackCount = () => {
-    if (isAdmin) api.get<{ new: number }>('/feedback/admin/count').then((result) => setFeedbackCount(result.new)).catch(() => {});
+    if (isAdmin)
+      api
+        .get<{ new: number }>('/feedback/admin/count')
+        .then((result) => setFeedbackCount(result.new))
+        .catch(() => {});
   };
 
   useEffect(() => {
     if (!user) return;
-    api.get<{ enabled: boolean }>('/feedback/config').then(({ enabled }) => {
-      setFeedbackEnabled(enabled);
-      if (enabled && isAdmin) api.get<{ new: number }>('/feedback/admin/count').then((result) => setFeedbackCount(result.new)).catch(() => {});
-    }).catch(() => setFeedbackEnabled(false));
+    api
+      .get<{ enabled: boolean }>('/feedback/config')
+      .then(({ enabled }) => {
+        setFeedbackEnabled(enabled);
+        if (enabled && isAdmin)
+          api
+            .get<{ new: number }>('/feedback/admin/count')
+            .then((result) => setFeedbackCount(result.new))
+            .catch(() => {});
+      })
+      .catch(() => setFeedbackEnabled(false));
   }, [user, isAdmin]);
 
   useEffect(() => {
@@ -232,7 +257,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <aside className={clsx('flex flex-col bg-surface border-r border-border', 'transition-all duration-300 ease-in-out', 'fixed inset-y-0 left-0 z-50 w-[260px]', 'md:static md:z-auto', collapsed ? 'md:w-[68px]' : 'md:w-[240px]', sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0 md:shadow-none')}>
         {/* Brand */}
         <div className={clsx('flex h-[58px] shrink-0 items-center justify-between border-b border-border px-4', collapsed && 'md:justify-center md:px-2')}>
-          <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
+          <Link href="/dashboard" className="min-w-0">
             <Wordmark collapsed={collapsed} />
           </Link>
 
@@ -249,11 +274,33 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
         {/* Nav */}
         <nav className="sidebar-scroll flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-          {/* Core */}
-          {!collapsed && <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-fg-muted">Core</p>}
-          {visibleNavItems.map((item) => (
+          {/* Overview */}
+          {!collapsed && <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-fg-muted">Overview</p>}
+          {visibleOverviewItems.map((item) => (
             <NavLink key={item.href} item={item} active={pathname.startsWith(item.href)} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />
           ))}
+
+          {/* Sales */}
+          {!!visibleSalesItems.length && (
+            <div className="pt-5">
+              {!collapsed && <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-fg-muted">Sales</p>}
+              {collapsed && <div className="my-2 border-t border-border" />}
+              {visibleSalesItems.map((item) => (
+                <NavLink key={item.href} item={item} active={salesItemActive(item.view)} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />
+              ))}
+            </div>
+          )}
+
+          {/* Master data */}
+          {!!visibleMasterDataItems.length && (
+            <div className="pt-5">
+              {!collapsed && <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-fg-muted">Master Data</p>}
+              {collapsed && <div className="my-2 border-t border-border" />}
+              {visibleMasterDataItems.map((item) => (
+                <NavLink key={item.href} item={item} active={pathname.startsWith(item.href)} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />
+              ))}
+            </div>
+          )}
 
           {/* Administration */}
           {isAdmin && (
@@ -277,6 +324,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {feedbackEnabled && <NavLink item={{ label: 'My Feedback', href: '/feedback', icon: MessageSquare }} active={pathname === '/feedback'} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />}
           </div>
         </nav>
+
+        {/* Build label — deployment freshness at a glance */}
+        {!collapsed && (
+          <div className="shrink-0 border-t border-border px-4 py-2.5">
+            <p className="truncate font-mono text-[10px] text-fg-muted" title="Application version and deployed Git commit">
+              {DEPLOYMENT_LABEL}
+            </p>
+          </div>
+        )}
       </aside>
 
       {/* ══════════════════════════════════════

@@ -1,6 +1,8 @@
 {
   "name": "machineiq-backend",
-  "version": "2.1.0-rc.2",
+  "version": "2.2.0-rc.1",
+  "author": "Quorin Tech (https://www.quorintech.com)",
+  "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "build": "nest build",

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { Roles } from '../../decorators/roles.decorator';
@@ -74,7 +74,7 @@ export class OpportunitiesController {
   @Post(':id/convert')
   @Roles(Role.ADMIN, Role.MANAGER)
   convert(@Param('id') id: string, @Body() dto: ConvertOpportunityDto, @CurrentUser() currentUser: { userId: string; role: string }) {
-    return this.opportunitiesService.convertToProject(id, dto, currentUser);
+    throw new BadRequestException('Create the machine project from an approved sales order in Sales & Projects.');
   }
 
   @Post(':id/photos')
