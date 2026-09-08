@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { clsx } from 'clsx';
-import { Check, Info, Save, ShieldCheck, Trash2 } from 'lucide-react';
+import { Check, Save, ShieldCheck, Trash2 } from 'lucide-react';
 import {
   CURRENCY_OPTIONS,
   PAYMENT_TERM_OPTIONS,
@@ -17,6 +17,7 @@ import {
   prepareSupplierPayload,
   validateSupplierForm,
 } from '@/lib/suppliers';
+import { FieldLabel } from '@/components/ui/field-label';
 
 type SupplierTab = 'Overview' | 'Contact & Address' | 'Commercial' | 'Banking';
 const TABS: SupplierTab[] = ['Overview', 'Contact & Address', 'Commercial', 'Banking'];
@@ -31,13 +32,6 @@ type Props = {
   onSubmit: (values: Partial<SupplierPayload>) => Promise<boolean | void> | boolean | void;
   onCancel: () => void;
 };
-
-function FieldLabel({ children, required, tooltip }: { children: React.ReactNode; required?: boolean; tooltip?: string }) {
-  return <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-fg-secondary">
-    <span>{children}{required && <span className="text-red-500"> *</span>}</span>
-    {tooltip && <span title={tooltip} aria-label={tooltip} className="inline-flex cursor-help text-fg-muted"><Info className="h-3.5 w-3.5" /></span>}
-  </label>;
-}
 
 export function SupplierForm({ initialValues, saving = false, error, onSubmit, onCancel }: Props) {
   const isCreate = !initialValues?.code;
@@ -177,7 +171,7 @@ export function SupplierForm({ initialValues, saving = false, error, onSubmit, o
       {activeTab === 'Commercial' && <div className="grid gap-4 md:grid-cols-2">
         <div><FieldLabel required tooltip="Currency used by default on purchase transactions with this supplier.">Transaction currency</FieldLabel><input className={fc('currencyCode')} list="supplier-currency-options" maxLength={8} value={form.currencyCode} onChange={(event) => set('currencyCode', event.target.value.toUpperCase())} placeholder="INR" /><datalist id="supplier-currency-options">{CURRENCY_OPTIONS.map((item) => <option key={item} value={item} />)}</datalist>{err('currencyCode')}</div>
         <div><FieldLabel tooltip="When supplier invoices are normally due, for example Net 30.">Payment terms</FieldLabel><input className={fc('paymentTerms')} list="supplier-payment-options" value={form.paymentTerms} onChange={(event) => set('paymentTerms', event.target.value)} placeholder="Select or enter terms" /><datalist id="supplier-payment-options">{PAYMENT_TERM_OPTIONS.map((item) => <option key={item} value={item} />)}</datalist></div>
-        <div className="md:col-span-2"><FieldLabel tooltip="GSTIN, VAT number, or other jurisdiction-specific tax registration identifier.">Tax registration number</FieldLabel><input className={fc('taxRegistrationNumber')} value={form.taxRegistrationNumber} onChange={(event) => set('taxRegistrationNumber', event.target.value)} placeholder="GSTIN, VAT, or Tax ID" /></div>
+        <div className="md:col-span-2"><FieldLabel term="taxRegistration">Tax registration number</FieldLabel><input className={fc('taxRegistrationNumber')} value={form.taxRegistrationNumber} onChange={(event) => set('taxRegistrationNumber', event.target.value)} placeholder="GSTIN, VAT, or Tax ID" /></div>
         <div><FieldLabel tooltip="How this supplier is treated for indirect tax in its jurisdiction.">Tax treatment</FieldLabel><input className={fc('taxTreatment')} value={form.taxTreatment} onChange={(e) => set('taxTreatment', e.target.value)} placeholder="Registered, exempt, overseas…" /></div>
         <div><FieldLabel tooltip="State, province, or jurisdiction used as source of supply on purchases.">Place of supply</FieldLabel><input className={fc('placeOfSupply')} value={form.placeOfSupply} onChange={(e) => set('placeOfSupply', e.target.value)} placeholder="State or jurisdiction" /></div>
         <div className="md:col-span-2 rounded-xl border border-border bg-surface-secondary p-4 text-sm text-fg-muted"><strong className="text-fg-secondary">How these defaults are used:</strong> currency and payment terms prefill future purchase documents. Tax treatment remains transaction- and jurisdiction-specific.</div>

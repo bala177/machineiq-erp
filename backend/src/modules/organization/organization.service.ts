@@ -4,7 +4,7 @@ import { Model } from '../../database/postgres-document.model';
 import { DatabaseId } from '../../database/postgres-document.types';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { Branch, Company, Location } from '../../schemas/organization.schema';
-import { CreateBranchDto, CreateLocationDto, UpdateBranchDto, UpdateCompanyDto, UpdateLocationDto } from './organization.dto';
+import { COMPANY_OPTIONAL_FIELDS, CreateBranchDto, CreateLocationDto, UpdateBranchDto, UpdateCompanyDto, UpdateLocationDto } from './organization.dto';
 
 @Injectable()
 export class OrganizationService {
@@ -23,14 +23,28 @@ export class OrganizationService {
     const existing = await this.companyModel.findOne({ deletedAt: null });
     const duplicate = await this.companyModel.exists({ code: dto.code, deletedAt: null, ...(existing ? { _id: { $ne: existing._id } } : {}) });
     if (duplicate) throw new ConflictException('Company code already exists');
+    const values = this.clearedOptionalFields(dto);
     const company = existing
-      ? await this.companyModel.findByIdAndUpdate(existing._id, { $set: dto }, { new: true })
-      : await this.companyModel.create(dto);
+      ? await this.companyModel.findByIdAndUpdate(existing._id, { $set: values }, { new: true })
+      : await this.companyModel.create(values);
     await this.auditLogService.log({
       action: existing ? 'update' : 'create', entityType: 'Company', entityId: company!._id, performedBy: userId,
-      previousValues: existing?.toObject(), newValues: dto,
+      previousValues: existing?.toObject(), newValues: values,
     });
     return company;
+  }
+
+  /**
+   * The profile form always submits every field, so an optional field arriving
+   * blank means "clear it". Without an explicit null the update would skip the
+   * column and the stale value would survive.
+   */
+  private clearedOptionalFields(dto: UpdateCompanyDto): Record<string, unknown> {
+    const values: Record<string, unknown> = { ...dto };
+    for (const field of COMPANY_OPTIONAL_FIELDS) {
+      if (values[field] === undefined) values[field] = null;
+    }
+    return values;
   }
 
   async createBranch(dto: CreateBranchDto, userId: string) {

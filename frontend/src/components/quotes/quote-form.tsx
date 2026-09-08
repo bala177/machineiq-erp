@@ -2,6 +2,7 @@
 
 import { Plus, Save, Trash2 } from 'lucide-react';
 import { CustomerRecord } from '@/lib/customers';
+import { InfoTip } from '@/components/ui/info-tip';
 import {
   calculateQuoteTotals,
   CommercialItem,
@@ -210,7 +211,7 @@ export function QuoteForm({
                     <input className="input-field" value={item.sku || ''} onChange={(e) => updateLine(index, { sku: e.target.value })} />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-xs font-medium text-fg-secondary">HSN/SAC</span>
+                    <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-fg-secondary">HSN/SAC<InfoTip term="hsn" label="HSN or SAC code" /></span>
                     <input className="input-field" value={item.hsnSac || ''} onChange={(e) => updateLine(index, { hsnSac: e.target.value })} />
                   </label>
                   <label className="block">

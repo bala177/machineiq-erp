@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { clsx } from 'clsx';
-import { Check, Info, Save, Trash2 } from 'lucide-react';
+import { Check, Save, Trash2 } from 'lucide-react';
 import { getCountryCallingCode, parsePhoneNumberFromString } from 'libphonenumber-js';
 import {
   ACCOUNT_TYPES,
@@ -19,6 +19,7 @@ import {
   prepareCustomerPayload,
   validateCustomerForm,
 } from '@/lib/customers';
+import { FieldLabel } from '@/components/ui/field-label';
 
 export type { CustomerFormValues, CustomerRecord } from '@/lib/customers';
 
@@ -48,13 +49,6 @@ const DEFAULT_DRAFT_STORAGE_KEY = 'machineiq:customer-draft:v1';
 function hasDraftContent(values: CustomerFormValues) {
   return (Object.keys(values) as (keyof CustomerFormValues)[])
     .some((field) => values[field] !== emptyCustomerForm[field]);
-}
-
-function FieldLabel({ children, required, tooltip }: { children: React.ReactNode; required?: boolean; tooltip?: string }) {
-  return <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-fg-secondary">
-    <span>{children}{required && <span className="text-red-500"> *</span>}</span>
-    {tooltip && <span title={tooltip} aria-label={tooltip} className="inline-flex cursor-help text-fg-muted"><Info className="h-3.5 w-3.5" /></span>}
-  </label>;
 }
 
 function PhoneField({ label, field, value, countryName, error, onChange }: {
@@ -574,7 +568,7 @@ export function CustomerForm({
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Tax / VAT / GST Number</label>
+              <FieldLabel term="taxRegistration">Tax / VAT / GST Number</FieldLabel>
               <input className={fc('vatNumber')} value={form.vatNumber}
                 onChange={(e) => set('vatNumber', e.target.value)}
                 placeholder="GSTIN, VAT, or Tax ID" />

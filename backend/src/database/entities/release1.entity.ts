@@ -79,6 +79,12 @@ export class CompanyEntity extends MigratedEntity {
   @Column({ type: 'varchar', length: 160, nullable: true }) industry: string | null;
   @Column({ name: 'tax_registration_number', type: 'varchar', length: 80, nullable: true }) taxRegistrationNumber: string | null;
   @Column({ name: 'registration_number', type: 'varchar', length: 80, nullable: true }) registrationNumber: string | null;
+  @Column({ type: 'varchar', length: 21, nullable: true }) cin: string | null;
+  @Column({ type: 'varchar', length: 15, nullable: true }) gstin: string | null;
+  @Column({ type: 'varchar', length: 10, nullable: true }) pan: string | null;
+  @Column({ type: 'varchar', length: 10, nullable: true }) tan: string | null;
+  @Column({ name: 'msme_number', type: 'varchar', length: 40, nullable: true }) msmeNumber: string | null;
+  @Column({ name: 'incorporated_on', type: 'date', nullable: true }) incorporatedOn: string | null;
   @Column({ name: 'base_currency', type: 'varchar', length: 8, default: 'INR' }) baseCurrency: string;
   @Column({ type: 'varchar', length: 80, default: 'Asia/Kolkata' }) timezone: string;
   @Column({ name: 'fiscal_year_start_month', type: 'varchar', length: 20, default: 'april' }) fiscalYearStartMonth: string;

@@ -8,6 +8,7 @@ import { Building2, Bell, FileCog, FileText, Info, KeyRound, ShieldCheck, Plus, 
 import { clsx } from 'clsx';
 import { APP_VERSION, SHORT_GIT_COMMIT } from '@/lib/app-meta';
 import { ROLE_DEFINITIONS, ROLE_KEYS, roleLabel } from '@/lib/roles';
+import { InfoTip } from '@/components/ui/info-tip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -837,7 +838,7 @@ function CommercialTab() {
             <input className="input-field" value={prefs.organizationPhone} onChange={(e) => set('organizationPhone', e.target.value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-fg-secondary">Tax Registration Number</span>
+            <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-fg-secondary">Tax Registration Number<InfoTip term="taxRegistration" label="Tax Registration Number" /></span>
             <input className="input-field" value={prefs.taxRegistrationNumber} onChange={(e) => set('taxRegistrationNumber', e.target.value)} />
           </label>
           <label className="block md:col-span-2">

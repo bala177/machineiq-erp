@@ -1,6 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import dataSource from '../database/data-source';
 import { BranchEntity, CompanyEntity, CustomerEntity, DepartmentEntity, DocumentTypeEntity, ItemCategoryEntity, ItemEntity, LocationEntity, PermissionEntity, RolePermissionEntity, SequenceEntity, SupplierEntity, SystemSettingEntity, UomEntity, UserEntity } from '../database/entities/release1.entity';
+import { CompanyDirectorEntity } from '../database/entities/company-profile.entity';
 import { RuntimeDocumentEntity } from '../database/entities/runtime-document.entity';
 import { Role } from '../common/enums';
 import { ADMIN_PERMISSION_DEFINITIONS } from '../common/admin-permissions';
@@ -51,6 +52,12 @@ async function seed() {
       website: 'https://machineiq.tech',
       taxRegistrationNumber: '29AABCM1234F1Z5',
       registrationNumber: 'U29299KA2026PTC000001',
+      cin: 'U29299KA2026PTC000001',
+      gstin: '29AABCM1234F1Z5',
+      pan: 'AABCM1234F',
+      tan: 'BLRM12345F',
+      msmeNumber: 'UDYAM-KA-03-0001234',
+      incorporatedOn: '2013-12-18',
       baseCurrency: 'INR',
       timezone: 'Asia/Kolkata',
       address: 'Peenya Industrial Area',
@@ -63,6 +70,15 @@ async function seed() {
     { conflictPaths: ['code'] },
   );
   const company = await companies.findOneByOrFail({ code: 'MIQ' });
+
+  const directors = dataSource.getRepository(CompanyDirectorEntity);
+  for (const director of [
+    { name: 'Ravi Menon', designation: 'Managing Director', din: '02451188', email: 'ravi.menon@machineiq.com', phone: '+91 80 5555 0101', shareholdingPercent: 60 },
+    { name: 'Priya Nair', designation: 'Whole-time Director', din: '07713920', email: 'priya.nair@machineiq.com', phone: '+91 80 5555 0102', shareholdingPercent: 40 },
+  ]) {
+    if (await directors.findOneBy({ din: director.din })) continue;
+    await directors.save(directors.create({ ...director, companyId: company._id, appointedOn: '2013-12-18', isActive: true }));
+  }
 
   const branches = dataSource.getRepository(BranchEntity);
   await branches.upsert(

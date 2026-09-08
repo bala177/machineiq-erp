@@ -114,7 +114,15 @@ The ISA-88 machine breakdown hierarchy is:
 Project → Machine → Unit → EquipmentModule → ControlModule → Component
 ```
 
-Core entities: `User`, `Department`, `Customer`, `Opportunity`, `Project`, `Milestone`, `Machine`, `Unit`, `EquipmentModule`, `ControlModule`, `Component`, `Task`, `ProcurementItem`, `Supplier`, `Document`, `DecisionLog`, `Notification`, `AuditLog`
+Core entities: `User`, `Department`, `Company`, `CompanyDirector`, `CompanyDocument`, `Customer`, `Opportunity`, `Project`, `Milestone`, `Machine`, `Unit`, `EquipmentModule`, `ControlModule`, `Component`, `Task`, `ProcurementItem`, `Supplier`, `Document`, `DecisionLog`, `Notification`, `AuditLog`
+
+### Company statutory profile
+
+`Company` carries the Indian statutory identifiers — `cin`, `gstin`, `pan`, `tan`, `msmeNumber`, `incorporatedOn` — each validated against its issued format in `UpdateCompanyDto` only when a value is supplied, so a company outside India leaves them empty.
+
+`CompanyDocument` is the single attachment store for the whole company setup: the logo, every statutory certificate, MOA/AOA, and the per-director soft copies. Files are held as base64 data URLs in a `content` column marked `select: false`, so listing attachments never loads the payloads — fetch one through `GET /organization/documents/:id/content`. A partial unique index keeps one live file per slot (per company, or per director for the `director_*`, `din_certificate` and `shareholding_certificate` kinds); replacing a file soft-deletes its predecessor rather than overwriting it.
+
+Aadhaar is deliberately stored **as a soft copy only** — there is no Aadhaar number column, which keeps the platform clear of Aadhaar Act §29 obligations.
 
 Always enforce `departmentId`, `status`, and ownership on tasks and components.
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { api } from '@/lib/api';
+import { fetchCompanyLogo } from '@/lib/company-documents';
 import { formatMoney, QuoteRecord } from '@/lib/quotes';
 import { formatDate } from '@/lib/utils';
 
@@ -15,6 +16,7 @@ function addressText(address: any) {
 export default function PrintQuotePage() {
   const params = useParams<{ id: string }>();
   const [quote, setQuote] = useState<QuoteRecord | null>(null);
+  const [logo, setLogo] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -22,6 +24,8 @@ export default function PrintQuotePage() {
       .then(setQuote)
       .catch((err: any) => setError(err.message || 'Failed to load quote'));
   }, [params.id]);
+
+  useEffect(() => { void fetchCompanyLogo().then(setLogo); }, []);
 
   if (error) return <div className="card p-5 text-sm text-red-600">{error}</div>;
   if (!quote) return <p className="p-8 text-sm text-fg-muted">Loading quote...</p>;
@@ -37,6 +41,7 @@ export default function PrintQuotePage() {
       <div className="bg-white p-8 text-slate-900 shadow-sm print:p-0 print:shadow-none">
         <header className="flex items-start justify-between border-b border-slate-300 pb-6">
           <div>
+            {logo && <img src={logo} alt="" className="mb-3 max-h-16 max-w-[220px] object-contain" />}
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{organization.organizationName || 'MachineIQ'}</p>
             <h1 className="mt-1 text-2xl font-bold">Quotation</h1>
             <p className="mt-2 text-sm text-slate-600">{quote.subject || 'Commercial offer for custom machine and automation requirements.'}</p>
