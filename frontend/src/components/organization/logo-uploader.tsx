@@ -73,7 +73,9 @@ export function LogoUploader({ document, disabled, onChange, onError }: {
         <p className="mt-0.5 text-xs text-fg-muted">
           {document ? `${document.fileName} · ${formatBytes(document.sizeBytes)}` : 'PNG, JPEG, or WebP up to 2 MB.'}
         </p>
-        <p className="mt-0.5 text-xs text-fg-muted">Appears on printed quotations. Reprints of older quotes use the current logo.</p>
+        {disabled
+          ? <p className="mt-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">Save the company profile below before uploading a logo.</p>
+          : <p className="mt-0.5 text-xs text-fg-muted">Appears on printed quotations. Reprints of older quotes use the current logo.</p>}
         <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={upload} />
         <div className="mt-2 flex gap-2">
           <button type="button" className="btn-secondary px-2.5 py-1.5 text-xs" onClick={() => inputRef.current?.click()} disabled={disabled || busy}>

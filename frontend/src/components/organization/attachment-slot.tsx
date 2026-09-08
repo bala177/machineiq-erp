@@ -96,6 +96,7 @@ export function AttachmentSlot({ kind, document, directorId, disabled, onChange,
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={disabled || busy}
+          title={disabled ? 'Save the company profile before adding attachments' : `Attach ${documentLabels[kind]}`}
           className="flex items-center gap-1.5 rounded-lg border border-dashed border-border-strong px-2.5 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:border-brand-400 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-brand-400"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Paperclip className="h-3.5 w-3.5" />}

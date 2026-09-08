@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { Building2, Check, Circle, Factory, LayoutList, MapPin, Pencil, Plus, Save, Trash2, Warehouse } from 'lucide-react';
+import { AlertCircle, Building2, Check, Circle, Factory, LayoutList, MapPin, Pencil, Plus, Save, Trash2, Warehouse } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Modal } from '@/components/ui/modal';
@@ -13,6 +13,10 @@ import { AttachmentSlot, StatutoryRow } from '@/components/organization/attachme
 import { LogoUploader } from '@/components/organization/logo-uploader';
 import { CompanyDocument, CompanyDocumentKind } from '@/lib/company-documents';
 import { GlossaryTerm } from '@/lib/glossary';
+import { COUNTRY_OPTIONS, INDUSTRY_OPTIONS } from '@/lib/customers';
+import { CURRENCY_OPTIONS } from '@/lib/suppliers';
+import { COMMON_TIMEZONES, allTimezones, describeTimezone } from '@/lib/timezones';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { InfoTip } from '@/components/ui/info-tip';
 
 type Company = {
@@ -47,6 +51,20 @@ function Field({ label, term, children }: { label: string; term?: GlossaryTerm; 
     <span className="flex items-center gap-1.5">{label}{term && <InfoTip term={term} label={label} />}</span>
     <div className="mt-1.5">{children}</div>
   </label>;
+}
+
+function CountrySelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <select className="input-field" value={value} onChange={(event) => onChange(event.target.value)}>
+      {!COUNTRY_OPTIONS.some((option) => option.name === value) && <option value={value}>{value || 'Select a country'}</option>}
+      {COUNTRY_OPTIONS.map((option) => <option key={option.code} value={option.name}>{option.name}</option>)}
+    </select>
+  );
+}
+
+/** Keeps an existing stored value selectable even if it is not in the option list. */
+function withCurrent(options: readonly string[], current: string) {
+  return current && !options.includes(current) ? [current, ...options] : [...options];
 }
 
 function SectionTitle({ title, description }: { title: string; description: string }) {
@@ -215,21 +233,39 @@ export default function OrganizationPage() {
     <div className="grid gap-6">
       <form id="company-panel" role="tabpanel" className={`card p-5 ${activeSection === 'company' ? '' : 'hidden'}`} onSubmit={saveCompany}>
         <div className="mb-5 flex items-center gap-3 border-b border-border pb-4"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/30 dark:text-brand-300"><Building2 className="h-5 w-5" /></div><div><h2 className="font-semibold text-fg">Company profile</h2><p className="text-sm text-fg-muted">Legal identity, statutory registrations, and constitutional documents</p></div></div>
+        {/* Attachments hang off the company record, so nothing can be filed
+            until it exists. Say so once, before anything looks broken. */}
+        {!company && (
+          <div className="mb-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/20">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              Fill in the company name and save this profile first. The logo and every certificate upload stay disabled until the company record exists.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <SectionTitle title="Identity" description="Official name, internal company code, and the logo used on commercial documents." />
           <LogoUploader document={companyDocument('logo')} disabled={!company} onChange={reloadProfile} onError={setError} />
-          <Field label="Company code"><input required className="input-field" value={companyForm.code} onChange={(e) => setCompanyForm({ ...companyForm, code: e.target.value.toUpperCase() })} /></Field>
+          <Field label="Company code"><input required className="input-field" maxLength={30} placeholder="MIQ" value={companyForm.code} onChange={(e) => setCompanyForm({ ...companyForm, code: e.target.value.toUpperCase() })} /></Field>
           <Field label="Company name"><input required className="input-field" value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} /></Field>
-          <Field label="Industry"><input className="input-field" placeholder="Machinery manufacturing" value={companyForm.industry} onChange={(e) => setCompanyForm({ ...companyForm, industry: e.target.value })} /></Field>
+          <Field label="Industry">
+            <SelectWithOther
+              value={companyForm.industry}
+              options={INDUSTRY_OPTIONS}
+              onChange={(industry) => setCompanyForm({ ...companyForm, industry })}
+              placeholder="Select an industry"
+              otherPlaceholder="Describe the industry"
+            />
+          </Field>
           <Field label="Established on"><input type="date" className="input-field" value={companyForm.incorporatedOn} onChange={(e) => setCompanyForm({ ...companyForm, incorporatedOn: e.target.value })} /></Field>
 
           <SectionTitle title="Contact" description="Primary business contact details." />
-          <Field label="Email"><input type="email" className="input-field" value={companyForm.email} onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })} /></Field>
-          <Field label="Phone"><input className="input-field" value={companyForm.phone} onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} /></Field>
+          <Field label="Email"><input type="email" className="input-field" placeholder="operations@example.com" value={companyForm.email} onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })} /></Field>
+          <Field label="Phone"><input type="tel" className="input-field" placeholder="+91 80 5555 0100" value={companyForm.phone} onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} /></Field>
           <Field label="Website"><input type="url" className="input-field" placeholder="https://example.com" value={companyForm.website} onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })} /></Field>
 
           <SectionTitle title="Statutory registrations" description="Each number is stored with the certificate that proves it. Leave a slot empty if it does not apply." />
-          {!company && <p className="rounded-lg border border-border bg-surface-secondary px-3 py-2 text-xs text-fg-muted sm:col-span-2">Save the company profile once to enable attachments.</p>}
           <div className="sm:col-span-2">
             <StatutoryRow label="CIN" hint="Corporate Identity Number" term="cin" attachment={statutoryAttachment('cin_certificate')}>
               <input className="input-field font-mono" placeholder="U29299KA2026PTC000001" maxLength={21} value={companyForm.cin} onChange={(e) => setCompanyForm({ ...companyForm, cin: e.target.value.toUpperCase() })} />
@@ -255,15 +291,28 @@ export default function OrganizationPage() {
           </div>
 
           <SectionTitle title="Registered address" description="Legal address for company records." />
-          <Field label="Address"><input className="input-field" value={companyForm.address} onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} /></Field>
-          <Field label="City"><input className="input-field" value={companyForm.city} onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} /></Field>
-          <Field label="State / province"><input className="input-field" value={companyForm.stateProvince} onChange={(e) => setCompanyForm({ ...companyForm, stateProvince: e.target.value })} /></Field>
-          <Field label="Postal code"><input className="input-field" value={companyForm.postalCode} onChange={(e) => setCompanyForm({ ...companyForm, postalCode: e.target.value })} /></Field>
-          <Field label="Country"><input className="input-field" value={companyForm.country} onChange={(e) => setCompanyForm({ ...companyForm, country: e.target.value })} /></Field>
+          <Field label="Address"><input className="input-field" placeholder="Street, area, landmark" value={companyForm.address} onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} /></Field>
+          <Field label="City"><input className="input-field" placeholder="Bengaluru" value={companyForm.city} onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} /></Field>
+          <Field label="State / province"><input className="input-field" placeholder="Karnataka" value={companyForm.stateProvince} onChange={(e) => setCompanyForm({ ...companyForm, stateProvince: e.target.value })} /></Field>
+          <Field label="Postal code"><input className="input-field" inputMode="numeric" placeholder="560058" value={companyForm.postalCode} onChange={(e) => setCompanyForm({ ...companyForm, postalCode: e.target.value })} /></Field>
+          <Field label="Country"><CountrySelect value={companyForm.country} onChange={(country) => setCompanyForm({ ...companyForm, country })} /></Field>
 
           <SectionTitle title="Regional settings" description="Used by commercial documents and ERP transactions." />
-          <Field label="Base currency"><input required className="input-field" value={companyForm.baseCurrency} onChange={(e) => setCompanyForm({ ...companyForm, baseCurrency: e.target.value.toUpperCase() })} /></Field>
-          <Field label="Timezone"><input required className="input-field" value={companyForm.timezone} onChange={(e) => setCompanyForm({ ...companyForm, timezone: e.target.value })} /></Field>
+          <Field label="Base currency">
+            <select required className="input-field" value={companyForm.baseCurrency} onChange={(e) => setCompanyForm({ ...companyForm, baseCurrency: e.target.value })}>
+              {withCurrent(CURRENCY_OPTIONS, companyForm.baseCurrency).map((currency) => <option key={currency} value={currency}>{currency}</option>)}
+            </select>
+          </Field>
+          <Field label="Time zone">
+            <select required className="input-field" value={companyForm.timezone} onChange={(e) => setCompanyForm({ ...companyForm, timezone: e.target.value })}>
+              <optgroup label="Common">
+                {withCurrent(COMMON_TIMEZONES, companyForm.timezone).map((zone) => <option key={zone} value={zone}>{describeTimezone(zone)}</option>)}
+              </optgroup>
+              <optgroup label="All time zones">
+                {allTimezones().map((zone) => <option key={zone} value={zone}>{describeTimezone(zone)}</option>)}
+              </optgroup>
+            </select>
+          </Field>
           <Field label="Fiscal year starts"><select className="input-field capitalize" value={companyForm.fiscalYearStartMonth} onChange={(e) => setCompanyForm({ ...companyForm, fiscalYearStartMonth: e.target.value })}>{['january','february','march','april','may','june','july','august','september','october','november','december'].map(month => <option key={month} value={month}>{month}</option>)}</select></Field>
           <Field label="Date format"><select className="input-field" value={companyForm.dateFormat} onChange={(e) => setCompanyForm({ ...companyForm, dateFormat: e.target.value })}><option value="dd/MM/yyyy">DD/MM/YYYY</option><option value="MM/dd/yyyy">MM/DD/YYYY</option><option value="yyyy-MM-dd">YYYY-MM-DD</option><option value="dd MMM yyyy">DD MMM YYYY</option></select></Field>
           <Field label="Language"><select className="input-field" value={companyForm.languageCode} onChange={(e) => setCompanyForm({ ...companyForm, languageCode: e.target.value })}><option value="en">English</option><option value="de">German</option><option value="fr">French</option><option value="es">Spanish</option><option value="it">Italian</option><option value="pt">Portuguese</option></select></Field>
@@ -292,7 +341,7 @@ export default function OrganizationPage() {
     {activeSection === 'directors' && <div id="directors-panel" role="tabpanel"><DirectorManagement directors={directors} documents={documents} canManage={Boolean(company)} onReload={reloadProfile} onError={setError} /></div>}
     {activeSection === 'departments' && <div id="departments-panel" role="tabpanel"><DepartmentManagement onCountChange={setDepartmentCount} /></div>}
 
-    {branchOpen && <Modal title="Add branch" onClose={() => setBranchOpen(false)} size="lg"><form className="grid gap-4 sm:grid-cols-2" onSubmit={createBranch}><Field label="Branch code"><input required className="input-field" value={branchForm.code} onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value.toUpperCase() })} /></Field><Field label="Branch name"><input required className="input-field" value={branchForm.name} onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })} /></Field><Field label="Email"><input type="email" className="input-field" value={branchForm.email} onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })} /></Field><Field label="Phone"><input className="input-field" value={branchForm.phone} onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })} /></Field><Field label="GSTIN" term="gstin"><input className="input-field font-mono" value={branchForm.taxRegistrationNumber} onChange={(e) => setBranchForm({ ...branchForm, taxRegistrationNumber: e.target.value.toUpperCase() })} /></Field><div className="hidden sm:block" /><Field label="Address"><input className="input-field" value={branchForm.address} onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })} /></Field><Field label="City"><input className="input-field" value={branchForm.city} onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })} /></Field><Field label="State / province"><input className="input-field" value={branchForm.stateProvince} onChange={(e) => setBranchForm({ ...branchForm, stateProvince: e.target.value })} /></Field><Field label="Postal code"><input className="input-field" value={branchForm.postalCode} onChange={(e) => setBranchForm({ ...branchForm, postalCode: e.target.value })} /></Field><Field label="Country"><input className="input-field" value={branchForm.country} onChange={(e) => setBranchForm({ ...branchForm, country: e.target.value })} /></Field><div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setBranchOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create branch'}</button></div></form></Modal>}
-    {locationOpen && <Modal title="Add location" onClose={() => setLocationOpen(false)} size="lg"><form className="grid gap-4 sm:grid-cols-2" onSubmit={createLocation}><Field label="Location code"><input required className="input-field" value={locationForm.code} onChange={(e) => setLocationForm({ ...locationForm, code: e.target.value.toUpperCase() })} /></Field><Field label="Location name"><input required className="input-field" value={locationForm.name} onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })} /></Field><Field label="Branch"><select required className="input-field" value={locationForm.branchId} onChange={(e) => setLocationForm({ ...locationForm, branchId: e.target.value })}><option value="">Select branch</option>{branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.code} — {branch.name}</option>)}</select></Field><Field label="Location type"><select className="input-field" value={locationForm.type} onChange={(e) => setLocationForm({ ...locationForm, type: e.target.value })}><option value="office">Office</option><option value="factory">Factory</option><option value="warehouse">Warehouse</option><option value="service">Service</option></select></Field><Field label="Address"><input className="input-field" value={locationForm.address} onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })} /></Field><Field label="City"><input className="input-field" value={locationForm.city} onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })} /></Field><Field label="State / province"><input className="input-field" value={locationForm.stateProvince} onChange={(e) => setLocationForm({ ...locationForm, stateProvince: e.target.value })} /></Field><Field label="Postal code"><input className="input-field" value={locationForm.postalCode} onChange={(e) => setLocationForm({ ...locationForm, postalCode: e.target.value })} /></Field><Field label="Country"><input className="input-field" value={locationForm.country} onChange={(e) => setLocationForm({ ...locationForm, country: e.target.value })} /></Field><div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setLocationOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create location'}</button></div></form></Modal>}
+    {branchOpen && <Modal title="Add branch" onClose={() => setBranchOpen(false)} size="lg"><form className="grid gap-4 sm:grid-cols-2" onSubmit={createBranch}><Field label="Branch code"><input required className="input-field" value={branchForm.code} onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value.toUpperCase() })} /></Field><Field label="Branch name"><input required className="input-field" value={branchForm.name} onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })} /></Field><Field label="Email"><input type="email" className="input-field" value={branchForm.email} onChange={(e) => setBranchForm({ ...branchForm, email: e.target.value })} /></Field><Field label="Phone"><input className="input-field" value={branchForm.phone} onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })} /></Field><Field label="GSTIN" term="gstin"><input className="input-field font-mono" value={branchForm.taxRegistrationNumber} onChange={(e) => setBranchForm({ ...branchForm, taxRegistrationNumber: e.target.value.toUpperCase() })} /></Field><div className="hidden sm:block" /><Field label="Address"><input className="input-field" value={branchForm.address} onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })} /></Field><Field label="City"><input className="input-field" value={branchForm.city} onChange={(e) => setBranchForm({ ...branchForm, city: e.target.value })} /></Field><Field label="State / province"><input className="input-field" value={branchForm.stateProvince} onChange={(e) => setBranchForm({ ...branchForm, stateProvince: e.target.value })} /></Field><Field label="Postal code"><input className="input-field" value={branchForm.postalCode} onChange={(e) => setBranchForm({ ...branchForm, postalCode: e.target.value })} /></Field><Field label="Country"><CountrySelect value={branchForm.country} onChange={(country) => setBranchForm({ ...branchForm, country })} /></Field><div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setBranchOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create branch'}</button></div></form></Modal>}
+    {locationOpen && <Modal title="Add location" onClose={() => setLocationOpen(false)} size="lg"><form className="grid gap-4 sm:grid-cols-2" onSubmit={createLocation}><Field label="Location code"><input required className="input-field" value={locationForm.code} onChange={(e) => setLocationForm({ ...locationForm, code: e.target.value.toUpperCase() })} /></Field><Field label="Location name"><input required className="input-field" value={locationForm.name} onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })} /></Field><Field label="Branch"><select required className="input-field" value={locationForm.branchId} onChange={(e) => setLocationForm({ ...locationForm, branchId: e.target.value })}><option value="">Select branch</option>{branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.code} — {branch.name}</option>)}</select></Field><Field label="Location type"><select className="input-field" value={locationForm.type} onChange={(e) => setLocationForm({ ...locationForm, type: e.target.value })}><option value="office">Office</option><option value="factory">Factory</option><option value="warehouse">Warehouse</option><option value="service">Service</option></select></Field><Field label="Address"><input className="input-field" value={locationForm.address} onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })} /></Field><Field label="City"><input className="input-field" value={locationForm.city} onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })} /></Field><Field label="State / province"><input className="input-field" value={locationForm.stateProvince} onChange={(e) => setLocationForm({ ...locationForm, stateProvince: e.target.value })} /></Field><Field label="Postal code"><input className="input-field" value={locationForm.postalCode} onChange={(e) => setLocationForm({ ...locationForm, postalCode: e.target.value })} /></Field><Field label="Country"><CountrySelect value={locationForm.country} onChange={(country) => setLocationForm({ ...locationForm, country })} /></Field><div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2"><button type="button" className="btn-ghost" onClick={() => setLocationOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create location'}</button></div></form></Modal>}
   </>;
 }
