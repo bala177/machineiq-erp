@@ -49,14 +49,34 @@ const masterDataRows = (data: Release1DashboardData) => [
   { label: 'Document types', value: data.documentTypes, icon: FileCog, href: '/admin/settings?tab=documentTypes' },
 ];
 
-function SummaryCards({ data }: { data: Release1DashboardData }) {
+/**
+ * Master data as one quiet strip rather than four coloured tiles. These are
+ * reference counts, not performance indicators — they share one surface and
+ * one weight so the pipeline above keeps the eye.
+ */
+function RecordStrip({ data }: { data: Release1DashboardData }) {
+  const cells = [
+    { label: 'Customers', value: data.customers, href: '/customers' },
+    { label: 'Suppliers', value: data.suppliers, href: '/suppliers' },
+    { label: 'Items', value: data.items, href: '/items' },
+    { label: 'Active users', value: data.users, href: '/admin/users' },
+  ];
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <KpiCard label="Customers" value={data.customers} icon={<Building2 />} accent="violet" href="/customers" />
-      <KpiCard label="Suppliers" value={data.suppliers} icon={<Truck />} accent="amber" href="/suppliers" />
-      <KpiCard label="Items" value={data.items} icon={<Boxes />} accent="blue" href="/items" />
-      <KpiCard label="Active users" value={data.users} icon={<UsersRound />} accent="green" href="/admin/users" />
-    </div>
+    <section className="card grid grid-cols-2 divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
+      {cells.map((cell, index) => (
+        <Link
+          key={cell.label}
+          href={cell.href}
+          className={`group px-5 py-3.5 transition-colors hover:bg-surface-secondary ${index ? 'sm:border-l sm:border-border' : ''} ${index % 2 ? 'border-l border-border sm:border-l' : ''}`}
+        >
+          <p className="text-[11px] font-medium uppercase tracking-wider text-fg-muted">{cell.label}</p>
+          <p className="mt-1 flex items-center gap-1.5 text-xl font-semibold tabular-nums text-fg">
+            {cell.value}
+            <ArrowRight className="h-3.5 w-3.5 text-fg-muted opacity-0 transition-opacity group-hover:opacity-100" />
+          </p>
+        </Link>
+      ))}
+    </section>
   );
 }
 
@@ -138,54 +158,45 @@ function SetupView({ data }: { data: Release1DashboardData }) {
         </div>
       </div>
 
-      <SummaryCards data={data} />
+      <RecordStrip data={data} />
     </div>
   );
 }
 
 function OperationalView({ data }: { data: Release1DashboardData }) {
   const teamIssues = data.inactiveUsers + data.usersWithoutDepartment;
+  const reference = masterDataRows(data);
 
   return (
-    <div className="space-y-6 pb-8">
-      <SummaryCards data={data} />
+    <div className="space-y-4 pb-8">
+      <RecordStrip data={data} />
 
-      <section className="card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"><CheckCircle2 className="h-5 w-5" /></div><div><h2 className="font-semibold text-fg">Organization setup complete</h2><p className="mt-0.5 text-sm text-fg-muted">Company structure, role access, item references, and document numbering are ready.</p></div></div>
-        <Link href="/organization" className="btn-secondary shrink-0">Review organization</Link>
-      </section>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <MasterDataStatus data={data} />
-
-        <section className="card p-5">
-          <h2 className="font-semibold text-fg">Team and access</h2>
-          <p className="mt-1 text-sm text-fg-muted">People and access records requiring attention.</p>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-surface-secondary p-4"><p className="text-2xl font-bold text-fg">{data.users}</p><p className="mt-1 text-xs text-fg-muted">Active users</p></div>
-            <div className="rounded-xl bg-surface-secondary p-4"><p className={`text-2xl font-bold ${teamIssues ? 'text-amber-600' : 'text-emerald-600'}`}>{teamIssues}</p><p className="mt-1 text-xs text-fg-muted">Records needing attention</p></div>
-          </div>
-          <div className="mt-4 space-y-2 text-sm">
-            <div className="flex items-center justify-between"><span className="text-fg-secondary">Inactive users</span><span className="font-semibold text-fg">{data.inactiveUsers}</span></div>
-            <div className="flex items-center justify-between"><span className="text-fg-secondary">Users without departments</span><span className="font-semibold text-fg">{data.usersWithoutDepartment}</span></div>
-            <div className="flex items-center justify-between"><span className="text-fg-secondary">Role access</span><span className={data.accessAssignments > 0 ? 'badge-green' : 'badge-amber'}>{data.accessAssignments > 0 ? 'Configured' : 'Review needed'}</span></div>
-          </div>
-          <Link href="/admin/users" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:underline">Manage users <ArrowRight className="h-4 w-4" /></Link>
+      {/* Only surface team and access when something actually needs doing. */}
+      {teamIssues > 0 && (
+        <section className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3.5">
+          <span className="flex items-center gap-2 font-medium text-fg">
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            {teamIssues} user {teamIssues === 1 ? 'record needs' : 'records need'} attention
+          </span>
+          {data.inactiveUsers > 0 && <span className="text-sm text-fg-muted">{data.inactiveUsers} inactive</span>}
+          {data.usersWithoutDepartment > 0 && <span className="text-sm text-fg-muted">{data.usersWithoutDepartment} without a department</span>}
+          <Link href="/admin/users" className="ml-auto text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">Manage users</Link>
         </section>
-      </div>
+      )}
 
-      <section className="card p-5">
-        <h2 className="font-semibold text-fg">Quick actions</h2>
-        <p className="mt-1 text-sm text-fg-muted">Maintain the records used most often.</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: 'Manage customers', href: '/customers', icon: Building2 },
-            { label: 'Manage suppliers', href: '/suppliers', icon: Truck },
-            { label: 'Manage items', href: '/items', icon: Boxes },
-            { label: 'Manage organization', href: '/organization', icon: GitBranch },
-          ].map((item) => <Link key={item.label} href={item.href} className="flex items-center gap-3 rounded-xl border border-border p-3.5 text-sm font-semibold text-fg transition-colors hover:border-brand-300 hover:bg-brand-50/50 dark:hover:border-brand-900 dark:hover:bg-brand-950/10"><item.icon className="h-4 w-4 text-brand-600" /><span className="flex-1">{item.label}</span><ArrowRight className="h-4 w-4 text-fg-muted" /></Link>)}
-        </div>
-      </section>
+      {/* Configuration is settled once setup is complete: one line, not a panel. */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 px-1 text-sm text-fg-muted">
+        <span className="flex items-center gap-1.5">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          Organization setup complete
+        </span>
+        {reference.map((row) => (
+          <Link key={row.label} href={row.href} className="hover:text-fg hover:underline">
+            {row.label} <span className="tabular-nums text-fg-secondary">{row.value}</span>
+          </Link>
+        ))}
+        <Link href="/organization" className="ml-auto font-medium text-brand-600 hover:underline dark:text-brand-400">Review organization</Link>
+      </div>
     </div>
   );
 }

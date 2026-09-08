@@ -111,6 +111,30 @@
   .filter-pill-inactive {
     @apply bg-surface text-fg-secondary border border-border hover:bg-surface-tertiary hover:border-border-strong;
   }
+
+  /* Status pills. These were referenced across the app long before they were
+     defined, so every badge-* rendered as bare text until now. */
+  .badge-gray, .badge-blue, .badge-green, .badge-amber, .badge-red, .badge-purple {
+    @apply inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium capitalize;
+  }
+  .badge-gray {
+    @apply bg-surface-tertiary text-fg-secondary;
+  }
+  .badge-blue {
+    @apply bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300;
+  }
+  .badge-green {
+    @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300;
+  }
+  .badge-amber {
+    @apply bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300;
+  }
+  .badge-red {
+    @apply bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300;
+  }
+  .badge-purple {
+    @apply bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300;
+  }
 }
 
 /* Dropdown animation */

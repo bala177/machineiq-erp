@@ -28,6 +28,7 @@ export class SalesController {
   upload(@Param('id',ParseUUIDPipe) id:string,@UploadedFile() file:{buffer:Buffer;originalname:string;mimetype:string},@CurrentUser() actor:SalesActor){return this.sales.attach(id,file,actor);}
   @Get('records/:id/attachments/:attachment')
   async download(@Param('id',ParseUUIDPipe) id:string,@Param('attachment',ParseUUIDPipe) attachment:string,@CurrentUser() actor:SalesActor,@Res() res:Response){const f=await this.sales.download(id,attachment,actor);res.setHeader('Content-Type',f.mime);res.setHeader('Content-Disposition',`attachment; filename="${f.name}"`);res.setHeader('X-Content-Type-Options','nosniff');res.send(f.content);}
+  @Get('overview') overview(@CurrentUser() actor:SalesActor){return this.sales.overview(actor);}
   @Get('notifications') notifications(@CurrentUser() actor:SalesActor){return this.sales.notifications(actor);}
   @Patch('notifications/:id/read') read(@Param('id',ParseUUIDPipe) id:string,@CurrentUser() actor:SalesActor){return this.sales.readNotification(id,actor);}
   @Get('reports/:name') report(@Param('name') name:string,@Query() query:SalesQueryDto,@CurrentUser() actor:SalesActor){return this.sales.report(name,query,actor);}

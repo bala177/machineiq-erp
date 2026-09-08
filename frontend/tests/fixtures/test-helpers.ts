@@ -785,6 +785,32 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
       return;
     }
 
+    if (path === '/sales/overview' && method === 'GET') {
+      await route.fulfill(jsonResponse({
+        scope: 'all',
+        stages: [
+          { kind: 'enquiry', open: 2, total: 3, value: [{ currency: 'INR', gross: '2950000.00' }] },
+          { kind: 'quote', open: 1, total: 2, value: [{ currency: 'INR', gross: '2124000.00' }] },
+          { kind: 'order', open: 0, total: 0, value: [] },
+          { kind: 'project', open: 0, total: 0, value: [] },
+        ],
+        attention: { pendingApproval: [], expiringQuotes: [], overdueOrders: [] },
+      }));
+      return;
+    }
+
+    if (path === '/sales/records' && method === 'GET') {
+      await route.fulfill(jsonResponse({
+        data: [{
+          id: 'sales-1', kind: 'quote', number: 'QTE-MIQ-2026-00001', title: 'Capping machine quote',
+          status: 'draft', customer_name: 'Atlas Beverage Systems', owner_name: 'Alex Admin',
+          currency: 'INR', gross: '2124000.00', document_date: '2026-09-01', updated_at: '2026-09-01T00:00:00.000Z',
+        }],
+        total: 1,
+      }));
+      return;
+    }
+
     await route.fulfill(jsonResponse({ message: `Unhandled route: ${method} ${path}` }, 500));
   });
 }

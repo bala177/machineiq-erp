@@ -370,6 +370,68 @@ export class SalesService implements OnModuleInit, OnModuleDestroy {
     const lineFields=['description','unit','item_id','uom_id','quantity','unit_price','discount_percent','tax_percent'];
     return {from:a.revision,to:b.revision,fields:[...fields,'requirements','currency','net','tax','gross','milestones'].filter(f=>JSON.stringify(a[f])!==JSON.stringify(b[f])).map(f=>({field:f,before:a[f],after:b[f]})),added:b.lines.filter((l:Row)=>!al.has(l.line_key)),removed:a.lines.filter((l:Row)=>!bl.has(l.line_key)),changed:b.lines.filter((l:Row)=>al.has(l.line_key)&&lineFields.some(f=>String(al.get(l.line_key)![f])!==String(l[f]))).map((l:Row)=>({before:al.get(l.line_key),after:l}))};
   }
+  /**
+   * Cross-release dashboard feed: where commercial work stands, and what is
+   * waiting on somebody.
+   *
+   * Scope and permissions come from the same context() the record routes use,
+   * so a user with 'own' scope sees only their own pipeline. Money is grouped
+   * by currency and summed in scaled integer units — totals from different
+   * currencies are never added together.
+   */
+  async overview(actor:SalesActor) {
+    const c=await this.context(actor);
+    const open:Record<string,string[]>={
+      enquiry:['draft','new','qualified','quoted'],
+      quote:['draft','review','approved','sent'],
+      order:['draft','review','confirmed','on_hold','partially_delivered'],
+      project:['draft','initiated','active','on_hold'],
+    };
+    const visible=`r.company_id=$1 AND ($3='all' OR r.owner_id=$2 OR r.created_by=$2)`;
+    const values=[c.companyId,c.userId,c.scope];
+    const rows:Row[]=await this.db.query(
+      `SELECT r.kind,r.status,r.currency,r.currency_precision,r.net,r.tax,r.gross,r.id,r.number,r.title,r.approval,
+              r.valid_until,r.delivery_date,c.name AS customer_name,u.first_name||' '||u.last_name AS owner_name
+         FROM sales_records r JOIN customers c ON c.id=r.customer_id JOIN users u ON u.id=r.owner_id
+        WHERE ${visible} AND r.is_current`, values);
+
+    const stages=Object.entries(open).map(([kind,statuses])=>{
+      const live=rows.filter(r=>r.kind===kind&&statuses.includes(r.status));
+      const byCurrency=new Map<string,{units:bigint;precision:number}>();
+      for(const r of live) {
+        const entry=byCurrency.get(r.currency)||{units:0n,precision:r.currency_precision};
+        entry.precision=Math.max(entry.precision,r.currency_precision);
+        entry.units+=amountUnits(r.gross,4);
+        byCurrency.set(r.currency,entry);
+      }
+      return {
+        kind, open:live.length, total:rows.filter(r=>r.kind===kind).length,
+        value:[...byCurrency.entries()].map(([currency,entry])=>{
+          const scale=10n**BigInt(4-entry.precision);
+          return {currency,gross:moneyString(entry.units/scale,entry.precision)};
+        }),
+      };
+    });
+
+    const brief=(r:Row)=>({id:r.id,kind:r.kind,number:r.number,title:r.title,status:r.status,
+      customer:r.customer_name,owner:r.owner_name,currency:r.currency,gross:r.gross,
+      valid_until:r.valid_until,delivery_date:r.delivery_date});
+    const today=new Date().toISOString().slice(0,10);
+    const soon=new Date(Date.now()+14*86400000).toISOString().slice(0,10);
+    const day=(value:unknown)=>value?String(value).slice(0,10):null;
+
+    return {
+      scope:c.scope, stages,
+      attention:{
+        pendingApproval:rows.filter(r=>r.approval==='pending'&&['review'].includes(r.status)).map(brief),
+        expiringQuotes:rows.filter(r=>r.kind==='quote'&&['sent','approved'].includes(r.status)
+          &&day(r.valid_until)&&day(r.valid_until)!<=soon).map(brief),
+        overdueOrders:rows.filter(r=>r.kind==='order'&&open.order.includes(r.status)
+          &&day(r.delivery_date)&&day(r.delivery_date)!<today).map(brief),
+      },
+    };
+  }
+
   async notifications(actor:SalesActor) {
     const c=await this.context(actor);return this.db.query(`SELECT n.* FROM sales_notifications n JOIN sales_records r ON r.id=n.record_id WHERE n.user_id=$1 AND r.company_id=$2 AND ($3='all' OR r.owner_id=$1 OR r.created_by=$1) ORDER BY n.created_at DESC LIMIT 100`,[c.userId,c.companyId,c.scope]);
   }

@@ -10,14 +10,24 @@ test.describe('core workflows', () => {
     await setAuthenticatedSession(page);
     await page.goto('/dashboard');
 
+    // The commercial pipeline leads, with Release 1 reference data beneath it.
+    await expect(page.getByRole('heading', { name: 'Commercial pipeline' })).toBeVisible();
+    await expect(page.getByText('Enquiries').first()).toBeVisible();
+    await expect(page.getByText('Quotations').first()).toBeVisible();
+    await expect(page.getByText('Sales orders').first()).toBeVisible();
+    await expect(page.getByText('Machine projects').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Recently updated' })).toBeVisible();
+    await expect(page.getByText('Capping machine quote')).toBeVisible();
+
     await expect(page.getByText('Customers').first()).toBeVisible();
     await expect(page.getByText('Suppliers').first()).toBeVisible();
     await expect(page.getByText('Items').first()).toBeVisible();
     await expect(page.getByText('Active users').first()).toBeVisible();
     await expect(page.getByText('Organization setup complete')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Master data status' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Team and access' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Quick actions' })).toBeVisible();
+
+    // Setup detail is demoted to a single line once it is complete.
+    await expect(page.getByRole('heading', { name: 'Master data status' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Quick actions' })).toHaveCount(0);
     await expect(page.getByText('Release 1 scope')).toHaveCount(0);
     await expect(page.getByText('Machine Inquiries')).toHaveCount(0);
     await expect(page.getByText('By Priority')).toHaveCount(0);

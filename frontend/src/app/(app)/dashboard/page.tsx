@@ -6,10 +6,10 @@ import { useAuth } from '@/providers/auth-provider';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ExecutiveView } from './_views/executive-view';
-import { SalesView } from './_views/sales-view';
 import { PmView } from './_views/pm-view';
 import { EngineerView } from './_views/engineer-view';
 import { Release1View, type Release1DashboardData } from './_views/release1-view';
+import { SalesPipeline, AttentionQueue, RecentRecords, type SalesOverview, type SalesRecordRow } from '@/components/dashboard/sales-pipeline';
 import type { ExecutiveDashboard, MyTask, OpportunityItem, ProjectSummary } from '@/components/dashboard/types';
 
 export default function DashboardPage() {
@@ -21,6 +21,8 @@ export default function DashboardPage() {
   const [tasks,         setTasks]         = useState<MyTask[]>([]);
   const [projects,      setProjects]      = useState<ProjectSummary[]>([]);
   const [releaseData,   setReleaseData]   = useState<Release1DashboardData | null>(null);
+  const [overview,      setOverview]      = useState<SalesOverview | null>(null);
+  const [salesRecords,  setSalesRecords]  = useState<SalesRecordRow[]>([]);
   const [loading,       setLoading]       = useState(true);
 
   useEffect(() => {
@@ -28,7 +30,16 @@ export default function DashboardPage() {
 
     const fetches: Promise<void>[] = [];
 
-    if (['manager', 'sales', 'leadership'].includes(role)) {
+    // The commercial summary renders on arrival rather than holding the page
+    // back: both sections are conditional, and blocking on them delayed the
+    // route becoming interactive for every role.
+    //
+    // Scope and permissions are enforced by /sales/overview itself, so every
+    // role asks for it and simply renders nothing if sales is not theirs.
+    void api.get<SalesOverview>('/sales/overview').then(setOverview).catch(() => {});
+    void api.get<{ data: SalesRecordRow[] }>('/sales/records?limit=8').then(res => setSalesRecords(res.data ?? [])).catch(() => {});
+
+    if (['manager', 'leadership'].includes(role)) {
       fetches.push(api.get<{ data: OpportunityItem[]; total: number }>('/opportunities?limit=5').then(res => setOpportunities(res.data ?? [])).catch(() => {}));
     }
 
@@ -94,21 +105,27 @@ export default function DashboardPage() {
   if (loading || !user) return <LoadingSpinner />;
 
   const description =
-    role === 'admin' ? 'Organization setup and master data overview' :
-    role === 'sales' ? 'Machine inquiry pipeline and review status' :
-    role === 'manager' ? 'Projects, delivery health, and work requiring attention' :
-    role === 'designer' ? 'Assigned engineering work and project context' :
-    'Customers, machine inquiries, and project health overview';
+    role === 'admin' ? 'Setup readiness, commercial pipeline, and work needing attention' :
+    role === 'sales' ? 'Your commercial pipeline and what is waiting on a decision' :
+    role === 'manager' ? 'Pipeline, delivery health, and work requiring attention' :
+    role === 'designer' ? 'Assigned engineering work and the orders behind it' :
+    'Commercial pipeline, delivery health, and project overview';
 
   return (
     <>
       <PageHeader title="Dashboard" description={description} />
 
+      {overview && (
+        <div className="mb-6 space-y-4">
+          <SalesPipeline stages={overview.stages} scope={overview.scope} />
+          <AttentionQueue attention={overview.attention} />
+          <RecentRecords records={salesRecords} />
+        </div>
+      )}
+
       {role === 'admin' && releaseData ? (
         <Release1View data={releaseData} />
-      ) : role === 'sales' ? (
-        <SalesView opportunities={opportunities} />
-      ) : role === 'manager' && execData ? (
+      ) : role === 'sales' ? null : role === 'manager' && execData ? (
         <PmView data={execData} />
       ) : role === 'designer' ? (
         <EngineerView tasks={tasks} deptDashboard={null} projects={projects} />
