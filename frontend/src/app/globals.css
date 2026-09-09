@@ -86,6 +86,10 @@
   .card-hover {
     @apply card transition-all duration-200 hover:shadow-card-hover hover:border-border-strong;
   }
+  /* Marks the field a settings link pointed at, until the reader interacts with the page. */
+  .field-focus-ring {
+    @apply rounded-lg ring-2 ring-brand-500 ring-offset-4 ring-offset-surface;
+  }
 
   /* Table enhancements */
   .table-header {

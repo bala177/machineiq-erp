@@ -140,3 +140,23 @@ test('overview entries open the section they name', async ({ page }) => {
   await expect(page).toHaveURL(/\/organization\?section=company/);
   await expect(page.getByLabel('Company name')).toBeVisible();
 });
+
+test('a settings entry that names a field highlights that field', async ({ page }) => {
+  await page.goto('/organization?section=company&focus=baseCurrency');
+  const field = page.locator('[data-field="baseCurrency"]');
+  await expect(field).toBeVisible();
+  await expect(field).toHaveClass(/field-focus-ring/);
+});
+
+test('the highlight clears once the user interacts with the page', async ({ page }) => {
+  await page.goto('/organization?section=company&focus=baseCurrency');
+  const field = page.locator('[data-field="baseCurrency"]');
+  await expect(field).toHaveClass(/field-focus-ring/);
+  await page.getByLabel('Company name').click();
+  await expect(field).not.toHaveClass(/field-focus-ring/);
+});
+
+test('an unknown focus value still opens the page', async ({ page }) => {
+  await page.goto('/organization?section=company&focus=doesNotExist');
+  await expect(page.getByLabel('Company name')).toBeVisible();
+});

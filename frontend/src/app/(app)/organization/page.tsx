@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Modal } from '@/components/ui/modal';
 import { api } from '@/lib/api';
+import { useFocusField } from '@/lib/use-focus-field';
 import { DepartmentManagement } from '@/components/organization/department-management';
 import { Director, DirectorManagement } from '@/components/organization/director-management';
 import { OrganizationOverview } from '@/components/organization/organization-overview';
@@ -46,8 +47,8 @@ function companyToForm(company: Company | null) {
   };
 }
 
-function Field({ label, term, children }: { label: string; term?: GlossaryTerm; children: React.ReactNode }) {
-  return <label className="block text-sm font-medium text-fg-secondary">
+function Field({ label, term, field, children }: { label: string; term?: GlossaryTerm; field?: string; children: React.ReactNode }) {
+  return <label data-field={field} className="block text-sm font-medium text-fg-secondary">
     <span className="flex items-center gap-1.5">{label}{term && <InfoTip term={term} label={label} />}</span>
     <div className="mt-1.5">{children}</div>
   </label>;
@@ -131,6 +132,7 @@ export default function OrganizationPage() {
     const requestedSection = new URLSearchParams(window.location.search).get('section') as OrganizationSection | null;
     if (requestedSection && organizationSections.includes(requestedSection)) setActiveSection(requestedSection);
   }, []);
+  useFocusField(!loading);
 
   async function saveCompany(event: FormEvent) {
     event.preventDefault(); setSaving(true); setMessage(''); setError('');
@@ -298,12 +300,12 @@ export default function OrganizationPage() {
           <Field label="Country"><CountrySelect value={companyForm.country} onChange={(country) => setCompanyForm({ ...companyForm, country })} /></Field>
 
           <SectionTitle title="Regional settings" description="Used by commercial documents and ERP transactions." />
-          <Field label="Base currency">
+          <Field label="Base currency" field="baseCurrency">
             <select required className="input-field" value={companyForm.baseCurrency} onChange={(e) => setCompanyForm({ ...companyForm, baseCurrency: e.target.value })}>
               {withCurrent(CURRENCY_OPTIONS, companyForm.baseCurrency).map((currency) => <option key={currency} value={currency}>{currency}</option>)}
             </select>
           </Field>
-          <Field label="Time zone">
+          <Field label="Time zone" field="timeZone">
             <select required className="input-field" value={companyForm.timezone} onChange={(e) => setCompanyForm({ ...companyForm, timezone: e.target.value })}>
               <optgroup label="Common">
                 {withCurrent(COMMON_TIMEZONES, companyForm.timezone).map((zone) => <option key={zone} value={zone}>{describeTimezone(zone)}</option>)}
