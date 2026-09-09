@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Role } from '../../common/enums';
-import { PermissionEntity, RolePermissionEntity } from '../../database/entities/release1.entity';
+import { PermissionEntity, RoleEntity, RolePermissionEntity } from '../../database/entities/release1.entity';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { CreatePermissionDto, SetRolePermissionsDto, UpdatePermissionDto } from './permissions.dto';
 
@@ -12,6 +12,7 @@ export class PermissionsService {
   constructor(
     @InjectRepository(PermissionEntity) private permissions: Repository<PermissionEntity>,
     @InjectRepository(RolePermissionEntity) private rolePermissions: Repository<RolePermissionEntity>,
+    @InjectRepository(RoleEntity) private roles: Repository<RoleEntity>,
     private auditLogService: AuditLogService,
     private dataSource: DataSource,
   ) {}
@@ -47,7 +48,16 @@ export class PermissionsService {
   }
 
   async matrix() {
-    const [permissions, assignments] = await Promise.all([this.findAll(), this.rolePermissions.find({ where: { allowed: true } })]);
+    const [permissions, grants, roles] = await Promise.all([
+      this.findAll(),
+      this.rolePermissions.find({ where: { allowed: true } }),
+      this.roles.find({ where: { deletedAt: IsNull() } }),
+    ]);
+    // Callers still identify a role by its key, so translate the stored id back.
+    const keyById = new Map(roles.map((role) => [role._id, role.key]));
+    const assignments = grants
+      .filter((grant) => keyById.has(grant.roleId))
+      .map((grant) => ({ role: keyById.get(grant.roleId)!, roleId: grant.roleId, permissionId: grant.permissionId, allowed: grant.allowed }));
     return { permissions, assignments };
   }
 
@@ -56,10 +66,13 @@ export class PermissionsService {
     if (dto.permissionIds.some((id) => !isUUID(id))) throw new BadRequestException('One or more permissions are invalid');
     const validCount = await this.permissions.count({ where: { _id: In(dto.permissionIds), isActive: true, deletedAt: IsNull() } });
     if (validCount !== dto.permissionIds.length) throw new BadRequestException('One or more permissions are invalid');
+    const target = await this.roles.findOne({ where: { key: role, deletedAt: IsNull() } });
+    if (!target) throw new BadRequestException('Invalid role');
+    const roleId = target._id;
     await this.dataSource.transaction(async (manager) => {
       const repository = manager.getRepository(RolePermissionEntity);
-      await repository.delete({ role });
-      if (dto.permissionIds.length) await repository.insert(dto.permissionIds.map((permissionId) => ({ role, permissionId, allowed: true })));
+      await repository.delete({ roleId });
+      if (dto.permissionIds.length) await repository.insert(dto.permissionIds.map((permissionId) => ({ roleId, permissionId, allowed: true })));
     });
     await this.auditLogService.log({ action: 'assign', entityType: 'RolePermission', entityId: role, performedBy: userId, newValues: dto });
     return this.matrix();

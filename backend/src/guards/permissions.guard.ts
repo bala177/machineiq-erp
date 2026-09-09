@@ -20,7 +20,8 @@ export class PermissionsGuard implements CanActivate {
     if (!user?.role) return false;
     const permissions = await this.permissions.find({ where: { code: In(required), isActive: true, deletedAt: IsNull() }, select: { _id: true } });
     if (permissions.length !== required.length) return false;
-    const assigned = await this.rolePermissions.count({ where: { role: user.role, permissionId: In(permissions.map((permission) => permission._id)), allowed: true } });
+    // Roles are rows now, but the request still carries the role key, so match through it.
+    const assigned = await this.rolePermissions.count({ where: { roleRef: { key: user.role }, permissionId: In(permissions.map((permission) => permission._id)), allowed: true } });
     return assigned === required.length;
   }
 }

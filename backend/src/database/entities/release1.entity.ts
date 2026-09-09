@@ -33,6 +33,17 @@ export class DepartmentEntity extends MigratedEntity {
   @OneToMany(() => UserEntity, (user) => user.department) users: UserEntity[];
 }
 
+@Entity('roles')
+export class RoleEntity extends MigratedEntity {
+  /** Stable identifier. For the seeded roles this equals the former Role enum value. */
+  @Column({ type: 'varchar', length: 60, unique: true }) key: string;
+  @Column({ type: 'varchar', length: 120 }) name: string;
+  @Column({ type: 'text', nullable: true }) description: string | null;
+  /** Seeded roles. Not editable or deletable, so there is always a way back in. */
+  @Column({ name: 'is_system', default: false }) isSystem: boolean;
+  @Column({ name: 'is_active', default: true }) isActive: boolean;
+}
+
 @Entity('users')
 @Index(['role'])
 export class UserEntity extends MigratedEntity {
@@ -40,7 +51,10 @@ export class UserEntity extends MigratedEntity {
   @Column({ name: 'last_name', type: 'varchar', length: 120 }) lastName: string;
   @Column({ type: 'varchar', length: 320, unique: true }) email: string;
   @Column({ name: 'password_hash', type: 'text', select: false }) password: string;
-  @Column({ type: 'enum', enum: Role, default: Role.DESIGNER }) role: Role;
+  /** Mirror of `roleRef.key`, kept because raw SQL and the frontend still compare role strings. */
+  @Column({ type: 'varchar', length: 60, default: Role.DESIGNER }) role: string;
+  @Column({ name: 'role_id', type: 'uuid' }) roleId: string;
+  @ManyToOne(() => RoleEntity) @JoinColumn({ name: 'role_id' }) roleRef: RoleEntity;
   @Column({ name: 'department_id', type: 'uuid', nullable: true }) departmentId: string | null;
   @ManyToOne(() => DepartmentEntity, (department) => department.users, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'department_id' }) department: DepartmentEntity | null;
@@ -60,9 +74,10 @@ export class PermissionEntity extends MigratedEntity {
 }
 
 @Entity('role_permissions')
-@Unique(['role', 'permissionId'])
+@Unique(['roleId', 'permissionId'])
 export class RolePermissionEntity extends BaseEntity {
-  @Column({ type: 'enum', enum: Role }) role: Role;
+  @Column({ name: 'role_id', type: 'uuid' }) roleId: string;
+  @ManyToOne(() => RoleEntity, { onDelete: 'CASCADE' }) @JoinColumn({ name: 'role_id' }) roleRef: RoleEntity;
   @Column({ name: 'permission_id', type: 'uuid' }) permissionId: string;
   @ManyToOne(() => PermissionEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'permission_id' }) permission: PermissionEntity;
@@ -346,6 +361,7 @@ export class AuditLogEntity {
 /** All relational entities owned by the Release 1 PostgreSQL baseline. */
 export const RELEASE1_ENTITIES = [
   DepartmentEntity,
+  RoleEntity,
   UserEntity,
   PermissionEntity,
   RolePermissionEntity,

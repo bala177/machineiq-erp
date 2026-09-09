@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import dataSource from '../database/data-source';
-import { BranchEntity, CompanyEntity, CustomerEntity, DepartmentEntity, DocumentTypeEntity, ItemCategoryEntity, ItemEntity, LocationEntity, PermissionEntity, RolePermissionEntity, SequenceEntity, SupplierEntity, SystemSettingEntity, UomEntity, UserEntity } from '../database/entities/release1.entity';
+import { BranchEntity, CompanyEntity, CustomerEntity, DepartmentEntity, DocumentTypeEntity, ItemCategoryEntity, ItemEntity, LocationEntity, PermissionEntity, RoleEntity, RolePermissionEntity, SequenceEntity, SupplierEntity, SystemSettingEntity, UomEntity, UserEntity } from '../database/entities/release1.entity';
 import { CompanyDirectorEntity } from '../database/entities/company-profile.entity';
 import { RuntimeDocumentEntity } from '../database/entities/runtime-document.entity';
 import { Role } from '../common/enums';
@@ -31,8 +31,9 @@ async function seed() {
     await permissions.upsert({ code, module, action, description: `${action} ${module}`, isActive: true }, { conflictPaths: ['code'] });
   }
   const rolePermissions = dataSource.getRepository(RolePermissionEntity);
+  const adminRole = await dataSource.getRepository(RoleEntity).findOneByOrFail({ key: Role.ADMIN });
   for (const permission of await permissions.find()) {
-    await rolePermissions.upsert({ role: Role.ADMIN, permissionId: permission._id, allowed: true }, { conflictPaths: ['role', 'permissionId'] });
+    await rolePermissions.upsert({ roleId: adminRole._id, permissionId: permission._id, allowed: true }, { conflictPaths: ['roleId', 'permissionId'] });
   }
 
   const documentTypes = dataSource.getRepository(DocumentTypeEntity);
@@ -188,6 +189,7 @@ async function seed() {
 async function seedDemo() {
   const users = dataSource.getRepository(UserEntity);
   const pmDepartment = await dataSource.getRepository(DepartmentEntity).findOneByOrFail({ code: 'PM' });
+  const adminRole = await dataSource.getRepository(RoleEntity).findOneByOrFail({ key: Role.ADMIN });
   const password = await bcrypt.hash('ChangeMe123!', 12);
   await users.upsert(
     {
@@ -196,6 +198,7 @@ async function seedDemo() {
       email: 'reviewer@machineiq.local',
       password,
       role: Role.ADMIN,
+      roleId: adminRole._id,
       departmentId: pmDepartment._id,
       title: 'Release 1 Reviewer',
       phone: null,
