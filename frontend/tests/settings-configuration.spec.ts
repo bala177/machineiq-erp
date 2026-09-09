@@ -160,3 +160,19 @@ test('an unknown focus value still opens the page', async ({ page }) => {
   await page.goto('/organization?section=company&focus=doesNotExist');
   await expect(page.getByLabel('Company name')).toBeVisible();
 });
+
+test('a tab entry can highlight a field inside the tab', async ({ page }) => {
+  await page.route('**/api/items/preferences', route => route.fulfill({ json: { salesEnabled: true, purchaseEnabled: true, isStockItem: true, taxPercent: 0, requireHsnSac: false } }));
+  await page.goto('/admin/settings?tab=items&focus=requireHsnSac');
+  const field = page.locator('[data-field="requireHsnSac"]');
+  await expect(field).toBeVisible();
+  await expect(field).toHaveClass(/field-focus-ring/);
+});
+
+test('changing tab by hand drops a stale highlight target', async ({ page }) => {
+  await page.route('**/api/items/preferences', route => route.fulfill({ json: { salesEnabled: true, purchaseEnabled: true, isStockItem: true, taxPercent: 0, requireHsnSac: false } }));
+  await page.goto('/admin/settings?tab=items&focus=requireHsnSac');
+  await page.getByRole('button', { name: 'Platform', exact: true }).click();
+  await expect(page).toHaveURL(/tab=platform/);
+  await expect(page).not.toHaveURL(/focus=/);
+});

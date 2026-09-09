@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { SettingsOverview } from '@/components/settings/settings-overview';
+import { ItemSettings } from '@/components/settings/item-settings';
+import { SalesSettings } from '@/components/settings/sales-settings';
 import { api } from '@/lib/api';
+import { useFocusField } from '@/lib/use-focus-field';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Building2, Bell, FileCog, FileText, Info, KeyRound, ShieldCheck, Plus, Pencil, Trash2, Check, X, Save, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -12,15 +16,6 @@ import { InfoTip } from '@/components/ui/info-tip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Department = {
-  _id: string;
-  name: string;
-  code?: string;
-  description?: string;
-  isActive: boolean;
-};
-
-type DeptForm = { name: string; code: string; description: string };
 type Permission = { _id: string; code: string; module: string; action: string; description?: string; isActive: boolean };
 type RolePermission = { role: string; permissionId: string; allowed: boolean };
 type DocumentType = { _id: string; code: string; name: string; prefix: string; padding: number; resetFrequency: 'never' | 'yearly' | 'monthly'; nextNumber: string; isActive: boolean };
@@ -61,6 +56,9 @@ const NOTIF_LABELS: { key: keyof NotificationPrefs; label: string; description: 
 ];
 
 const TABS = [
+  { key: 'overview', label: 'Overview', icon: Building2 },
+  { key: 'items', label: 'Item preferences', icon: FileCog },
+  { key: 'sales', label: 'Sales configuration', icon: FileCog },
   { key: 'commercial', label: 'Commercial', icon: FileText },
   { key: 'roles', label: 'Roles', icon: ShieldCheck },
   { key: 'permissions', label: 'Permissions', icon: KeyRound },
@@ -71,7 +69,6 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]['key'];
 
-const EMPTY_FORM: DeptForm = { name: '', code: '', description: '' };
 const EMPTY_DOCUMENT_TYPE: DocumentTypeForm = { code: '', name: '', prefix: '', padding: 4, resetFrequency: 'yearly', nextNumber: 1 };
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
@@ -115,211 +112,6 @@ function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onCo
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ─── Departments Tab ──────────────────────────────────────────────────────────
-
-function DepartmentsTab() {
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<Department | null>(null);
-  const [form, setForm] = useState<DeptForm>(EMPTY_FORM);
-  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    api
-      .get<Department[]>('/departments')
-      .then(setDepartments)
-      .catch(() => setError('Failed to load departments'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  function openCreate() {
-    setEditTarget(null);
-    setForm(EMPTY_FORM);
-    setError('');
-    setShowModal(true);
-  }
-
-  function openEdit(dept: Department) {
-    setEditTarget(dept);
-    setForm({ name: dept.name, code: dept.code || '', description: dept.description || '' });
-    setError('');
-    setShowModal(true);
-  }
-
-  async function handleSave() {
-    if (!form.name.trim()) {
-      setError('Department name is required');
-      return;
-    }
-    setSaving(true);
-    setError('');
-    try {
-      if (editTarget) {
-        await api.patch(`/departments/${editTarget._id}`, form);
-      } else {
-        await api.post('/departments', form);
-      }
-      setShowModal(false);
-      load();
-    } catch (e: any) {
-      setError(e.message || 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    try {
-      await api.delete(`/departments/${deleteTarget._id}`);
-      setDeleteTarget(null);
-      load();
-    } catch {
-      setError('Failed to delete department');
-      setDeleteTarget(null);
-    }
-  }
-
-  if (loading) return <LoadingSpinner />;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-fg-tertiary">Manage the departments in your organisation. Departments are used to assign ownership to tasks, deliverables, and team members.</p>
-        <button onClick={openCreate} className="btn-primary shrink-0">
-          <Plus className="h-4 w-4" /> Add Department
-        </button>
-      </div>
-
-      {error && !showModal && <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">{error}</div>}
-
-      {departments.length === 0 ? (
-        <div className="card flex flex-col items-center py-12 text-center">
-          <Building2 className="mb-3 h-10 w-10 text-fg-muted" />
-          <p className="text-sm font-medium text-fg-tertiary">No departments yet</p>
-          <p className="mt-1 text-xs text-fg-muted">Add your first department to get started</p>
-        </div>
-      ) : (
-        <>
-          {/* Mobile cards */}
-          <div className="space-y-2 sm:hidden">
-            {departments.map((d) => (
-              <div key={d._id} className="card p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-fg">{d.name}</p>
-                      {d.code && <span className="rounded bg-surface-tertiary px-1.5 py-0.5 text-[16px] font-semibold uppercase tracking-wider text-fg-tertiary">{d.code}</span>}
-                    </div>
-                    {d.description && <p className="mt-0.5 text-xs text-fg-tertiary">{d.description}</p>}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <button onClick={() => openEdit(d)} className="btn-ghost p-1.5 text-fg-muted hover:text-brand-600">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => setDeleteTarget(d)} className="btn-ghost p-1.5 text-fg-muted hover:text-red-500">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop table */}
-          <div className="card hidden overflow-hidden sm:block">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="table-header">
-                  <th>Name</th>
-                  <th>Code</th>
-                  <th>Description</th>
-                  <th>Status</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {departments.map((d) => (
-                  <tr key={d._id} className="table-row">
-                    <td className="px-5 py-4 font-semibold text-fg">{d.name}</td>
-                    <td className="px-5 py-4">{d.code ? <span className="rounded-lg bg-surface-tertiary px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-fg-tertiary">{d.code}</span> : <span className="text-fg-muted">—</span>}</td>
-                    <td className="px-5 py-4 text-fg-tertiary">{d.description || '—'}</td>
-                    <td className="px-5 py-4">
-                      <span className={clsx('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[15px] font-semibold', d.isActive ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400')}>
-                        <span className={clsx('h-1.5 w-1.5 rounded-full', d.isActive ? 'bg-emerald-500' : 'bg-slate-400')} />
-                        {d.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(d)} className="btn-ghost p-1.5 text-fg-muted hover:text-brand-600" title="Edit">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => setDeleteTarget(d)} className="btn-ghost p-1.5 text-fg-muted hover:text-red-500" title="Delete">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {/* Create / Edit Modal */}
-      {showModal && (
-        <Modal title={editTarget ? 'Edit Department' : 'Add Department'} onClose={() => setShowModal(false)}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="department-name" className="mb-1.5 block text-sm font-medium text-fg-secondary">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input id="department-name" className="input-field w-full" placeholder="e.g. Mechanical Engineering" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div>
-              <label htmlFor="department-code" className="mb-1.5 block text-sm font-medium text-fg-secondary">
-                Code
-              </label>
-              <input id="department-code" className="input-field w-full" placeholder="e.g. MECH" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} maxLength={10} />
-              <p className="mt-1 text-xs text-fg-muted">Short identifier used in reports and task labels</p>
-            </div>
-            <div>
-              <label htmlFor="department-description" className="mb-1.5 block text-sm font-medium text-fg-secondary">
-                Description
-              </label>
-              <textarea id="department-description" className="input-field w-full resize-none" rows={3} placeholder="Optional description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            </div>
-            {error && <p className="rounded bg-red-50 dark:bg-red-950/30 px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
-            <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setShowModal(false)} className="btn-secondary">
-                Cancel
-              </button>
-              <button onClick={handleSave} disabled={saving} className="btn-primary">
-                {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                {editTarget ? 'Save Changes' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Delete Confirm */}
-      {deleteTarget && <ConfirmDialog message={`Delete "${deleteTarget.name}"? This action cannot be undone. Departments with active users cannot be deleted.`} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />}
     </div>
   );
 }
@@ -687,7 +479,7 @@ function NotificationsTab() {
           setPrefs(value as NotificationPrefs);
         }
       })
-      .catch(() => {})
+      .catch(() => setError('Failed to load notification preferences. Reload this page to retry.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -713,12 +505,14 @@ function NotificationsTab() {
 
   if (loading) return <LoadingSpinner />;
 
+  if (error.startsWith('Failed to load')) return <div role="alert" className="card p-5">{error}</div>;
+
   const enabledCount = Object.values(prefs).filter(Boolean).length;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-fg-tertiary">Control which notification types are active. Disabling a type suppresses all in-app and real-time alerts of that kind for all users.</p>
+        <p className="text-sm text-fg-tertiary">Control which notification types are active. Disabling a type suppresses new task and component alerts of that kind for all users. Sales workflow alerts are separate.</p>
         <span className="shrink-0 text-xs text-fg-muted">
           {enabledCount} of {NOTIF_LABELS.length} active
         </span>
@@ -819,9 +613,11 @@ function CommercialTab() {
   };
 
   if (loading) return <LoadingSpinner />;
+  if (error.startsWith('Failed to load')) return <div role="alert" className="card p-5">{error}. Reload this page to retry.</div>;
 
   return (
     <div className="space-y-5">
+      <div className="card p-4 text-sm text-fg-muted">These settings apply to the earlier quote workflow. Configure current enquiries, quotations, sales orders, and projects under Sales configuration. Company master data is managed under Organization.</div>
       <div className="card p-5">
         <h2 className="mb-4 text-sm font-semibold text-fg">Organization and numbering</h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -1107,7 +903,7 @@ function PlatformTab() {
     { label: 'Product', value: 'MachineIQ — ERP for Machine Builders' },
     { label: 'Version', value: APP_VERSION },
     { label: 'Git commit', value: SHORT_GIT_COMMIT },
-    { label: 'Status', value: 'Release candidate — deployed' },
+    { label: 'Status', value: 'Release candidate' },
     { label: 'Support', value: 'support@machineiq.com' },
   ];
 
@@ -1134,22 +930,45 @@ function PlatformTab() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminSettingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('commercial');
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(() => new Set(['overview']));
+  useEffect(() => {
+    setVisitedTabs(previous => previous.has(activeTab) ? previous : new Set([...previous, activeTab]));
+  }, [activeTab]);
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get('tab') as Tab | null;
     if (requestedTab && TABS.some((tab) => tab.key === requestedTab)) setActiveTab(requestedTab);
   }, []);
+  useFocusField();
+
+  function selectTab(tab: Tab) {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    // A highlight target belongs to the tab it was requested for, not to wherever the reader goes next.
+    url.searchParams.delete('focus');
+    window.history.pushState({}, '', url);
+  }
+
+  useEffect(() => {
+    const sync = () => {
+      const tab = new URLSearchParams(window.location.search).get('tab') as Tab;
+      setActiveTab(TABS.some(item => item.key === tab) ? tab : 'overview');
+    };
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
+  }, []);
 
   return (
     <>
-      <PageHeader title="Settings" description="Configure master data, access control, numbering, notifications, and platform defaults." />
+      <PageHeader title="Settings" description="Configure organization details, module preferences, access control, numbering, and notifications." />
 
       {/* Tab bar */}
       <div className="mb-6 border-b border-border">
         <nav className="-mb-px flex gap-0 overflow-x-auto" aria-label="Settings tabs">
           {TABS.map(({ key, label, icon: Icon }) => (
-            <button key={key} onClick={() => setActiveTab(key)} className={clsx('flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors', activeTab === key ? 'border-brand-600 text-brand-600' : 'border-transparent text-fg-tertiary hover:border-slate-300 dark:hover:border-slate-600 hover:text-fg-secondary')}>
+            <button key={key} aria-current={activeTab === key ? 'page' : undefined} onClick={() => selectTab(key)} className={clsx('flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors', activeTab === key ? 'border-brand-600 text-brand-600' : 'border-transparent text-fg-tertiary hover:border-slate-300 dark:hover:border-slate-600 hover:text-fg-secondary')}>
               <Icon className="h-4 w-4" />
               {label}
             </button>
@@ -1158,12 +977,19 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Tab panels */}
-      {activeTab === 'commercial' && <CommercialTab />}
-      {activeTab === 'roles' && <RolesTab />}
-      {activeTab === 'permissions' && <PermissionsTab />}
-      {activeTab === 'documentTypes' && <DocumentTypesTab />}
-      {activeTab === 'notifications' && <NotificationsTab />}
-      {activeTab === 'platform' && <PlatformTab />}
+      {activeTab === 'overview' && <SettingsOverview onSelect={tab => selectTab(tab as Tab)} />}
+      {TABS.filter(({ key }) => key !== 'overview' && (visitedTabs.has(key) || activeTab === key)).map(({ key }) => (
+        <div key={key} hidden={activeTab !== key}>
+          {key === 'items' && <ItemSettings />}
+          {key === 'sales' && <SalesSettings />}
+          {key === 'commercial' && <CommercialTab />}
+          {key === 'roles' && <RolesTab />}
+          {key === 'permissions' && <PermissionsTab />}
+          {key === 'documentTypes' && <DocumentTypesTab />}
+          {key === 'notifications' && <NotificationsTab />}
+          {key === 'platform' && <PlatformTab />}
+        </div>
+      ))}
     </>
   );
 }
