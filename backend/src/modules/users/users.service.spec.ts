@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
-import { UserEntity } from '../../database/entities/release1.entity';
+import { RoleEntity, UserEntity } from '../../database/entities/release1.entity';
 import { UsersService } from './users.service';
 
 const USER_ID = 'c40f899a-37f8-4bad-a886-7753d1561626';
@@ -11,6 +11,7 @@ describe('UsersService PostgreSQL guards', () => {
   const repository = {
     find: jest.fn().mockResolvedValue([]), findOne: jest.fn(), merge: jest.fn(), save: jest.fn(), softDelete: jest.fn(),
   };
+  const roles = { findOne: jest.fn() };
   let service: UsersService;
 
   beforeEach(async () => {
@@ -19,6 +20,7 @@ describe('UsersService PostgreSQL guards', () => {
     const module = await Test.createTestingModule({ providers: [
       UsersService,
       { provide: getRepositoryToken(UserEntity), useValue: repository },
+      { provide: getRepositoryToken(RoleEntity), useValue: roles },
     ] }).compile();
     service = module.get(UsersService);
   });
@@ -57,4 +59,3 @@ describe('UsersService PostgreSQL guards', () => {
     expect(repository.softDelete).toHaveBeenCalledWith(USER_ID);
   });
 });
-

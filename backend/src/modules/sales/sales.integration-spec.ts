@@ -19,7 +19,7 @@ describe('R2 PostgreSQL acceptance',()=>{
     // Revert/reapply R2 before data is posted to verify its empty-schema recovery.
     await db.undoLastMigration({transaction:'all'});await db.runMigrations({transaction:'all'});
     [company]=(await db.query(`INSERT INTO companies(code,name) VALUES('R2','R2 Test Organization') RETURNING id`)).map((r:any)=>r.id);
-    const actor=async(role:string,email:string)=>{const [u]=await db.query(`INSERT INTO users(first_name,last_name,email,password_hash,role) VALUES('R2',$1::text,$2,'not-used',$1::text::users_role_enum) RETURNING id`,[role,email]);return {userId:u.id,role};};
+    const actor=async(role:string,email:string)=>{const [u]=await db.query(`INSERT INTO users(first_name,last_name,email,password_hash,role,role_id) SELECT 'R2',$1::text,$2,'not-used',r.key,r.id FROM roles r WHERE r.key=$1 RETURNING id`,[role,email]);return {userId:u.id,role};};
     admin=await actor('admin','admin-r2@test.local');manager=await actor('manager','manager-r2@test.local');seller=await actor('sales','seller-r2@test.local');outsider=await actor('sales','outsider-r2@test.local');
     [customer]=(await db.query(`INSERT INTO customers(code,name) VALUES('R2-C','R2 Customer') RETURNING id`)).map((r:any)=>r.id);
     sales=new SalesService(db);site=(await sales.createSite({customer_id:customer,name:'Factory',address:'Site address',contact:'Customer'},seller)).id;
@@ -125,9 +125,9 @@ describe('R2 PostgreSQL acceptance',()=>{
     await db.query(`UPDATE users SET is_active=false WHERE id=$1`,[outsider.userId]);
     await expect(sales.config(outsider)).rejects.toThrow('inactive');
     await db.query(`UPDATE users SET is_active=true WHERE id=$1`,[outsider.userId]);
-    await db.query(`UPDATE role_permissions SET allowed=false WHERE role='sales' AND permission_id IN (SELECT id FROM permissions WHERE code='sales.export')`);
+    await db.query(`UPDATE role_permissions SET allowed=false WHERE role_id=(SELECT id FROM roles WHERE key='sales') AND permission_id IN (SELECT id FROM permissions WHERE code='sales.export')`);
     await expect(sales.report('orders',{},seller,true)).rejects.toThrow('permission');
-    await db.query(`UPDATE role_permissions SET allowed=true WHERE role='sales' AND permission_id IN (SELECT id FROM permissions WHERE code='sales.export')`);
+    await db.query(`UPDATE role_permissions SET allowed=true WHERE role_id=(SELECT id FROM roles WHERE key='sales') AND permission_id IN (SELECT id FROM permissions WHERE code='sales.export')`);
     await expect(sales.report('orders',{from:'2026-02-01',to:'2026-01-01'},manager)).rejects.toThrow('From date');
   });
 });

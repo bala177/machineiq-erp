@@ -23,7 +23,7 @@ export class SalesService implements OnModuleInit, OnModuleDestroy {
   private async context(actor: SalesActor, action='view', m=this.db.manager): Promise<Context> {
     const [user]=await m.query(`SELECT id,role FROM users WHERE id=$1 AND is_active AND deleted_at IS NULL`,[actor.userId]);
     if(!user) throw new ForbiddenException('Your account is inactive');
-    const permissions=await m.query(`SELECT p.action FROM permissions p JOIN role_permissions rp ON rp.permission_id=p.id WHERE p.module='sales' AND p.is_active AND p.deleted_at IS NULL AND rp.allowed AND rp.role=$1`,[user.role]);
+    const permissions=await m.query(`SELECT p.action FROM permissions p JOIN role_permissions rp ON rp.permission_id=p.id JOIN roles rr ON rr.id=rp.role_id WHERE p.module='sales' AND p.is_active AND p.deleted_at IS NULL AND rp.allowed AND rr.is_active AND rr.deleted_at IS NULL AND rr.key=$1`,[user.role]);
     if(!permissions.some((p:Row)=>p.action===action)) throw new ForbiddenException(`Sales ${action} permission is required`);
     let [access]=await m.query(`SELECT a.* FROM sales_access a JOIN companies c ON c.id=a.company_id WHERE a.user_id=$1 AND c.is_active AND c.deleted_at IS NULL`,[actor.userId]);
     if(!access) {
@@ -83,7 +83,7 @@ export class SalesService implements OnModuleInit, OnModuleDestroy {
       SELECT DISTINCT u.id,$1::uuid,$2::text,$3::text FROM users u JOIN sales_access a ON a.user_id=u.id
       WHERE a.company_id=$4 AND u.is_active AND u.deleted_at IS NULL
       AND (a.scope='all' OR u.id=$5 OR u.id=$6)
-      AND EXISTS(SELECT 1 FROM permissions p JOIN role_permissions rp ON rp.permission_id=p.id WHERE p.code='sales.view' AND p.is_active AND p.deleted_at IS NULL AND rp.role::text=u.role::text AND rp.allowed)
+      AND EXISTS(SELECT 1 FROM permissions p JOIN role_permissions rp ON rp.permission_id=p.id JOIN roles rr ON rr.id=rp.role_id WHERE p.code='sales.view' AND p.is_active AND p.deleted_at IS NULL AND rr.key=u.role AND rr.is_active AND rr.deleted_at IS NULL AND rp.allowed)
       ON CONFLICT DO NOTHING`,[row.id,`${row.number} r${row.revision}: ${action.replace(/_/g,' ')}`,event.id,c.companyId,row.owner_id,row.created_by]);
   }
 
@@ -441,7 +441,7 @@ export class SalesService implements OnModuleInit, OnModuleDestroy {
       SELECT DISTINCT u.id,r.id,r.number||': quotation expiry / payment milestone approaching',r.id::text||':'||(now() AT TIME ZONE c.timezone)::date::text
       FROM sales_records r JOIN companies c ON c.id=r.company_id JOIN sales_access a ON a.company_id=r.company_id JOIN users u ON u.id=a.user_id
       WHERE r.is_current AND u.is_active AND u.deleted_at IS NULL AND (a.scope='all' OR u.id=r.owner_id OR u.id=r.created_by)
-      AND EXISTS(SELECT 1 FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE rp.role::text=u.role::text AND rp.allowed AND p.code='sales.view' AND p.is_active AND p.deleted_at IS NULL)
+      AND EXISTS(SELECT 1 FROM role_permissions rp JOIN roles rr ON rr.id=rp.role_id JOIN permissions p ON p.id=rp.permission_id WHERE rr.key=u.role AND rr.is_active AND rr.deleted_at IS NULL AND rp.allowed AND p.code='sales.view' AND p.is_active AND p.deleted_at IS NULL)
       AND ((r.kind='quote' AND r.status='sent' AND r.valid_until<=(now() AT TIME ZONE c.timezone)::date+3)
       OR (r.kind='order' AND r.status='confirmed' AND EXISTS(SELECT 1 FROM sales_milestones sm WHERE sm.record_id=r.id AND sm.due_date BETWEEN (now() AT TIME ZONE c.timezone)::date AND (now() AT TIME ZONE c.timezone)::date+7)))
       ON CONFLICT DO NOTHING`);

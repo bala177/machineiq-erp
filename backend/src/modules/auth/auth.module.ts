@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
-import { UserEntity } from '../../database/entities/release1.entity';
+import { RoleEntity, UserEntity } from '../../database/entities/release1.entity';
 import { SettingsModule } from '../settings/settings.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 
@@ -25,7 +25,7 @@ import { AuditLogModule } from '../audit-log/audit-log.module';
       }),
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([UserEntity, RoleEntity]),
     SettingsModule,
     AuditLogModule,
   ],

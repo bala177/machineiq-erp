@@ -33,6 +33,7 @@ import { HealthController } from './health.controller';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { postgresOptions } from './database/database.config';
 import { SalesModule } from './modules/sales/sales.module';
+import { FoundationModule } from './modules/foundation/foundation.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { SalesModule } from './modules/sales/sales.module';
     SuppliersModule,
     FeedbackModule,
     SalesModule,
+    FoundationModule,
   ],
   controllers: [HealthController],
   providers: [

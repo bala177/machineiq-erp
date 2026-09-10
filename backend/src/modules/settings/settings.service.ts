@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SystemSettingEntity } from '../../database/entities/release1.entity';
@@ -15,6 +15,13 @@ const DEFAULTS: Record<string, any> = {
     appName: 'MachineIQ',
     version: '1.0.0',
     timezone: 'UTC',
+  },
+  item_preferences: {
+    salesEnabled: true,
+    purchaseEnabled: true,
+    isStockItem: true,
+    taxPercent: 18,
+    requireHsnSac: false,
   },
   commercial_preferences: {
     organizationName: 'MachineIQ',
@@ -86,7 +93,18 @@ export class SettingsService {
   }
 
   async upsert(key: string, value: any): Promise<SystemSettingEntity> {
+    if (key === 'item_preferences') value = this.validateItemPreferences(value);
     await this.settings.upsert({ key, value }, { conflictPaths: ['key'] });
     return (await this.settings.findOne({ where: { key } }))!;
+  }
+
+  private validateItemPreferences(value: any) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new BadRequestException('Item preferences must be an object');
+    const booleanKeys = ['salesEnabled', 'purchaseEnabled', 'isStockItem', 'requireHsnSac'];
+    if (booleanKeys.some((key) => typeof value[key] !== 'boolean')) throw new BadRequestException('Item preference switches must be true or false');
+    const taxPercent = Number(value.taxPercent);
+    if (!Number.isFinite(taxPercent) || taxPercent < 0 || taxPercent > 100) throw new BadRequestException('Default tax must be between 0 and 100');
+    if (!value.salesEnabled && !value.purchaseEnabled) throw new BadRequestException('Items must be enabled for sales, purchasing, or both');
+    return { ...value, taxPercent };
   }
 }

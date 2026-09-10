@@ -1,11 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
-import { Role } from '../../common/enums';
 import { PermissionEntity, RoleEntity, RolePermissionEntity } from '../../database/entities/release1.entity';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { CreatePermissionDto, SetRolePermissionsDto, UpdatePermissionDto } from './permissions.dto';
+import { CreatePermissionDto, CreateRoleDto, SetRolePermissionsDto, UpdatePermissionDto, UpdateRoleDto } from './permissions.dto';
 
 @Injectable()
 export class PermissionsService {
@@ -18,6 +17,36 @@ export class PermissionsService {
   ) {}
 
   findAll() { return this.permissions.find({ where: { deletedAt: IsNull() }, order: { module: 'ASC', action: 'ASC' } }); }
+  findRoles() { return this.roles.find({ where: { deletedAt: IsNull() }, order: { isSystem: 'DESC', name: 'ASC' } }); }
+
+  async createRole(dto: CreateRoleDto, userId: string) {
+    if (await this.roles.exists({ where: { key: dto.key, deletedAt: IsNull() } })) throw new BadRequestException('Role key already exists');
+    const role = await this.roles.save(this.roles.create({ ...dto, description: dto.description ?? null, isSystem: false, isActive: true }));
+    await this.auditLogService.log({ action: 'create', entityType: 'Role', entityId: role._id, performedBy: userId, newValues: dto });
+    return role;
+  }
+
+  async updateRole(key: string, dto: UpdateRoleDto, userId: string) {
+    const role = await this.roles.findOne({ where: { key, deletedAt: IsNull() } });
+    if (!role) throw new NotFoundException('Role not found');
+    if (role.isSystem && dto.isActive === false) throw new BadRequestException('System roles cannot be deactivated');
+    const previous = { ...role };
+    const saved = await this.roles.save(this.roles.merge(role, dto));
+    await this.auditLogService.log({ action: 'update', entityType: 'Role', entityId: role._id, performedBy: userId, previousValues: previous, newValues: dto });
+    return saved;
+  }
+
+  async removeRole(key: string, userId: string) {
+    const role = await this.roles.findOne({ where: { key, deletedAt: IsNull() } });
+    if (!role) throw new NotFoundException('Role not found');
+    if (role.isSystem) throw new BadRequestException('System roles cannot be deleted');
+    const [{ count }] = await this.dataSource.query(`SELECT count(*)::int count FROM users WHERE role_id=$1 AND deleted_at IS NULL`, [role._id]);
+    if (Number(count)) throw new BadRequestException('Reassign users before deleting this role');
+    await this.rolePermissions.delete({ roleId: role._id });
+    role.isActive = false; await this.roles.save(role); await this.roles.softDelete(role._id);
+    await this.auditLogService.log({ action: 'delete', entityType: 'Role', entityId: role._id, performedBy: userId, previousValues: role });
+    return { message: 'Role deleted' };
+  }
 
   async create(dto: CreatePermissionDto, userId: string) {
     if (await this.permissions.exists({ where: { code: dto.code, deletedAt: IsNull() } })) throw new BadRequestException('Permission code already exists');
@@ -58,15 +87,14 @@ export class PermissionsService {
     const assignments = grants
       .filter((grant) => keyById.has(grant.roleId))
       .map((grant) => ({ role: keyById.get(grant.roleId)!, roleId: grant.roleId, permissionId: grant.permissionId, allowed: grant.allowed }));
-    return { permissions, assignments };
+    return { permissions, assignments, roles };
   }
 
-  async setRolePermissions(role: Role, dto: SetRolePermissionsDto, userId: string) {
-    if (!Object.values(Role).includes(role)) throw new BadRequestException('Invalid role');
+  async setRolePermissions(role: string, dto: SetRolePermissionsDto, userId: string) {
     if (dto.permissionIds.some((id) => !isUUID(id))) throw new BadRequestException('One or more permissions are invalid');
     const validCount = await this.permissions.count({ where: { _id: In(dto.permissionIds), isActive: true, deletedAt: IsNull() } });
     if (validCount !== dto.permissionIds.length) throw new BadRequestException('One or more permissions are invalid');
-    const target = await this.roles.findOne({ where: { key: role, deletedAt: IsNull() } });
+    const target = await this.roles.findOne({ where: { key: role, isActive: true, deletedAt: IsNull() } });
     if (!target) throw new BadRequestException('Invalid role');
     const roleId = target._id;
     await this.dataSource.transaction(async (manager) => {

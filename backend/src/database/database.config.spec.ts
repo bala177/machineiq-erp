@@ -3,6 +3,8 @@ import { ZohoParityMasterData2026090400001 } from './migrations/202609040001-Zoh
 import { FeedbackSystem2026090600001 } from './migrations/202609060001-FeedbackSystem';
 import { Release2Sales2026090700001 } from './migrations/202609070001-Release2Sales';
 import { AdminPermissionsBackfill2026090700002 } from './migrations/202609070002-AdminPermissionsBackfill';
+import { ConfigurableRoles2026090900001 } from './migrations/202609090001-ConfigurableRoles';
+import { Release1Completion2026091000001 } from './migrations/202609100001-Release1Completion';
 
 describe('postgresOptions', () => {
   const originalMigrationSetting = process.env.RUN_MIGRATIONS_ON_STARTUP;
@@ -36,5 +38,7 @@ describe('postgresOptions', () => {
     expect(options.migrations).toContain(FeedbackSystem2026090600001);
     expect(options.migrations).toContain(Release2Sales2026090700001);
     expect(options.migrations).toContain(AdminPermissionsBackfill2026090700002);
+    expect(options.migrations).toContain(ConfigurableRoles2026090900001);
+    expect(options.migrations).toContain(Release1Completion2026091000001);
   });
 });

@@ -70,6 +70,6 @@ node node_modules/@playwright/test/cli.js test tests/feedback.spec.ts --workers=
 
 ## Evidence and release status
 
-On 7 September 2026, the backend regression suite passed **25 suites / 398 tests**; the R2 PostgreSQL suite passed **9 workflow scenarios**; feedback browser checks passed **6 tests** across desktop/mobile; and frontend production build/type checking passed. The full real-browser sales workflow also passed on **desktop and Pixel 7**, including the tabbed forms, attachment refresh correction, separate approval, reports, exports and scoped project access.
+On 10 September 2026, after closing the expanded R1 dependencies, the backend regression suite passed **33 suites / 444 tests**, the R2 isolated PostgreSQL suite passed **9/9 workflow scenarios**, and backend/frontend production build and type checking passed. The earlier 7 September browser evidence remains **6 feedback tests** plus the full sales workflow on **desktop and Pixel 7**, including tabbed forms, attachment refresh correction, separate approval, reports, exports and scoped project access. Browser UAT against the final published candidate remains a release gate.
 
 This is implementation/test evidence, not customer UAT or production deployment approval. Customer acceptance, production backup/restore rehearsal, workload targets and a tagged deployment remain release activities. No production deployment or historical data import is claimed.

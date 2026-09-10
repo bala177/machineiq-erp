@@ -4,6 +4,7 @@ import { AuditLogModule } from '../audit-log/audit-log.module';
 import { Item, ItemCategory, ItemCategorySchema, ItemSchema, Uom, UomSchema } from '../../schemas/item.schema';
 import { ItemsController } from './items.controller';
 import { ItemsService } from './items.service';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ItemsService } from './items.service';
       { name: Uom.name, schema: UomSchema },
     ]),
     AuditLogModule,
+    SettingsModule,
   ],
   controllers: [ItemsController],
   providers: [ItemsService],

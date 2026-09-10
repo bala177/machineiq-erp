@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { SettingsOverview } from '@/components/settings/settings-overview';
 import { ItemSettings } from '@/components/settings/item-settings';
 import { SalesSettings } from '@/components/settings/sales-settings';
+import { FoundationSettings } from '@/components/settings/foundation-settings';
 import { api } from '@/lib/api';
 import { useFocusField } from '@/lib/use-focus-field';
 import { PageHeader } from '@/components/layout/page-header';
@@ -11,13 +12,14 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Building2, Bell, FileCog, FileText, Info, KeyRound, ShieldCheck, Plus, Pencil, Trash2, Check, X, Save, AlertTriangle, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
 import { APP_VERSION, SHORT_GIT_COMMIT } from '@/lib/app-meta';
-import { ROLE_DEFINITIONS, ROLE_KEYS, roleLabel } from '@/lib/roles';
+import { roleColor, roleLabel } from '@/lib/roles';
 import { InfoTip } from '@/components/ui/info-tip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Permission = { _id: string; code: string; module: string; action: string; description?: string; isActive: boolean };
 type RolePermission = { role: string; permissionId: string; allowed: boolean };
+type RoleRecord = { _id: string; key: string; name: string; description?: string; isSystem: boolean; isActive: boolean };
 type DocumentType = { _id: string; code: string; name: string; prefix: string; padding: number; resetFrequency: 'never' | 'yearly' | 'monthly'; nextNumber: string; isActive: boolean };
 type DocumentTypeForm = { code: string; name: string; prefix: string; padding: number; resetFrequency: 'never' | 'yearly' | 'monthly'; nextNumber: number };
 
@@ -57,6 +59,7 @@ const NOTIF_LABELS: { key: keyof NotificationPrefs; label: string; description: 
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: Building2 },
+  { key: 'foundation', label: 'Foundation masters', icon: Building2 },
   { key: 'items', label: 'Item preferences', icon: FileCog },
   { key: 'sales', label: 'Sales configuration', icon: FileCog },
   { key: 'commercial', label: 'Commercial', icon: FileText },
@@ -119,24 +122,30 @@ function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onCo
 // ─── Roles Tab ───────────────────────────────────────────────────────────────
 
 function RolesTab() {
+  const [roles, setRoles] = useState<RoleRecord[]>([]);
+  const [form, setForm] = useState({ key: '', name: '', description: '' });
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState('');
+  const load = useCallback(() => api.get<RoleRecord[]>('/permissions/roles').then(setRoles).catch(err => setError(err.message)), []);
+  useEffect(() => { void load(); }, [load]);
+  async function create(event: React.FormEvent) {
+    event.preventDefault(); setError('');
+    try { await api.post('/permissions/roles', form); setOpen(false); setForm({ key: '', name: '', description: '' }); await load(); }
+    catch (err: any) { setError(err.message || 'Role could not be created'); }
+  }
+  async function remove(role: RoleRecord) {
+    if (!window.confirm(`Delete ${role.name}? Reassign its users first.`)) return;
+    try { await api.delete(`/permissions/roles/${role.key}`); await load(); }
+    catch (err: any) { setError(err.message || 'Role could not be deleted'); }
+  }
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-fg-tertiary">Roles control what each user can see and do across MachineIQ. Role permissions are enforced server-side on every request.</p>
+        <button className="btn-primary shrink-0" onClick={() => setOpen(true)}><Plus className="h-4 w-4" />Add role</button>
       </div>
-
-      <div className="space-y-2 sm:hidden">
-        {ROLE_DEFINITIONS.map((r) => (
-          <div key={r.key} className="card p-4">
-            <div className="flex items-start gap-3">
-              <span className={clsx('mt-0.5 inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-semibold capitalize', r.color)}>{r.label}</span>
-              <p className="text-xs text-fg-tertiary">{r.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card hidden overflow-hidden sm:block">
+      {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      <div className="card overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="table-header">
@@ -146,17 +155,16 @@ function RolesTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {ROLE_DEFINITIONS.map((r) => (
+            {roles.map((r) => (
               <tr key={r.key} className="table-row">
                 <td className="px-5 py-4">
-                  <span className={clsx('inline-flex items-center rounded px-2.5 py-0.5 text-xs font-semibold capitalize', r.color)}>{r.label}</span>
+                  <span className={clsx('inline-flex items-center rounded px-2.5 py-0.5 text-xs font-semibold capitalize', roleColor(r.key))}>{r.name}</span>
+                  <span className="ml-2 font-mono text-xs text-fg-muted">{r.key}</span>
                 </td>
                 <td className="max-w-xl px-5 py-4 text-fg-tertiary">{r.description}</td>
                 <td className="px-5 py-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[15px] font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Active
-                  </span>
+                  <span className={r.isActive ? 'badge-green' : 'badge-gray'}>{r.isActive ? 'Active' : 'Inactive'}</span>
+                  {!r.isSystem && <button className="ml-3 text-xs text-red-600 hover:underline" onClick={() => void remove(r)}>Delete</button>}
                 </td>
               </tr>
             ))}
@@ -164,10 +172,8 @@ function RolesTab() {
         </table>
       </div>
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/30">
-        <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Fixed application roles</p>
-        <p className="mt-0.5 text-xs text-blue-700 dark:text-blue-400">Use the Permissions tab to configure the capabilities assigned to each role.</p>
-      </div>
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/30"><p className="text-sm font-medium text-blue-800 dark:text-blue-300">Protected system roles and configurable custom roles</p><p className="mt-0.5 text-xs text-blue-700 dark:text-blue-400">System roles cannot be removed. Create customer-specific roles here, then assign capabilities in Permissions and users in User Management.</p></div>
+      {open && <Modal title="Add role" onClose={() => setOpen(false)}><form className="space-y-4" onSubmit={create}><label className="block text-sm">Role key<input required pattern="[a-z][a-z0-9_]+" maxLength={60} className="input-field mt-1" value={form.key} onChange={e => setForm({ ...form, key: e.target.value.toLowerCase() })} /></label><label className="block text-sm">Display name<input required className="input-field mt-1" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label><label className="block text-sm">Responsibilities<textarea className="input-field mt-1" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></label><div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary">Create role</button></div></form></Modal>}
     </div>
   );
 }
@@ -181,14 +187,17 @@ function PermissionsTab() {
   const [savingRole, setSavingRole] = useState('');
   const [savedRole, setSavedRole] = useState('');
   const [error, setError] = useState('');
+  const [roles, setRoles] = useState<RoleRecord[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get<{ permissions: Permission[]; assignments: RolePermission[] }>('/permissions/matrix')
+      .get<{ permissions: Permission[]; assignments: RolePermission[]; roles: RoleRecord[] }>('/permissions/matrix')
       .then((matrix) => {
         setPermissions(matrix.permissions.filter((permission) => permission.isActive));
-        setSelected(Object.fromEntries(ROLE_KEYS.map((role) => [role, matrix.assignments.filter((assignment) => assignment.role === role && assignment.allowed).map((assignment) => assignment.permissionId)])));
+        const activeRoles = matrix.roles.filter(role => role.isActive);
+        setRoles(activeRoles);
+        setSelected(Object.fromEntries(activeRoles.map((role) => [role.key, matrix.assignments.filter((assignment) => assignment.role === role.key && assignment.allowed).map((assignment) => assignment.permissionId)])));
         setError('');
       })
       .catch((err: any) => setError(err.message || 'Failed to load permission matrix'))
@@ -235,9 +244,9 @@ function PermissionsTab() {
           <thead>
             <tr className="table-header">
               <th>Capability</th>
-              {ROLE_DEFINITIONS.map((role) => (
+              {roles.map((role) => (
                 <th key={role.key} className="text-center">
-                  {role.label}
+                  {role.name}
                 </th>
               ))}
             </tr>
@@ -251,9 +260,9 @@ function PermissionsTab() {
                   </p>
                   <p className="mt-0.5 font-mono text-xs text-fg-muted">{permission.code}</p>
                 </td>
-                {ROLE_DEFINITIONS.map((role) => (
+                {roles.map((role) => (
                   <td key={role.key} className="px-4 py-4 text-center">
-                    <input type="checkbox" className="h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-500" aria-label={`${role.label}: ${permission.module} ${permission.action}`} checked={(selected[role.key] || []).includes(permission._id)} onChange={() => toggle(role.key, permission._id)} />
+                    <input type="checkbox" className="h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-500" aria-label={`${role.name}: ${permission.module} ${permission.action}`} checked={(selected[role.key] || []).includes(permission._id)} onChange={() => toggle(role.key, permission._id)} />
                   </td>
                 ))}
               </tr>
@@ -262,9 +271,9 @@ function PermissionsTab() {
         </table>
       </div>
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-        {ROLE_DEFINITIONS.map((role) => (
+        {roles.map((role) => (
           <button key={role.key} type="button" className="btn-secondary" disabled={Boolean(savingRole)} onClick={() => void save(role.key)}>
-            {savingRole === role.key ? <RefreshCw className="h-4 w-4 animate-spin" /> : savedRole === role.key ? <Check className="h-4 w-4 text-emerald-600" /> : <Save className="h-4 w-4" />}Save {role.label}
+            {savingRole === role.key ? <RefreshCw className="h-4 w-4 animate-spin" /> : savedRole === role.key ? <Check className="h-4 w-4 text-emerald-600" /> : <Save className="h-4 w-4" />}Save {role.name}
           </button>
         ))}
       </div>
@@ -981,6 +990,7 @@ export default function AdminSettingsPage() {
       {TABS.filter(({ key }) => key !== 'overview' && (visitedTabs.has(key) || activeTab === key)).map(({ key }) => (
         <div key={key} hidden={activeTab !== key}>
           {key === 'items' && <ItemSettings />}
+          {key === 'foundation' && <FoundationSettings />}
           {key === 'sales' && <SalesSettings />}
           {key === 'commercial' && <CommercialTab />}
           {key === 'roles' && <RolesTab />}

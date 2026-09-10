@@ -149,6 +149,71 @@ export class LocationEntity extends MigratedEntity {
   @Column({ name: 'is_active', default: true }) isActive: boolean;
 }
 
+@Entity('warehouses')
+@Index(['locationId'])
+export class WarehouseEntity extends MigratedEntity {
+  @Column({ type: 'varchar', length: 40, unique: true }) code: string;
+  @Column({ type: 'varchar', length: 200 }) name: string;
+  @Column({ name: 'location_id', type: 'uuid' }) locationId: string;
+  @ManyToOne(() => LocationEntity, { onDelete: 'RESTRICT' }) @JoinColumn({ name: 'location_id' }) location: LocationEntity;
+  @Column({ name: 'manager_id', type: 'uuid', nullable: true }) managerId: string | null;
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' }) @JoinColumn({ name: 'manager_id' }) manager: UserEntity | null;
+  @Column({ type: 'text', nullable: true }) description: string | null;
+  @Column({ name: 'is_active', default: true }) isActive: boolean;
+}
+
+@Entity('employees')
+@Index(['departmentId'])
+export class EmployeeEntity extends MigratedEntity {
+  @Column({ name: 'employee_code', type: 'varchar', length: 40, unique: true }) employeeCode: string;
+  @Column({ name: 'user_id', type: 'uuid', nullable: true, unique: true }) userId: string | null;
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' }) @JoinColumn({ name: 'user_id' }) user: UserEntity | null;
+  @Column({ name: 'first_name', type: 'varchar', length: 120 }) firstName: string;
+  @Column({ name: 'last_name', type: 'varchar', length: 120 }) lastName: string;
+  @Column({ type: 'varchar', length: 320, nullable: true, unique: true }) email: string | null;
+  @Column({ type: 'varchar', length: 40, nullable: true }) phone: string | null;
+  @Column({ type: 'varchar', length: 160, nullable: true }) designation: string | null;
+  @Column({ name: 'department_id', type: 'uuid', nullable: true }) departmentId: string | null;
+  @ManyToOne(() => DepartmentEntity, { nullable: true, onDelete: 'SET NULL' }) @JoinColumn({ name: 'department_id' }) department: DepartmentEntity | null;
+  @Column({ name: 'manager_id', type: 'uuid', nullable: true }) managerId: string | null;
+  @ManyToOne(() => EmployeeEntity, { nullable: true, onDelete: 'SET NULL' }) @JoinColumn({ name: 'manager_id' }) manager: EmployeeEntity | null;
+  @Column({ name: 'hire_date', type: 'date', nullable: true }) hireDate: string | null;
+  @Column({ name: 'is_active', default: true }) isActive: boolean;
+}
+
+@Entity('currencies')
+export class CurrencyEntity extends MigratedEntity {
+  @Column({ type: 'varchar', length: 3, unique: true }) code: string;
+  @Column({ type: 'varchar', length: 120 }) name: string;
+  @Column({ type: 'varchar', length: 12, nullable: true }) symbol: string | null;
+  @Column({ type: 'smallint', default: 2 }) precision: number;
+  @Column({ name: 'is_active', default: true }) isActive: boolean;
+}
+
+@Entity('tax_rates')
+@Unique(['companyId', 'code'])
+export class TaxRateEntity extends MigratedEntity {
+  @Column({ name: 'company_id', type: 'uuid' }) companyId: string;
+  @ManyToOne(() => CompanyEntity, { onDelete: 'CASCADE' }) @JoinColumn({ name: 'company_id' }) company: CompanyEntity;
+  @Column({ type: 'varchar', length: 40 }) code: string;
+  @Column({ type: 'varchar', length: 120 }) name: string;
+  @Column({ type: 'numeric', precision: 7, scale: 4, transformer: moneyTransformer }) rate: number;
+  @Column({ name: 'effective_from', type: 'date', nullable: true }) effectiveFrom: string | null;
+  @Column({ name: 'effective_to', type: 'date', nullable: true }) effectiveTo: string | null;
+  @Column({ name: 'is_active', default: true }) isActive: boolean;
+}
+
+@Entity('reference_statuses')
+@Unique(['module', 'code'])
+export class ReferenceStatusEntity extends MigratedEntity {
+  @Column({ type: 'varchar', length: 80 }) module: string;
+  @Column({ type: 'varchar', length: 40 }) code: string;
+  @Column({ type: 'varchar', length: 120 }) label: string;
+  @Column({ name: 'sort_order', type: 'integer', default: 0 }) sortOrder: number;
+  @Column({ name: 'is_terminal', default: false }) isTerminal: boolean;
+  @Column({ name: 'is_active', default: true }) isActive: boolean;
+}
+
 @Entity('customers')
 @Index(['name'])
 @Index(['accountType'])
@@ -368,6 +433,11 @@ export const RELEASE1_ENTITIES = [
   CompanyEntity,
   BranchEntity,
   LocationEntity,
+  WarehouseEntity,
+  EmployeeEntity,
+  CurrencyEntity,
+  TaxRateEntity,
+  ReferenceStatusEntity,
   CustomerEntity,
   SupplierEntity,
   ItemCategoryEntity,

@@ -33,6 +33,7 @@ const groups: SettingsGroup[] = [
     { title: 'Organization profile', description: 'Company details, base currency, timezone, branches, locations, and departments.', href: '/organization', section: 'company' },
     { title: 'Users', description: 'Manage team members, roles, and account status.', href: '/admin/users' },
     { title: 'Roles & permissions', description: 'Review role responsibilities and configure access to modules.', tab: 'permissions' },
+    { title: 'Foundation masters', description: 'Employees, warehouses, currencies, tax rates, and reusable reference statuses.', tab: 'foundation' },
   ] },
   { title: 'Module preferences', description: 'Set defaults, validation requirements, and policies for each module.', entries: [
     { title: 'Sales configuration', description: 'Approval policy, currencies, tax rates, and numbering for enquiries, quotations, orders, and projects.', tab: 'sales' },

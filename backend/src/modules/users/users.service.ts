@@ -2,22 +2,21 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, IsNull, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
-import { UserEntity } from '../../database/entities/release1.entity';
+import { RoleEntity, UserEntity } from '../../database/entities/release1.entity';
 import { Role } from '../../common/enums';
 import { UpdateUserDto } from './users.dto';
 
-const VALID_ROLES = new Set<string>(Object.values(Role));
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(UserEntity) private users: Repository<UserEntity>) {}
+  constructor(
+    @InjectRepository(UserEntity) private users: Repository<UserEntity>,
+    @InjectRepository(RoleEntity) private roles: Repository<RoleEntity>,
+  ) {}
 
   async findAll(query: { role?: string; departmentId?: string; isActive?: boolean }) {
     const where: FindOptionsWhere<UserEntity> = { deletedAt: IsNull() };
 
-    // Whitelist role against known enum values to prevent NoSQL operator injection
-    if (query.role && VALID_ROLES.has(query.role)) {
-      where.role = query.role as Role;
-    }
+    if (query.role && /^[a-z][a-z0-9_]{1,59}$/.test(query.role)) where.role = query.role;
 
     // Validate departmentId is a proper UUID before querying
     if (query.departmentId && isUUID(query.departmentId)) {
@@ -43,7 +42,14 @@ export class UsersService {
     if (!isUUID(id)) throw new NotFoundException('User not found');
     const user = await this.users.findOne({ where: { _id: id, deletedAt: IsNull() } });
     if (!user) throw new NotFoundException('User not found');
-    return this.users.save(this.users.merge(user, dto));
+    if (dto.role) {
+      const role = await this.roles.findOne({ where: { key: dto.role, isActive: true, deletedAt: IsNull() } });
+      if (!role) throw new BadRequestException('Select an active role');
+      user.role = role.key;
+      user.roleId = role._id;
+    }
+    const { role: _role, ...changes } = dto;
+    return this.users.save(this.users.merge(user, changes));
   }
 
   async delete(id: string) {

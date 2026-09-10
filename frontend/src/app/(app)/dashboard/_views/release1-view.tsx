@@ -11,8 +11,12 @@ import {
   Ruler,
   ShieldCheck,
   Tags,
-  Truck,
   UsersRound,
+  Warehouse,
+  BadgePercent,
+  Coins,
+  ListChecks,
+  UserRound,
 } from 'lucide-react';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 
@@ -31,6 +35,11 @@ export type Release1DashboardData = {
   uoms: number;
   documentTypes: number;
   accessAssignments: number;
+  warehouses: number;
+  employees: number;
+  currencies: number;
+  taxRates: number;
+  statuses: number;
 };
 
 const setupItems = (data: Release1DashboardData) => [
@@ -39,6 +48,7 @@ const setupItems = (data: Release1DashboardData) => [
   { label: 'Physical location', description: 'Add the first office, plant, or warehouse.', complete: data.locations > 0, href: '/organization?section=locations', action: 'Add a physical location', icon: MapPin },
   { label: 'Department', description: 'Define the teams responsible for company work.', complete: data.departments > 0, href: '/organization?section=departments', action: 'Add a department', icon: UsersRound },
   { label: 'Item foundation', description: 'Create at least one category and unit of measure.', complete: data.categories > 0 && data.uoms > 0, href: '/items', action: 'Configure item master', icon: Boxes },
+  { label: 'ERP foundation masters', description: 'Confirm warehouse, employee, currency, tax, and status reference data.', complete: data.warehouses > 0 && data.employees > 0 && data.currencies > 0 && data.taxRates > 0 && data.statuses > 0, href: '/admin/settings?tab=foundation', action: 'Configure foundation masters', icon: Warehouse },
   { label: 'Role access', description: 'Confirm what each role is allowed to do.', complete: data.accessAssignments > 0 && data.users > 0, href: '/admin/settings?tab=permissions', action: 'Review role access', icon: ShieldCheck },
   { label: 'Document numbering', description: 'Create numbering rules for business documents.', complete: data.documentTypes > 0, href: '/admin/settings?tab=documentTypes', action: 'Configure document numbering', icon: FileCog },
 ];
@@ -47,6 +57,11 @@ const masterDataRows = (data: Release1DashboardData) => [
   { label: 'Item categories', value: data.categories, icon: Tags, href: '/items' },
   { label: 'Units of measure', value: data.uoms, icon: Ruler, href: '/items' },
   { label: 'Document types', value: data.documentTypes, icon: FileCog, href: '/admin/settings?tab=documentTypes' },
+  { label: 'Warehouses', value: data.warehouses, icon: Warehouse, href: '/admin/settings?tab=foundation' },
+  { label: 'Employees', value: data.employees, icon: UserRound, href: '/admin/settings?tab=foundation' },
+  { label: 'Currencies', value: data.currencies, icon: Coins, href: '/admin/settings?tab=foundation' },
+  { label: 'Tax rates', value: data.taxRates, icon: BadgePercent, href: '/admin/settings?tab=foundation' },
+  { label: 'Reference statuses', value: data.statuses, icon: ListChecks, href: '/admin/settings?tab=foundation' },
 ];
 
 /**

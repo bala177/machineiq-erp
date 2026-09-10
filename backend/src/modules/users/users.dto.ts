@@ -1,5 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, MaxLength } from 'class-validator';
-import { Role } from '../../common/enums';
+import { IsString, IsOptional, IsBoolean, Matches, MaxLength } from 'class-validator';
 import { IsOptionalUuid } from '../../common/optional-uuid';
 
 export class UpdateUserDto {
@@ -14,8 +13,9 @@ export class UpdateUserDto {
   lastName?: string;
 
   @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
+  @IsString()
+  @Matches(/^[a-z][a-z0-9_]{1,59}$/)
+  role?: string;
 
   @IsOptionalUuid('departmentId must be a valid department id')
   departmentId?: string | null;

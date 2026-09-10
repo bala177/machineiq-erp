@@ -5,13 +5,15 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { Role } from '../../common/enums';
-import { AuditLogEntity, PermissionEntity, RolePermissionEntity, SystemSettingEntity, UserEntity } from '../../database/entities/release1.entity';
+import { AuditLogEntity, PermissionEntity, RoleEntity, RolePermissionEntity, SystemSettingEntity, UserEntity } from '../../database/entities/release1.entity';
 import { SettingsService } from '../settings/settings.service';
 import { AuthService } from './auth.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 describe('AuthService PostgreSQL setup', () => {
   const users = { count: jest.fn(), createQueryBuilder: jest.fn() };
+  const roles = { findOne: jest.fn() };
+  const transactionRoles = { findOne: jest.fn() };
   const transactionUsers = { count: jest.fn(), create: jest.fn(), save: jest.fn() };
   const transactionSettings = { upsert: jest.fn() };
   const transactionPermissions = { upsert: jest.fn(), find: jest.fn() };
@@ -22,6 +24,7 @@ describe('AuthService PostgreSQL setup', () => {
       work({
         getRepository: (entity: unknown) => {
           if (entity === UserEntity) return transactionUsers;
+          if (entity === RoleEntity) return transactionRoles;
           if (entity === SystemSettingEntity) return transactionSettings;
           if (entity === PermissionEntity) return transactionPermissions;
           if (entity === RolePermissionEntity) return transactionRolePermissions;
@@ -38,7 +41,9 @@ describe('AuthService PostgreSQL setup', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    const module = await Test.createTestingModule({ providers: [AuthService, { provide: getRepositoryToken(UserEntity), useValue: users }, { provide: JwtService, useValue: jwt }, { provide: SettingsService, useValue: settings }, { provide: DataSource, useValue: dataSource }, { provide: AuditLogService, useValue: auditLogService }] }).compile();
+    roles.findOne.mockResolvedValue({ _id: '019bc839-53ea-7448-9eb4-640b37ca1b10', key: Role.DESIGNER, isActive: true });
+    transactionRoles.findOne.mockResolvedValue({ _id: '019bc839-53ea-7448-9eb4-640b37ca1b11', key: Role.ADMIN, isActive: true });
+    const module = await Test.createTestingModule({ providers: [AuthService, { provide: getRepositoryToken(UserEntity), useValue: users }, { provide: getRepositoryToken(RoleEntity), useValue: roles }, { provide: JwtService, useValue: jwt }, { provide: SettingsService, useValue: settings }, { provide: DataSource, useValue: dataSource }, { provide: AuditLogService, useValue: auditLogService }] }).compile();
     service = module.get(AuthService);
   });
 
@@ -90,7 +95,7 @@ describe('AuthService PostgreSQL setup', () => {
       { conflictPaths: ['key'] },
     );
     expect(transactionPermissions.upsert).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ code: 'items.manage', isActive: true }), expect.objectContaining({ code: 'departments.manage', isActive: true })]), { conflictPaths: ['code'] });
-    expect(transactionRolePermissions.upsert).toHaveBeenCalledWith([{ role: Role.ADMIN, permissionId: 'eef56d5c-468e-4228-a521-8cf73c2185e5', allowed: true }], { conflictPaths: ['role', 'permissionId'] });
+    expect(transactionRolePermissions.upsert).toHaveBeenCalledWith([{ roleId: '019bc839-53ea-7448-9eb4-640b37ca1b11', permissionId: 'eef56d5c-468e-4228-a521-8cf73c2185e5', allowed: true }], { conflictPaths: ['roleId', 'permissionId'] });
     expect(transactionAuditLogs.save).toHaveBeenCalledWith(expect.objectContaining({ action: 'setup', performedBy: 'c40f899a-37f8-4bad-a886-7753d1561626' }));
     expect(result.user.role).toBe(Role.ADMIN);
   });

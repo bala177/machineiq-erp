@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { AuditLogEntity, PermissionEntity, RolePermissionEntity, SystemSettingEntity, UserEntity } from '../../database/entities/release1.entity';
+import { AuditLogEntity, PermissionEntity, RoleEntity, RolePermissionEntity, SystemSettingEntity, UserEntity } from '../../database/entities/release1.entity';
 import { Role } from '../../common/enums';
 import { ADMIN_PERMISSION_DEFINITIONS } from '../../common/admin-permissions';
 import { SettingsService } from '../settings/settings.service';
@@ -14,6 +14,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 export class AuthService {
   constructor(
     @InjectRepository(UserEntity) private users: Repository<UserEntity>,
+    @InjectRepository(RoleEntity) private roles: Repository<RoleEntity>,
     private jwtService: JwtService,
     private settingsService: SettingsService,
     private dataSource: DataSource,
@@ -28,11 +29,15 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
+    const roleKey = dto.role ?? Role.DESIGNER;
+    const role = await this.roles.findOne({ where: { key: roleKey, isActive: true, deletedAt: IsNull() } });
+    if (!role) throw new BadRequestException('Select an active role');
     const user = await this.users.save(
       this.users.create({
         ...dto,
         email,
-        role: (dto.role as Role | undefined) ?? Role.DESIGNER,
+        role: role.key,
+        roleId: role._id,
         departmentId: dto.departmentId ?? null,
         password: hashedPassword,
       }),
@@ -124,6 +129,8 @@ export class AuthService {
       if (await userRepository.count({ withDeleted: true })) {
         throw new ForbiddenException('Setup has already been completed for this deployment');
       }
+      const adminRole = await manager.getRepository(RoleEntity).findOne({ where: { key: Role.ADMIN, isActive: true, deletedAt: IsNull() } });
+      if (!adminRole) throw new ForbiddenException('The administrator role is not configured');
       const created = await userRepository.save(
         userRepository.create({
           email: dto.email.trim().toLowerCase(),
@@ -131,6 +138,7 @@ export class AuthService {
           firstName: dto.firstName,
           lastName: dto.lastName,
           role: Role.ADMIN,
+          roleId: adminRole._id,
           departmentId: null,
           title: null,
           phone: null,
@@ -160,8 +168,8 @@ export class AuthService {
         where: { code: In(ADMIN_PERMISSION_DEFINITIONS.map(([code]) => code)) },
       });
       await manager.getRepository(RolePermissionEntity).upsert(
-        permissions.map((permission) => ({ role: Role.ADMIN, permissionId: permission._id, allowed: true })),
-        { conflictPaths: ['role', 'permissionId'] },
+        permissions.map((permission) => ({ roleId: adminRole._id, permissionId: permission._id, allowed: true })),
+        { conflictPaths: ['roleId', 'permissionId'] },
       );
       await manager.getRepository(AuditLogEntity).save(
         manager.getRepository(AuditLogEntity).create({

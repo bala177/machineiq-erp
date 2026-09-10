@@ -18,7 +18,7 @@ export function ItemSettings() {
   async function load() {
     setLoading(true); setError('');
     try {
-      const value = parseItemPreferences(await api.get<unknown>('/items/preferences'));
+      const value = parseItemPreferences(await api.get<unknown>('/settings/item_preferences'));
       setPrefs(value); setOriginal(value);
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }

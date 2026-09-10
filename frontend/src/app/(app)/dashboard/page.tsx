@@ -68,7 +68,12 @@ export default function DashboardPage() {
           api.get<any[]>('/items/uoms').catch(() => []),
           api.get<any[]>('/document-types').catch(() => []),
           api.get<{ assignments?: unknown[] }>('/permissions/matrix').catch(() => ({ assignments: [] })),
-        ]).then(([company, branches, locations, departments, users, customers, suppliers, items, categories, uoms, documentTypes, permissionMatrix]) => {
+          api.get<any[]>('/foundation/warehouses').catch(() => []),
+          api.get<any[]>('/foundation/employees').catch(() => []),
+          api.get<any[]>('/foundation/currencies').catch(() => []),
+          api.get<any[]>('/foundation/tax-rates').catch(() => []),
+          api.get<any[]>('/foundation/statuses').catch(() => []),
+        ]).then(([company, branches, locations, departments, users, customers, suppliers, items, categories, uoms, documentTypes, permissionMatrix, warehouses, employees, currencies, taxRates, statuses]) => {
           const activeUsers = users.filter((item) => item.isActive !== false);
           setReleaseData({
             companyConfigured: Boolean(company),
@@ -85,6 +90,11 @@ export default function DashboardPage() {
             uoms: uoms.length,
             documentTypes: documentTypes.length,
             accessAssignments: permissionMatrix.assignments?.length ?? 0,
+            warehouses: warehouses.length,
+            employees: employees.length,
+            currencies: currencies.length,
+            taxRates: taxRates.length,
+            statuses: statuses.length,
           });
         }),
       );

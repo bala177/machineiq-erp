@@ -7,6 +7,7 @@ import { SequencesService } from '../sequences/sequences.service';
 import { Item, ItemCategory, Uom } from '../../schemas/item.schema';
 import { CreateItemCategoryDto, CreateItemDto, CreateUomDto, UpdateItemCategoryDto, UpdateItemDto, UpdateUomDto } from './items.dto';
 import { pricePerBaseUom, quantityInBaseUom } from './uom-conversion';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class ItemsService {
@@ -16,14 +17,16 @@ export class ItemsService {
     @InjectPgModel(Uom.name) private uomModel: Model<Uom>,
     private auditLogService: AuditLogService,
     private sequencesService: SequencesService,
+    private settingsService: SettingsService,
   ) {}
 
   async createItem(dto: CreateItemDto, userId: string) {
+    const payload = await this.applyItemPreferences(dto);
     const code = dto.code || await this.generateCode();
     await this.assertCodeAvailable(this.itemModel, code, 'Item');
     await this.requireActive(this.categoryModel, dto.categoryId, 'Item category');
     await this.requireActive(this.uomModel, dto.uomId, 'UOM');
-    const item = await this.itemModel.create({ ...dto, code });
+    const item = await this.itemModel.create({ ...payload, code });
     await this.auditLogService.log({ action: 'create', entityType: 'Item', entityId: item._id, performedBy: userId, newValues: item.toObject() });
     return item.populate([{ path: 'categoryId', select: 'code name' }, { path: 'uomId', select: 'code name' }]);
   }
@@ -42,6 +45,7 @@ export class ItemsService {
 
   async updateItem(id: string, dto: UpdateItemDto, userId: string) {
     const existing = await this.findItem(id);
+    await this.assertItemPolicy({ ...existing.toObject(), ...dto });
     if (dto.categoryId) await this.requireActive(this.categoryModel, dto.categoryId, 'Item category');
     if (dto.uomId) await this.requireActive(this.uomModel, dto.uomId, 'UOM');
     const item = await this.itemModel.findOneAndUpdate({ _id: id, deletedAt: null }, { $set: dto }, { new: true });
@@ -184,5 +188,29 @@ export class ItemsService {
       standardCostPerBaseUom: pricePerBaseUom(plain.standardCost, conversion),
       sellingPricePerBaseUom: pricePerBaseUom(plain.sellingPrice, conversion),
     };
+  }
+
+  private async itemPreferences() {
+    const setting = await this.settingsService.get('item_preferences');
+    return setting?.value ?? {};
+  }
+
+  private async applyItemPreferences(dto: CreateItemDto) {
+    const preferences = await this.itemPreferences();
+    const payload = {
+      ...dto,
+      salesEnabled: dto.salesEnabled ?? preferences.salesEnabled ?? true,
+      purchaseEnabled: dto.purchaseEnabled ?? preferences.purchaseEnabled ?? true,
+      isStockItem: dto.isStockItem ?? preferences.isStockItem ?? true,
+      taxPercent: dto.taxPercent ?? preferences.taxPercent ?? 18,
+    };
+    await this.assertItemPolicy(payload, preferences);
+    return payload;
+  }
+
+  private async assertItemPolicy(item: Partial<CreateItemDto>, loadedPreferences?: any) {
+    const preferences = loadedPreferences ?? await this.itemPreferences();
+    if (!item.salesEnabled && !item.purchaseEnabled) throw new BadRequestException('An item must be enabled for sales, purchasing, or both');
+    if (preferences.requireHsnSac && !item.hsnSac?.trim()) throw new BadRequestException('HSN/SAC is required by item preferences');
   }
 }

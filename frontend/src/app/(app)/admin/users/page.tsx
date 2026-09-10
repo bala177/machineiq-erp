@@ -7,7 +7,9 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Modal } from '@/components/ui/modal';
 import { Users, Plus, Pencil, Trash2, AlertTriangle, Search, X, ChevronDown } from 'lucide-react';
-import { ROLE_KEYS, roleColor, roleLabel } from '@/lib/roles';
+import { roleColor, roleLabel } from '@/lib/roles';
+
+type RoleRecord = { key: string; name: string; isActive: boolean };
 
 function RoleBadge({ role }: { role: string }) {
   return (
@@ -28,10 +30,12 @@ function Avatar({ firstName, lastName }: { firstName?: string; lastName?: string
 /* ─── Add User Form ─── */
 function AddUserForm({
   departments,
+  roles,
   onSuccess,
   onCancel,
 }: {
   departments: any[];
+  roles: RoleRecord[];
   onSuccess: (user: any) => void;
   onCancel: () => void;
 }) {
@@ -92,7 +96,7 @@ function AddUserForm({
         <div>
           <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Role <span className="text-red-500">*</span></label>
           <select className="input-field" value={form.role} onChange={(e) => set('role', e.target.value)} disabled={saving}>
-            {ROLE_KEYS.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
+            {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
           </select>
         </div>
         <div>
@@ -118,11 +122,13 @@ function AddUserForm({
 function EditUserForm({
   user,
   departments,
+  roles,
   onSuccess,
   onCancel,
 }: {
   user: any;
   departments: any[];
+  roles: RoleRecord[];
   onSuccess: (updated: any) => void;
   onCancel: () => void;
 }) {
@@ -175,7 +181,7 @@ function EditUserForm({
         <div>
           <label className="mb-1.5 block text-sm font-medium text-fg-secondary">Role</label>
           <select className="input-field" value={form.role} onChange={(e) => set('role', e.target.value)} disabled={saving}>
-            {ROLE_KEYS.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
+            {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
           </select>
         </div>
         <div>
@@ -299,6 +305,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
 export default function AdminUsersPage() {
   const [users, setUsers]           = useState<any[]>([]);
   const [departments, setDeps]      = useState<any[]>([]);
+  const [roles, setRoles]           = useState<RoleRecord[]>([]);
   const [loading, setLoading]       = useState(true);
   const [addOpen, setAddOpen]       = useState(false);
   const [editUser, setEditUser]     = useState<any | null>(null);
@@ -314,8 +321,9 @@ export default function AdminUsersPage() {
     Promise.all([
       api.get<any[]>('/users'),
       api.get<any[]>('/departments'),
+      api.get<RoleRecord[]>('/permissions/roles'),
     ])
-      .then(([u, d]) => { setUsers(u); setDeps(d); })
+      .then(([u, d, r]) => { setUsers(u); setDeps(d); setRoles(r.filter(role => role.isActive)); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -400,8 +408,8 @@ export default function AdminUsersPage() {
             className="input-field appearance-none pr-8 min-w-[140px]"
           >
             <option value="">All Roles</option>
-            {ROLE_KEYS.map((r) => (
-              <option key={r} value={r}>{roleLabel(r)}</option>
+            {roles.map((r) => (
+              <option key={r.key} value={r.key}>{r.name}</option>
             ))}
           </select>
           <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
@@ -585,6 +593,7 @@ export default function AdminUsersPage() {
         <Modal title="Add User" onClose={() => setAddOpen(false)} noPadding>
           <AddUserForm
             departments={departments}
+            roles={roles}
             onSuccess={handleAdded}
             onCancel={() => setAddOpen(false)}
           />
@@ -597,6 +606,7 @@ export default function AdminUsersPage() {
           <EditUserForm
             user={editUser}
             departments={departments}
+            roles={roles}
             onSuccess={handleUpdated}
             onCancel={() => setEditUser(null)}
           />

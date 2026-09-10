@@ -94,7 +94,7 @@ describe('UpdateUserDto — field length limits', () => {
 // UpdateUserDto — role enum validation
 // ---------------------------------------------------------------------------
 
-describe('UpdateUserDto — role enum', () => {
+describe('UpdateUserDto — role key', () => {
   const validRoles = Object.values(Role);
 
   validRoles.forEach((role) => {
@@ -104,8 +104,13 @@ describe('UpdateUserDto — role enum', () => {
     });
   });
 
-  it('rejects an unknown role "superuser"', async () => {
+  it('accepts a syntactically valid custom role key for service-level lookup', async () => {
     const errors = await validate(makeUpdate({ role: 'superuser' as any }));
+    expect(errorFor(errors, 'role')).toBe(false);
+  });
+
+  it('rejects an unsafe role key', async () => {
+    const errors = await validate(makeUpdate({ role: '{$ne:null}' as any }));
     expect(errorFor(errors, 'role')).toBe(true);
   });
 

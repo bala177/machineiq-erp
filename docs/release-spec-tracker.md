@@ -1,6 +1,6 @@
 # MachineIQ Specification and Release Tracker
 
-**R2 implementation update — 7 September 2026:** The enquiry → controlled quotation → approved order → machine project flow and seven reports are implemented on R1. See [operating rules and automated test evidence](release2-implementation-and-testing.md). Customer UAT and production certification remain separate gates. Older code observations below describe the initial gap review.
+**R1/R2 stabilization update — 10 September 2026:** The missing R1 employee, warehouse, currency, tax and configurable-status masters are implemented with audited APIs, administration UI, migration seeds and dashboard readiness checks. Configurable roles now retain referential permissions, and item preferences are enforced by the API. The R2 enquiry → controlled quotation → approved order → machine project flow and seven reports remain green. Backend regression passed **33 suites / 444 tests**, the isolated PostgreSQL R2 acceptance suite passed **9/9**, and both production builds passed. See the [R1 completion record](release1-completion-and-testing.md). Customer UAT and production certification remain separate gates.
 
 **Active baseline: 07 September 2026.** Original customer requirements: [Dashboard.docx](specs/Dashboard.docx). Revised scope and release order: [Product Specification v1.0](specs/MachineIQ_ERP_Product_Specification_v1.0.pdf). Read the [baseline/source and decision register](specification-baseline.md) before changing scope.
 
@@ -13,8 +13,8 @@
 | Revised specification     | `docs/specs/MachineIQ_ERP_Product_Specification_v1.0.pdf` — 07 September 2026                                                       |
 | Specification SHA-256     | `2b21f1ce379f43aa234fed79d3556d40e67e5014899692660dd7afec14b40c80`                                                                  |
 | Current packages          | Root/frontend/backend `2.2.0-rc.1`                                                                                                  |
-| Current implementation scope | R2 — Sales & Machine Project Initiation; reconcile expanded R1 dependencies                                                         |
-| Release certification     | Not established against the revised specification by this documentation alignment                                                   |
+| Current implementation scope | R1 foundation completion and R2 Sales & Machine Project Initiation stabilization                                                    |
+| Release certification     | Technical candidate checks passed 10 September 2026; customer UAT, backup/restore and authorized deployment remain open             |
 | Delivery plan             | [R1–R10 roadmap](erp-implementation-roadmap.md) and [R2 implementation plan](plans/2026-09-07-release2-sales-project-initiation.md) |
 
 ## Status and evidence rules
@@ -37,26 +37,26 @@ Implementation observations below retain previous evidence unless explicitly dat
 
 | ID    | Customer requirement      | Target  | Status                | Source / acceptance reference | Implementation observation or gap                                                                                                                 |
 | ----- | ------------------------- | ------- | --------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| MD-01 | Company details           | R1      | Revalidation required | DOCX Phase 1; spec §6         | `Company` schema and organization API/UI                                                                                                          |
-| MD-02 | Branches                  | R1      | Revalidation required | DOCX Phase 1; spec §6         | `Branch` schema and CRUD API/UI                                                                                                                   |
-| MD-03 | Locations                 | R1      | Revalidation required | DOCX Phase 1; spec §6         | `Location` schema and CRUD API/UI                                                                                                                 |
-| MD-04 | Departments               | R1      | Revalidation required | DOCX Phase 1; spec §6         | PostgreSQL department entity; permission-protected, audited CRUD API; Organization master-data create/edit/delete UI; desktop/mobile E2E coverage |
-| MD-05 | Employee master           | R1 / R9 | Not started           | DOCX Phase 1; spec §6         | Employee identity belongs to R1; workforce depth to R9. Login user exists; separate employee identity needs reconciliation.                       |
-| MD-06 | Roles                     | R1      | Revalidation required | DOCX Phase 1; spec §6         | Central `Role` enum and role guards                                                                                                               |
-| MD-07 | Permissions               | R1      | Revalidation required | DOCX Phase 1; spec §6         | Permission entities, matrix API/UI, server guard, first-admin bootstrap, and desktop/mobile E2E coverage                                          |
-| MD-08 | Login credentials         | R1      | Revalidation required | DOCX Phase 1; spec §6         | JWT authentication and password hashing                                                                                                           |
-| MD-09 | Customer code             | R1      | Revalidation required | DOCX Phase 1; spec §6         | Sequential code generation and validation                                                                                                         |
-| MD-10 | Customer address          | R1      | Revalidation required | DOCX Phase 1; spec §6         | Customer schema and UI                                                                                                                            |
-| MD-11 | Customer contact details  | R1      | Revalidation required | DOCX Phase 1; spec §6         | Customer contacts, email, and phone fields                                                                                                        |
-| MD-12 | Customer GST/VAT          | R1      | Revalidation required | DOCX Phase 1; spec §6         | VAT/tax fields and validation                                                                                                                     |
-| MD-13 | Supplier/vendor code      | R1      | Revalidation required | DOCX Phase 1; spec §6         | Sequential supplier code generation                                                                                                               |
-| MD-14 | Supplier payment terms    | R1      | Revalidation required | DOCX Phase 1; spec §6         | Supplier commercial fields                                                                                                                        |
-| MD-15 | Supplier contact details  | R1      | Revalidation required | DOCX Phase 1; spec §6         | Supplier schema, API, and UI                                                                                                                      |
-| MD-16 | Item code and description | R1      | Revalidation required | DOCX Phase 1; spec §6         | Item master CRUD                                                                                                                                  |
-| MD-17 | Item UOM                  | R1      | Revalidation required | DOCX Phase 1; spec §6         | UOM master CRUD and item reference                                                                                                                |
-| MD-18 | Item category             | R1      | Revalidation required | DOCX Phase 1; spec §6         | Item category CRUD and item reference                                                                                                             |
-| MD-19 | Item cost                 | R1      | Revalidation required | DOCX Phase 1; spec §6         | Standard cost field                                                                                                                               |
-| MD-20 | Item selling price        | R1      | Revalidation required | DOCX Phase 1; spec §6         | Selling price field                                                                                                                               |
+| MD-01 | Company details           | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Company legal/statutory profile and organization API/UI; included in readiness dashboard.                                                        |
+| MD-02 | Branches                  | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Audited branch CRUD API/UI and readiness checks.                                                                                                 |
+| MD-03 | Locations                 | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Audited location CRUD API/UI and warehouse relationship.                                                                                        |
+| MD-04 | Departments               | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | PostgreSQL department entity; permission-protected, audited CRUD API/UI and regression coverage.                                                |
+| MD-05 | Employee master           | R1 / R9 | Implemented / UAT pending | DOCX Phase 1; spec §6      | Separate employee identity, optional login/department/manager links, employment fields, active control and audited administration UI. R9 adds workforce operations. |
+| MD-06 | Roles                     | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Configurable role rows and UI, protected system roles, active controls, user references and guarded custom-role authorization.                  |
+| MD-07 | Permissions               | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Permission matrix, role-id grants, server guard, first-admin bootstrap and regression/integration coverage.                                     |
+| MD-08 | Login credentials         | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | JWT authentication, bcrypt password hashing, password policy, inactive-user rejection and controlled first-admin setup.                         |
+| MD-09 | Customer code             | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Sequential/manual unique code validation and audited customer CRUD.                                                                              |
+| MD-10 | Customer address          | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Billing/shipping address and customer-site support in API/UI.                                                                                    |
+| MD-11 | Customer contact details  | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Primary/secondary contact, email, phone and designation fields with validation.                                                                  |
+| MD-12 | Customer GST/VAT          | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Customer tax registration fields plus configurable organization tax-rate master.                                                               |
+| MD-13 | Supplier/vendor code      | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Sequential/manual unique supplier code and audited CRUD.                                                                                         |
+| MD-14 | Supplier payment terms    | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Supplier currency, tax, payment terms and lead-time commercial fields.                                                                           |
+| MD-15 | Supplier contact details  | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Supplier address and primary/secondary contact API/UI with validation.                                                                           |
+| MD-16 | Item code and description | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Item CRUD, generated/manual code and manufacturer, barcode, HSN/SAC, sales and purchasing descriptions.                                          |
+| MD-17 | Item UOM                  | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | UOM master, base-unit conversions and item reference.                                                                                            |
+| MD-18 | Item category             | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Hierarchical category CRUD and item reference integrity.                                                                                         |
+| MD-19 | Item cost                 | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Non-negative standard cost and base-UOM calculation.                                                                                             |
+| MD-20 | Item selling price        | R1      | Implemented / UAT pending | DOCX Phase 1; spec §6      | Non-negative selling price, default tax/preferences and base-UOM calculation.                                                                    |
 
 ### Sales
 
@@ -85,7 +85,7 @@ Implementation observations below retain previous evidence unless explicitly dat
 
 | ID     | Customer requirement   | Target  | Status      | Source / acceptance reference       | Implementation observation or gap                                                                                                    |
 | ------ | ---------------------- | ------- | ----------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| INV-01 | Warehouse              | R1 / R5 | Not started | DOCX Phase 2 Inventory; spec §§6,10 | Warehouse master required in R1; zones/bins, stock movement and balances in R5. Historical implementation gap requires revalidation. |
+| INV-01 | Warehouse              | R1 / R5 | Implemented / UAT pending | DOCX Phase 2 Inventory; spec §§6,10 | R1 warehouse master includes code, location, manager, active state and audit. Zones/bins, stock movement and balances remain correctly assigned to R5. |
 | INV-02 | Stock In and Stock Out | R5      | Not started | DOCX Phase 2 Inventory; spec §§6,10 | No stock ledger                                                                                                                      |
 | INV-03 | Stock Transfer         | R5      | Not started | DOCX Phase 2 Inventory; spec §§6,10 | No warehouse movement transaction                                                                                                    |
 | INV-04 | Stock Adjustment       | R5      | Not started | DOCX Phase 2 Inventory; spec §§6,10 | No adjustment document                                                                                                               |
@@ -117,7 +117,7 @@ Implementation observations below retain previous evidence unless explicitly dat
 
 | ID    | Customer requirement | Target  | Status            | Source / acceptance reference | Implementation observation or gap                                                                         |
 | ----- | -------------------- | ------- | ----------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
-| HR-01 | Employee             | R1 / R9 | Not started       | DOCX Phase 2 HR; spec §§6,14  | R1 employee identity and R9 employee/workforce depth; historical separate-employee gap remains to verify. |
+| HR-01 | Employee             | R1 / R9 | Implemented / UAT pending | DOCX Phase 2 HR; spec §§6,14  | R1 employee identity is implemented independently of login users; attendance, leave, overtime and payroll remain R9 scope. |
 | HR-02 | Attendance           | R9      | Not started       | DOCX Phase 2 HR; spec §§6,14  | No attendance model                                                                                       |
 | HR-03 | Leave                | R9      | Not started       | DOCX Phase 2 HR; spec §§6,14  | No leave model or approval                                                                                |
 | HR-04 | Overtime             | R9      | Not started       | DOCX Phase 2 HR; spec §§6,14  | No overtime model                                                                                         |
@@ -139,7 +139,7 @@ Implementation observations below retain previous evidence unless explicitly dat
 | ID     | Customer requirement      | Target | Status                | Source / acceptance reference  | Implementation observation or gap                                                                                                                                                       |
 | ------ | ------------------------- | ------ | --------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ARC-01 | SQL database architecture | R1     | Revalidation required | DOCX Phase 3; spec §§4,6,15,17 | PostgreSQL accepted in ADR-001; current TypeORM/PostgreSQL runtime exists. Certification requires current migration/recovery and integrity evidence, not the historical cutover status. |
-| ARC-02 | Status reference          | R1     | Partial               | DOCX Phase 3; spec §§4,6,15,17 | Configurable reference statuses belong to R1 and are extended per module. Existing enums do not satisfy runtime configuration by themselves.                                            |
+| ARC-02 | Status reference          | R1     | Implemented / UAT pending | DOCX Phase 3; spec §§4,6,15,17 | Configurable module/code/label/order/terminal status master, seeded common statuses and audited administration UI are implemented.                |
 | ARC-03 | Approval levels           | R10    | Not started           | DOCX Phase 3; spec §§4,6,15,17 | Configurable enterprise approval levels/matrix in R10. Basic module authority is required at module launch.                                                                             |
 | ARC-04 | Document type             | R1     | Revalidation required | DOCX Phase 3; spec §§4,6,15,17 | Existing DocumentType API/UI and numbering reported; revalidate organization/year uniqueness and no identifier reuse. Purchase use extends in R6.                                       |
 
@@ -198,13 +198,13 @@ These rows cover expanded scope as well as original requirements. IDs are tracke
 
 ### R1 — Foundation & Master Data
 
-| ID         | Required scope                                                                                                         | Source / target   |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| SPEC-R1-01 | Company profile, legal/tax details, branches, physical locations, departments, currency, timezone and fiscal settings. | Spec §6, p.8 / R1 |
-| SPEC-R1-02 | Users, employee identity, roles, permissions, credentials and access assignments; active/inactive controls.            | Spec §6, p.8 / R1 |
-| SPEC-R1-03 | Customer and supplier codes, addresses/sites, contacts, tax data, currencies, payment terms and supplier lead times.   | Spec §6, p.8 / R1 |
-| SPEC-R1-04 | Items, categories, UOM, make/buy, cost, selling price, manufacturer/part number, stock flag and reorder level.         | Spec §6, p.8 / R1 |
-| SPEC-R1-05 | Warehouse master, configurable tax/VAT, currency, reference statuses, document types and numbering series.             | Spec §6, p.8 / R1 |
+| ID         | Required scope                                                                                                         | Source / target   | Status |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------- | ------ |
+| SPEC-R1-01 | Company profile, legal/tax details, branches, physical locations, departments, currency, timezone and fiscal settings. | Spec §6, p.8 / R1 | Implemented; technical verification passed 2026-09-10; UAT pending |
+| SPEC-R1-02 | Users, employee identity, roles, permissions, credentials and access assignments; active/inactive controls.            | Spec §6, p.8 / R1 | Implemented; configurable-role and employee gaps closed 2026-09-10; UAT pending |
+| SPEC-R1-03 | Customer and supplier codes, addresses/sites, contacts, tax data, currencies, payment terms and supplier lead times.   | Spec §6, p.8 / R1 | Implemented; regression verified 2026-09-10; UAT pending |
+| SPEC-R1-04 | Items, categories, UOM, make/buy, cost, selling price, manufacturer/part number, stock flag and reorder level.         | Spec §6, p.8 / R1 | Implemented; item preferences are now API-enforced; UAT pending |
+| SPEC-R1-05 | Warehouse master, configurable tax/VAT, currency, reference statuses, document types and numbering series.             | Spec §6, p.8 / R1 | Implemented; missing foundation masters/migration/UI closed 2026-09-10; UAT pending |
 
 **Reports gate:** Master completeness, active users/roles, customer and supplier lists, item catalogue and change history.
 
@@ -212,7 +212,7 @@ These rows cover expanded scope as well as original requirements. IDs are tracke
 
 **Dependency:** Foundation for every release. Workforce operations expand in R9; stock transactions start in R5.
 
-- [ ] Scope groups, reports and release-specific acceptance pass with retained evidence.
+- [x] Scope groups and release-specific automated acceptance pass with retained technical evidence (2026-09-10).
 - [ ] Applicable cross-module controls and common release gates pass.
 
 ### R2 — Sales & Machine Project Initiation

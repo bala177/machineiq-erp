@@ -23,3 +23,16 @@ export class UpdatePermissionDto {
 export class SetRolePermissionsDto {
   @IsArray() @ArrayUnique() @IsUUID('4', { each: true }) permissionIds: string[];
 }
+
+export class CreateRoleDto {
+  @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value)
+  @IsString() @Matches(/^[a-z][a-z0-9_]{1,59}$/) key: string;
+  @Transform(({ value }) => trim(value)) @IsString() @IsNotEmpty() @MaxLength(120) name: string;
+  @Transform(({ value }) => trim(value)) @IsOptional() @IsString() @MaxLength(500) description?: string;
+}
+
+export class UpdateRoleDto {
+  @Transform(({ value }) => trim(value)) @IsOptional() @IsString() @IsNotEmpty() @MaxLength(120) name?: string;
+  @Transform(({ value }) => trim(value)) @IsOptional() @IsString() @MaxLength(500) description?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}

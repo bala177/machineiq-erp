@@ -23,7 +23,7 @@
     "frontend:dev": "npm --prefix frontend run dev",
     "backend:build": "npm --prefix backend run build",
     "frontend:build": "npm --prefix frontend run build",
-    "release:check": "bash scripts/release-check.sh",
+    "release:check": "node scripts/release-check.cjs",
     "test:release2": "node scripts/test-release2.cjs",
     "test:release2:browser": "node scripts/test-release2-browser.cjs"
   }

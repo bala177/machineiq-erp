@@ -75,13 +75,13 @@ describe('RegisterDto', () => {
     expect(errors.some((e) => e.property === 'password')).toBe(true);
   });
 
-  it('rejects an invalid role enum value', async () => {
-    const errors = await validate(make({ role: 'superuser' }));
+  it('rejects a malformed role key', async () => {
+    const errors = await validate(make({ role: 'Super User!' }));
     expect(errors.some((e) => e.property === 'role')).toBe(true);
   });
 
-  it('accepts a valid role enum value', async () => {
-    const errors = await validate(make({ role: 'admin' }));
+  it('accepts a valid configurable role key', async () => {
+    const errors = await validate(make({ role: 'service_manager' }));
     expect(errors).toHaveLength(0);
   });
 
