@@ -63,7 +63,7 @@ export const RELEASES: Release[] = [
       { type: 'feature', text: 'Five role-aware workspaces: Admin, Manager, Sales, Designer, and Leadership.' },
       { type: 'feature', text: 'Structured machine inquiry review, feasibility, approval, rejection, and project conversion.' },
       { type: 'feature', text: 'Project workspaces with machine breakdown, tasks, components, documents, decisions, and milestones.' },
-      { type: 'improvement', text: 'Reworked Help & FAQ with task-based guidance, real product screenshots, and current permissions.' },
+      { type: 'improvement', text: 'Reworked Help & FAQ as compact guided flows with a searchable terminology glossary, role-based starting paths, R2-to-R3 handover, and an always-visible Help shortcut.' },
       { type: 'improvement', text: 'Responsive navigation, accessible light and dark themes, notifications, and live updates.' },
       { type: 'security', text: 'JWT authentication, role checks, password hashing, rate limiting, and mutation audit history.' },
     ],
@@ -80,9 +80,10 @@ export const FAQ: FaqGroup[] = [
     id: 'scope',
     label: 'What is live today',
     items: [
-      { q: 'Which parts of MachineIQ can I use now?', a: 'Two releases are live. Release 1 is the master-data foundation: organization, users and permissions, customers, suppliers, and the item master. Release 2 adds sales and machine project initiation: enquiries, quotations with revisions and approval, sales orders, and machine projects created from a confirmed order.' },
-      { q: 'What should we configure first?', a: 'Configure the company, then branches and locations. Next review permissions and document types, followed by customers, suppliers, item categories, units of measure, and items. Then set your prefixes, currencies, and tax rates in Sales settings before raising the first enquiry.' },
+      { q: 'Which parts of MachineIQ can I use now?', a: 'Two releases are live. Release 1 covers organization, departments, employees, warehouses, currencies, tax rates, reference statuses, users, configurable roles and permissions, customers, suppliers, item master, and numbering. Release 2 adds enquiries, controlled quotation revisions and approval, sales orders, sales reports, and machine projects created from confirmed orders.' },
+      { q: 'What should we configure first?', a: 'Follow Getting Started in dependency order: company, branches, locations and departments; foundation masters; roles, permissions and users; numbering; partners; categories, UOMs and items; then Sales settings. Validate the result with one enquiry-to-project flow.' },
       { q: 'Which ERP transactions are still to come?', a: 'Engineering planning and document control, BOM and material planning, inventory and warehousing, purchasing and goods receipt, production and quality, FAT and delivery, and finance, payroll, and after-sales service are assigned to later releases.' },
+      { q: 'What does R3 receive from R2?', a: 'R3 begins with the machine project and its immutable commercial baseline: source order, customer and site, machine category, scope, dates, value, milestones and owner. Engineering adds plans, deliverables, documents, revisions, review and release control without replacing that accepted baseline.' },
       { q: 'Which database does MachineIQ use?', a: 'PostgreSQL 16 is the only system of record. You do not need to choose or synchronize a database in the application.' },
     ],
   },
@@ -102,6 +103,7 @@ export const FAQ: FaqGroup[] = [
     label: 'Master data',
     items: [
       { q: 'Why must I create a company before a branch?', a: 'Every branch belongs to the legal company. Physical locations then belong to a branch, so configure Organization in company, branch, location order.' },
+      { q: 'Where do I configure employees, warehouses, currencies, tax rates, and statuses?', a: 'Open Settings > Foundation masters. Warehouses require a physical location. Employees can optionally link to a login user, department and manager. Currency, tax and status records are reusable controlled references.' },
       { q: 'Are customer and supplier codes entered manually?', a: 'MachineIQ generates sequential customer and supplier codes. Complete the required business, contact, tax, and commercial fields; do not invent a parallel code.' },
       { q: 'What must exist before I create an item?', a: 'Create the required item category and unit of measure first. Then create the item with its code, description, category, UOM, cost, selling price, and applicable planning defaults.' },
       { q: 'What is an item master record?', a: 'It is the shared definition of a purchased, manufactured, or otherwise tracked item. Engineering components and quotation lines reference it; it does not create stock balances or movements.' },
@@ -112,6 +114,7 @@ export const FAQ: FaqGroup[] = [
     label: 'Permissions and numbering',
     items: [
       { q: 'Why can’t a user see or change a record?', a: 'Access depends on both the user role and its assigned permissions. An Admin should check Users first, then Settings > Permissions. Permission checks are enforced by the server.' },
+      { q: 'Can we create a customer-specific role?', a: 'Yes. Create it in Settings > Roles, assign only the required permissions, then assign users to it. System roles remain protected. Always verify a custom role with a representative user before wider access is granted.' },
       { q: 'How do I change permissions safely?', a: 'In Settings > Permissions, review one role at a time, change only the capabilities that role needs, save that role, and verify the result with a user assigned to it.' },
       { q: 'What are document types used for?', a: 'Document types define controlled numbering rules such as prefixes and sequence behavior for master-data documents. Configure them in Settings > Document Types before relying on generated references. Sales documents are numbered separately: set those prefixes in Sales settings.' },
     ],
@@ -120,7 +123,7 @@ export const FAQ: FaqGroup[] = [
     id: 'support',
     label: 'Validation and support',
     items: [
-      { q: 'How do I know setup is complete?', a: 'Confirm the organization hierarchy, role permissions, document types, customers, suppliers, categories, UOMs, and items can all be opened and used by the intended roles without duplicate codes or missing references. Then carry one enquiry through to a machine project to prove the sales flow end to end.' },
+      { q: 'How do I know setup is complete?', a: 'Use the admin dashboard readiness checklist. It verifies organization, foundation masters, roles and permissions, numbering, item references and active users. Then test representative roles and carry one enquiry through approval to a machine project.' },
       { q: 'Can I delete master data that has already been used?', a: 'Production records are soft-deleted or deactivated to preserve references and audit history. Prefer correcting or deactivating a record instead of trying to remove its history.' },
       { q: 'What should I include when reporting a problem?', a: 'Use the Feedback button in the bottom-right corner of the screen where it happened: it records the page, version, and browser for you. Add the record code, your role, what you expected, what happened instead, and a screenshot without passwords, tokens, or database URLs. Review & Feedback lists every section to review and tracks the replies you get.' },
     ],

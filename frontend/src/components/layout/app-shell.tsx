@@ -363,8 +363,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
           {/* Right */}
           <div className="flex items-center gap-1.5">
+            {/* Help stays available after a user follows a guide into another workspace. */}
+            <Link href="/help" aria-label="Help & FAQ shortcut" title="Help & FAQ" className={clsx('relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors', pathname === '/help' ? 'bg-brand-50 text-brand-600 dark:bg-brand-950/30' : 'text-fg-muted hover:bg-surface-secondary hover:text-fg-secondary')}>
+              <HelpCircle className="h-[18px] w-[18px]" />
+            </Link>
+
             {/* Notifications */}
-            <Link href="/notifications" className="relative flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-secondary hover:text-fg-secondary">
+            <Link href="/notifications" aria-label="Notifications" title="Notifications" className="relative flex h-9 w-9 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-secondary hover:text-fg-secondary">
               <Bell className="h-[18px] w-[18px]" />
             </Link>
 

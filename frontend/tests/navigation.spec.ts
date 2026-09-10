@@ -90,11 +90,25 @@ test('keeps account identity in the navbar instead of duplicating it in the side
 });
 
 test('support pages share current release-candidate identity and fit the viewport', async ({ page }) => {
+  test.setTimeout(60_000);
   await setAuthenticatedSession(page);
 
   await page.goto('/help');
   await expect(page.getByRole('heading', { name: 'Help & FAQ', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Set up once, in dependency order' })).toBeVisible();
+  await page.getByRole('link', { name: 'Open Organization' }).click();
+  await expect(page).toHaveURL(/\/organization$/);
+  await page.getByRole('link', { name: 'Help & FAQ shortcut' }).click();
+  await expect(page.getByRole('heading', { name: 'Help & FAQ', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: /Run the sales flow/ }).click();
+  await expect(page.getByRole('heading', { name: 'From customer demand to machine project' })).toBeVisible();
+  await page.getByRole('tab', { name: /Start R3 engineering/ }).click();
+  await expect(page.getByRole('heading', { name: 'Commercial truth becomes controlled engineering work' })).toBeVisible();
+  await page.getByRole('tab', { name: /^FAQ/ }).click();
+  await expect(page.getByRole('heading', { name: 'Choose a topic' })).toBeVisible();
+  await page.getByRole('tab', { name: /Glossary/ }).click();
+  await page.getByRole('textbox', { name: 'Search glossary' }).fill('baseline');
+  await expect(page.getByRole('heading', { name: 'Commercial baseline' })).toBeVisible();
 
   await page.goto('/about');
   await expect(page.getByText(`Release candidate · v${appVersion}`).first()).toBeVisible();
