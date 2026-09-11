@@ -52,7 +52,10 @@ export class OrganizationService {
     await this.assertCodeAvailable(this.branchModel, dto.code, 'Branch');
     const branch = await this.branchModel.create(dto);
     await this.logCreate('Branch', branch, userId);
-    return branch.populate('companyId', 'code name');
+    // The PostgreSQL document adapter supports populate on queries, not on a
+    // saved record. Re-read through the query API so creation does not return
+    // a 500 after the row and audit entry have already been committed.
+    return this.branchModel.findById(branch._id).populate('companyId', 'code name').exec();
   }
 
   findBranches(search?: string) {
@@ -84,7 +87,7 @@ export class OrganizationService {
     await this.assertCodeAvailable(this.locationModel, dto.code, 'Location');
     const location = await this.locationModel.create(dto);
     await this.logCreate('Location', location, userId);
-    return location.populate('branchId', 'code name');
+    return this.locationModel.findById(location._id).populate('branchId', 'code name').exec();
   }
 
   findLocations(query: { search?: string; branchId?: string }) {

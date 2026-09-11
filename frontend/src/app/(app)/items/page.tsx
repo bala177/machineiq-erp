@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Modal } from '@/components/ui/modal';
 import { api } from '@/lib/api';
+import { DEFAULT_ITEM_PREFERENCES, ItemPreferences, parseItemPreferences } from '@/lib/item-preferences';
 
 type Reference = { _id: string; code: string; name: string };
 type UomReference = Reference & { conversionFactor: number; baseUomId?: Reference | string | null };
@@ -85,6 +86,7 @@ export default function ItemsPage() {
   const [editingUomId, setEditingUomId] = useState('');
   const [guidedSetup, setGuidedSetup] = useState(false);
   const [error, setError] = useState('');
+  const [itemPreferences, setItemPreferences] = useState<ItemPreferences>(DEFAULT_ITEM_PREFERENCES);
   const [categoryForm, setCategoryForm] = useState(initialCategoryForm);
   const [uomForm, setUomForm] = useState(initialUomForm);
   const deferredSearch = useDeferredValue(search.trim());
@@ -95,16 +97,18 @@ export default function ItemsPage() {
       if (deferredSearch) query.set('search', deferredSearch);
       if (typeFilter) query.set('itemType', typeFilter);
       const suffix = query.size ? `?${query.toString()}` : '';
-      const [itemData, categoryData, uomData, supplierData] = await Promise.all([
+      const [itemData, categoryData, uomData, supplierData, preferencesData] = await Promise.all([
         api.get<ItemRecord[]>(`/items${suffix}`),
         api.get<Reference[]>('/items/categories'),
         api.get<UomReference[]>('/items/uoms'),
         api.get<Reference[]>('/suppliers'),
+        api.get<unknown>('/settings/item_preferences').then(parseItemPreferences).catch(() => DEFAULT_ITEM_PREFERENCES),
       ]);
       setItems(itemData);
       setCategories(categoryData);
       setUoms(uomData);
       setSuppliers(supplierData);
+      setItemPreferences(preferencesData);
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load item master');
@@ -333,7 +337,7 @@ export default function ItemsPage() {
       )}
 
       {createOpen && <Modal title={editingItem ? `Edit ${editingItem.name}` : 'Create item'} onClose={() => { setCreateOpen(false); setEditingItem(null); setError(''); }} size="xl" noPadding>
-        <ItemForm initialValues={editingItem} categories={categories} uoms={uoms} suppliers={suppliers} saving={saving} error={error} onSubmit={handleSaveItem} onCancel={() => { setCreateOpen(false); setEditingItem(null); setError(''); }} />
+        <ItemForm initialValues={editingItem || itemPreferences} categories={categories} uoms={uoms} suppliers={suppliers} saving={saving} error={error} requireHsnSac={itemPreferences.requireHsnSac} onSubmit={handleSaveItem} onCancel={() => { setCreateOpen(false); setEditingItem(null); setError(''); }} />
       </Modal>}
 
       {categoryOpen && <Modal title={guidedSetup ? 'Set up item master' : 'Manage item categories'} onClose={closeCategory}>

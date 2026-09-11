@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { BadgeCheck, Mail, Pencil, Phone, PieChart, Plus, Trash2, UserRound } from 'lucide-react';
+import { BadgeCheck, Mail, Pencil, Phone, PieChart, Plus, Save, Trash2, UserRound } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Modal } from '@/components/ui/modal';
 import { AttachmentSlot } from '@/components/organization/attachment-slot';
@@ -117,7 +117,7 @@ export function DirectorManagement({ directors, documents, canManage, onReload, 
               : 'Record the board, their DIN, and their statutory soft copies'}
           </p>
         </div>
-        <button className="btn-secondary" onClick={openCreate}><Plus className="h-4 w-4" />Add director</button>
+        <button className="btn-primary" disabled={!canManage} title={!canManage ? 'Save the company profile first' : 'Add and save a director'} onClick={openCreate}><Plus className="h-4 w-4" />Add director</button>
       </div>
 
       {totalShareholding > 100 && (
@@ -210,7 +210,7 @@ export function DirectorManagement({ directors, documents, canManage, onReload, 
           <p className="text-xs text-fg-muted sm:col-span-2">Photograph and identity soft copies are attached from the director card after saving.</p>
           <div className="flex justify-end gap-2 border-t border-border pt-4 sm:col-span-2">
             <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
-            <button className="btn-primary" disabled={saving}>{saving ? 'Saving…' : editing ? 'Save director' : 'Add director'}</button>
+            <button className="btn-primary" disabled={saving}><Save className="h-4 w-4" />{saving ? 'Saving…' : 'Save director'}</button>
           </div>
         </form>
       </Modal>

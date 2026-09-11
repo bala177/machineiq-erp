@@ -17,9 +17,8 @@ test('searches settings and opens the current sales configuration', async ({ pag
 
 test('item preferences stay in Settings and change new-item behavior', async ({ page }) => {
   let preferences = { salesEnabled: true, purchaseEnabled: true, isStockItem: true, taxPercent: 0, requireHsnSac: false };
-  await page.route('**/api/items/preferences', route => route.fulfill({ json: preferences }));
   await page.route('**/api/settings/item_preferences', async route => {
-    preferences = route.request().postDataJSON().value;
+    if (route.request().method() === 'PATCH') preferences = route.request().postDataJSON().value;
     await route.fulfill({ json: { value: preferences } });
   });
   await page.goto('/admin/settings');
@@ -41,7 +40,7 @@ test('item preferences stay in Settings and change new-item behavior', async ({ 
 });
 
 test('rejects incomplete item preferences instead of showing editable defaults', async ({ page }) => {
-  await page.route('**/api/items/preferences', route => route.fulfill({ json: { salesEnabled: true, taxPercent: 0 } }));
+  await page.route('**/api/settings/item_preferences', route => route.fulfill({ json: { value: { salesEnabled: true, taxPercent: 0 } } }));
   await page.goto('/admin/settings?tab=items');
   await expect(page.getByRole('alert').filter({ hasText: 'Item preferences are unavailable or invalid' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save item preferences' })).toHaveCount(0);
@@ -64,31 +63,30 @@ test('saves sales settings to the active workflow and restores them after reload
     await route.fulfill({ json: settings });
   });
   await page.goto('/admin/settings?tab=sales');
-  await page.getByLabel('New currency code').fill('EUR');
-  await page.getByRole('button', { name: 'Add currency' }).click();
-  await page.getByLabel('Quotation prefix').fill('offer');
+  await page.getByRole('group', { name: 'Currencies' }).getByRole('textbox').fill('INR:2\nEUR:2');
+  await page.getByRole('textbox', { name: 'quote' }).fill('offer');
   await page.getByRole('button', { name: 'Overview', exact: true }).click();
   await page.getByRole('button', { name: 'Sales configuration', exact: true }).click();
-  await expect(page.getByLabel('Quotation prefix')).toHaveValue('OFFER');
+  await expect(page.getByRole('textbox', { name: 'quote' })).toHaveValue('OFFER');
   await page.getByRole('button', { name: 'Save sales configuration' }).click();
-  await expect(page.getByRole('status')).toHaveText('Sales configuration saved');
+  await expect(page.getByRole('status')).toHaveText('Sales configuration saved.');
   expect(settings.currencies.EUR).toBe(2);
   expect(settings.prefixes.quote).toBe('OFFER');
   await page.reload();
-  await expect(page.getByLabel('EUR decimal places')).toHaveValue('2');
-  await expect(page.getByLabel('Quotation prefix')).toHaveValue('OFFER');
+  await expect(page.getByRole('group', { name: 'Currencies' }).getByRole('textbox')).toHaveValue(/EUR:2/);
+  await expect(page.getByRole('textbox', { name: 'quote' })).toHaveValue('OFFER');
 });
 
 test('keeps edits on a failed save and offers discard', async ({ page }) => {
   await page.route('**/api/sales/config', route => route.fulfill({ json: { settings: { separate_approver: true, currencies: { INR: 2 }, taxes: [0], prefixes: { enquiry: 'ENQ', quote: 'QTE', order: 'SO', project: 'PRJ' } }, permissions: ['administer'] } }));
   await page.route('**/api/sales/settings', route => route.fulfill({ status: 500, json: { message: 'Save unavailable' } }));
   await page.goto('/admin/settings?tab=sales');
-  await page.getByLabel('Quotation prefix').fill('NEW');
+  await page.getByRole('textbox', { name: 'quote' }).fill('NEW');
   await page.getByRole('button', { name: 'Save sales configuration' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Save unavailable' })).toBeVisible();
-  await expect(page.getByLabel('Quotation prefix')).toHaveValue('NEW');
+  await expect(page.getByRole('textbox', { name: 'quote' })).toHaveValue('NEW');
   await page.getByRole('button', { name: 'Discard changes' }).click();
-  await expect(page.getByLabel('Quotation prefix')).toHaveValue('QTE');
+  await expect(page.getByRole('textbox', { name: 'quote' })).toHaveValue('QTE');
 });
 
 test('does not offer to save defaults when loading sales configuration fails', async ({ page }) => {
@@ -162,7 +160,7 @@ test('an unknown focus value still opens the page', async ({ page }) => {
 });
 
 test('a tab entry can highlight a field inside the tab', async ({ page }) => {
-  await page.route('**/api/items/preferences', route => route.fulfill({ json: { salesEnabled: true, purchaseEnabled: true, isStockItem: true, taxPercent: 0, requireHsnSac: false } }));
+  await page.route('**/api/settings/item_preferences', route => route.fulfill({ json: { value: { salesEnabled: true, purchaseEnabled: true, isStockItem: true, taxPercent: 0, requireHsnSac: false } } }));
   await page.goto('/admin/settings?tab=items&focus=requireHsnSac');
   const field = page.locator('[data-field="requireHsnSac"]');
   await expect(field).toBeVisible();
@@ -170,7 +168,7 @@ test('a tab entry can highlight a field inside the tab', async ({ page }) => {
 });
 
 test('changing tab by hand drops a stale highlight target', async ({ page }) => {
-  await page.route('**/api/items/preferences', route => route.fulfill({ json: { salesEnabled: true, purchaseEnabled: true, isStockItem: true, taxPercent: 0, requireHsnSac: false } }));
+  await page.route('**/api/settings/item_preferences', route => route.fulfill({ json: { value: { salesEnabled: true, purchaseEnabled: true, isStockItem: true, taxPercent: 0, requireHsnSac: false } } }));
   await page.goto('/admin/settings?tab=items&focus=requireHsnSac');
   await page.getByRole('button', { name: 'Platform', exact: true }).click();
   await expect(page).toHaveURL(/tab=platform/);

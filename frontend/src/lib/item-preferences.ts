@@ -16,13 +16,19 @@ export const DEFAULT_ITEM_PREFERENCES: ItemPreferences = {
 
 export function parseItemPreferences(input: unknown): ItemPreferences {
   const envelope = input && typeof input === 'object' && 'value' in input ? (input as { value: unknown }).value : input;
-  const value = envelope && typeof envelope === 'object' ? envelope as Partial<ItemPreferences> : {};
-  const taxPercent = Number(value.taxPercent ?? DEFAULT_ITEM_PREFERENCES.taxPercent);
+  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) throw new Error('Item preferences are unavailable or invalid');
+  const value = envelope as Partial<ItemPreferences>;
+  if (typeof value.salesEnabled !== 'boolean' || typeof value.purchaseEnabled !== 'boolean'
+    || typeof value.isStockItem !== 'boolean' || typeof value.requireHsnSac !== 'boolean') {
+    throw new Error('Item preferences are unavailable or invalid');
+  }
+  const taxPercent = Number(value.taxPercent);
+  if (!Number.isFinite(taxPercent) || taxPercent < 0 || taxPercent > 100) throw new Error('Item preferences are unavailable or invalid');
   return {
-    salesEnabled: typeof value.salesEnabled === 'boolean' ? value.salesEnabled : true,
-    purchaseEnabled: typeof value.purchaseEnabled === 'boolean' ? value.purchaseEnabled : true,
-    isStockItem: typeof value.isStockItem === 'boolean' ? value.isStockItem : true,
-    taxPercent: Number.isFinite(taxPercent) && taxPercent >= 0 && taxPercent <= 100 ? taxPercent : 18,
-    requireHsnSac: typeof value.requireHsnSac === 'boolean' ? value.requireHsnSac : false,
+    salesEnabled: value.salesEnabled,
+    purchaseEnabled: value.purchaseEnabled,
+    isStockItem: value.isStockItem,
+    taxPercent,
+    requireHsnSac: value.requireHsnSac,
   };
 }

@@ -27,14 +27,29 @@ export function SalesSettings() {
   const [error, setError] = useState('');
   const canManage = user?.role === 'admin' && Boolean(value);
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError('');
     api.get<SalesConfig>('/sales/config').then(config => {
       const settings = config.settings;
       setValue(settings); setOriginal(settings);
       setCurrencyText(Object.entries(settings.currencies).map(([code, precision]) => `${code}:${precision}`).join('\n'));
       setTaxText(settings.taxes.join(', '));
     }).catch(requestError => setError((requestError as Error).message)).finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
+
+  function discard() {
+    if (!original) return;
+    setValue(original);
+    setCurrencyText(Object.entries(original.currencies).map(([code, precision]) => `${code}:${precision}`).join('\n'));
+    setTaxText(original.taxes.join(', '));
+    setError('');
+    setMessage('');
+  }
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -55,7 +70,7 @@ export function SalesSettings() {
   }
 
   if (loading) return <LoadingSpinner />;
-  if (!value) return <div role="alert" className="card p-5 text-sm text-red-600">{error || 'Sales configuration could not be loaded.'}</div>;
+  if (!value) return <div className="card p-5"><p role="alert" className="text-sm text-red-600">{error || 'Sales configuration could not be loaded.'}</p><button type="button" className="btn-secondary mt-4" onClick={load}>Retry</button></div>;
   const dirty = JSON.stringify(value) !== JSON.stringify(original) || currencyText !== Object.entries(original?.currencies || {}).map(([code, precision]) => `${code}:${precision}`).join('\n') || taxText !== (original?.taxes || []).join(', ');
   return <form className="space-y-5" onSubmit={save}>
     <div><h2 className="text-lg font-semibold text-fg">Sales configuration</h2><p className="mt-1 text-sm text-fg-muted">Controls R2 approvals, monetary precision, tax choices, and document numbering.</p></div>
@@ -70,6 +85,6 @@ export function SalesSettings() {
     <fieldset disabled={!canManage || saving} className="card p-5"><legend className="px-1 font-semibold">Numbering prefixes</legend><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{kinds.map(kind => <label key={kind} className="text-sm font-medium capitalize text-fg-secondary">{kind}<input required maxLength={12} pattern="[A-Z0-9]+" className="input-field mt-1.5 font-mono" value={value.prefixes[kind]} onChange={event => setValue({ ...value, prefixes: { ...value.prefixes, [kind]: event.target.value.toUpperCase() } })} /></label>)}</div></fieldset>
     {!canManage && <p className="text-sm text-fg-muted">Only an administrator can change this organization-wide configuration.</p>}
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}{message && <p role="status" className="text-sm text-emerald-600">{message}</p>}
-    <div className="flex justify-end border-t border-border pt-4"><button className="btn-primary" disabled={!canManage || saving || !dirty}>{saving ? 'Saving…' : 'Save sales configuration'}</button></div>
+    <div className="flex justify-end gap-3 border-t border-border pt-4"><button type="button" className="btn-secondary" disabled={!dirty || saving} onClick={discard}>Discard changes</button><button className="btn-primary" disabled={!canManage || saving || !dirty}>{saving ? 'Saving…' : 'Save sales configuration'}</button></div>
   </form>;
 }

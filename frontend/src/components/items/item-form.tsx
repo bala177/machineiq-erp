@@ -76,8 +76,8 @@ function normalize(values: ItemInitialValues | undefined, categories: Reference[
   return {
     ...emptyItem,
     ...values,
-    categoryId: referenceId(values.categoryId),
-    uomId: referenceId(values.uomId),
+    categoryId: referenceId(values.categoryId) || (categories.length === 1 ? categories[0]._id : ''),
+    uomId: referenceId(values.uomId) || (uoms.length === 1 ? uoms[0]._id : ''),
     defaultSupplierId: referenceId(values.defaultSupplierId),
     standardCost: values.standardCost == null ? '' : String(values.standardCost),
     sellingPrice: values.sellingPrice == null ? '' : String(values.sellingPrice),
@@ -87,12 +87,13 @@ function normalize(values: ItemInitialValues | undefined, categories: Reference[
   };
 }
 
-function validate(values: ItemFormValues): FieldErrors {
+function validate(values: ItemFormValues, requireHsnSac = false): FieldErrors {
   const errors: FieldErrors = {};
   if (!values.name.trim()) errors.name = 'Item name is required.';
   if (!values.categoryId) errors.categoryId = 'Select an item category.';
   if (!values.uomId) errors.uomId = 'Select the unit used to measure this item.';
   if (!values.salesEnabled && !values.purchaseEnabled) errors.availability = 'Enable sales information, purchase information, or both.';
+  if (requireHsnSac && !values.hsnSac.trim()) errors.hsnSac = 'HSN / SAC code is required by item preferences.';
 
   const nonNegative: Array<[keyof ItemFormValues, string]> = [
     ['sellingPrice', 'Selling price'], ['standardCost', 'Purchase cost'], ['reorderLevel', 'Reorder point'], ['leadTimeDays', 'Lead time'],
@@ -134,12 +135,13 @@ type Props = {
   suppliers: Reference[];
   saving?: boolean;
   error?: string;
+  requireHsnSac?: boolean;
   onSubmit: (values: ItemFormPayload) => Promise<boolean | void> | boolean | void;
   onCancel: () => void;
 };
 
-export function ItemForm({ initialValues, categories, uoms, suppliers, saving = false, error, onSubmit, onCancel }: Props) {
-  const isCreate = !initialValues;
+export function ItemForm({ initialValues, categories, uoms, suppliers, saving = false, error, requireHsnSac = false, onSubmit, onCancel }: Props) {
+  const isCreate = !initialValues || !('_id' in initialValues);
   const [activeTab, setActiveTab] = useState<ItemTab>('Overview');
   const [form, setForm] = useState<ItemFormValues>(() => normalize(initialValues || undefined, categories, uoms));
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -160,7 +162,7 @@ export function ItemForm({ initialValues, categories, uoms, suppliers, saving = 
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const errors = validate(form);
+    const errors = validate(form, requireHsnSac);
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       const fields = Object.keys(errors);
@@ -225,7 +227,7 @@ export function ItemForm({ initialValues, categories, uoms, suppliers, saving = 
         <section>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted">Tax defaults</p>
           <div className="grid gap-4 md:grid-cols-2">
-            <label><FieldLabel as="span" term={isService ? 'sac' : 'hsn'}>{isService ? 'SAC code' : 'HSN code'}</FieldLabel><input className="input-field" value={form.hsnSac} onChange={(event) => set('hsnSac', event.target.value)} placeholder={isService ? 'e.g. 998719' : 'e.g. 850440'} /></label>
+            <label><FieldLabel as="span" required={requireHsnSac} term={isService ? 'sac' : 'hsn'}>{isService ? 'SAC code' : 'HSN code'}</FieldLabel><input className={fc('hsnSac')} value={form.hsnSac} onChange={(event) => set('hsnSac', event.target.value)} placeholder={isService ? 'e.g. 998719' : 'e.g. 850440'} />{err('hsnSac')}</label>
             <label><FieldLabel as="span" tooltip="Default only. The applicable tax can change with the transaction and jurisdiction.">Default tax rate</FieldLabel><div className="relative"><input className={clsx(fc('taxPercent'), 'pr-10')} aria-label="Tax rate (%)" type="number" min="0" max="100" step="0.01" inputMode="decimal" value={form.taxPercent} onChange={(event) => set('taxPercent', event.target.value)} placeholder="0" /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-fg-muted">%</span></div>{err('taxPercent')}</label>
           </div>
           <div className="mt-4 rounded-xl border border-border bg-surface-secondary p-4 text-sm text-fg-muted"><strong className="text-fg-secondary">How this default is used:</strong> it prefills commercial documents, but users can adjust tax according to the transaction and place of supply.</div>
