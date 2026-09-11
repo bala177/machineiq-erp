@@ -37,4 +37,5 @@ export class FeedbackQueryDto {
   @IsOptional() @IsIn(FEEDBACK_TYPES) type?: string;
   @IsOptional() @IsIn(FEEDBACK_URGENCIES) urgency?: string;
   @IsOptional() @IsString() @MaxLength(200) search?: string;
+  @IsOptional() @IsString() @MaxLength(80) targetRelease?: string;
 }

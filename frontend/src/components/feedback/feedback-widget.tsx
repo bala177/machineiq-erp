@@ -8,6 +8,7 @@ import { APP_VERSION, GIT_COMMIT } from '@/lib/app-meta';
 import { FeedbackType, FeedbackUrgency, feedbackTypeLabels } from '@/lib/feedback';
 import { reviewSections, sectionForPath } from '@/lib/review-sections';
 import { clsx } from 'clsx';
+import { useAuth } from '@/providers/auth-provider';
 
 const types: { value: FeedbackType; icon: typeof Bug }[] = [
   { value: 'broken', icon: Bug }, { value: 'hard_to_use', icon: MousePointer2 },
@@ -23,6 +24,7 @@ const issueChoices: Record<FeedbackType, string[]> = {
 };
 
 export function FeedbackWidget({ enabled, onSubmitted }: { enabled: boolean; onSubmitted?: () => void }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<FeedbackType>('broken');
   const [urgency, setUrgency] = useState<FeedbackUrgency>('important');
@@ -113,18 +115,18 @@ export function FeedbackWidget({ enabled, onSubmitted }: { enabled: boolean; onS
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="fixed bottom-[76px] right-4 z-30 flex items-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-700 md:bottom-6 md:right-6" aria-label="Send feedback">
-        <MessageCircle className="h-5 w-5" /><span className="hidden sm:inline">Feedback</span>
+      <button onClick={() => setOpen(true)} className="fixed bottom-[76px] right-4 z-30 flex items-center gap-2 rounded-full bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-700 md:bottom-6 md:right-6" aria-label="Report issue or idea">
+        <MessageCircle className="h-5 w-5" /><span className="hidden sm:inline">Report issue or idea</span>
       </button>
       {open && <div className="fixed inset-0 z-[200] bg-black/35 backdrop-blur-[1px]" onMouseDown={(e) => e.target === e.currentTarget && close()}>
         <section role="dialog" aria-modal="true" aria-labelledby="feedback-title" className="absolute inset-y-0 right-0 flex w-full max-w-lg flex-col border-l border-border bg-surface shadow-2xl">
           <header className="flex items-start justify-between border-b border-border px-5 py-4">
-            <div><h2 id="feedback-title" className="text-lg font-bold text-fg">Help us improve MachineIQ</h2><p className="mt-1 text-xs text-fg-muted">Usually takes less than a minute.</p></div>
+            <div><h2 id="feedback-title" className="text-lg font-bold text-fg">Report an issue or idea</h2><p className="mt-1 text-xs text-fg-muted">Sent directly to the MachineIQ development feedback center.</p></div>
             <button onClick={close} className="rounded-lg p-2 text-fg-muted hover:bg-surface-secondary" aria-label="Close feedback"><X className="h-5 w-5" /></button>
           </header>
           {sent ? <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
-            <CheckCircle2 className="h-14 w-14 text-emerald-500" /><h3 className="mt-4 text-xl font-bold text-fg">Thank you</h3><p className="mt-2 text-sm text-fg-muted">Your feedback is saved. You can follow its status in My Feedback.</p>
-            <button onClick={() => { close(); router.push('/feedback'); }} className="btn-primary mt-6">View My Feedback</button><button onClick={close} className="btn-secondary mt-3">Done</button>
+            <CheckCircle2 className="h-14 w-14 text-emerald-500" /><h3 className="mt-4 text-xl font-bold text-fg">Report received</h3><p className="mt-2 text-sm text-fg-muted">It is saved with the page and release details. Follow its status in Feedback Center.</p>
+            <button onClick={() => { close(); router.push(user?.role === 'admin' ? '/admin/feedback' : '/feedback'); }} className="btn-primary mt-6">Open Feedback Center</button><button onClick={close} className="btn-secondary mt-3">Done</button>
           </div> : <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
             <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
               <div><label htmlFor="feedback-section" className="mb-2 block text-sm font-semibold text-fg">Which section?</label><select id="feedback-section" className="input-field w-full" value={reportSection} onChange={event => { setSection(event.target.value); setIssue(''); }}><option value={currentSection}>{currentSection} · current page</option>{[...new Set([...reviewSections.map(item => item.label), 'Enquiries', 'Quotations', 'Sales orders', 'Sales reports', 'Machine projects'])].filter(name => name !== currentSection).map(name => <option key={name}>{name}</option>)}</select><p className="mt-1 text-xs text-fg-muted">The current section is selected for you.</p></div>

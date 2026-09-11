@@ -195,7 +195,12 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
     }
 
     if (path === '/feedback/admin/count' && method === 'GET') {
-      await route.fulfill(jsonResponse({ new: mutableFeedback.filter((item) => item.status === 'new').length, blocking: mutableFeedback.filter((item) => item.status === 'new' && item.urgency === 'blocking').length }));
+      const open = mutableFeedback.filter((item) => !['fixed', 'wont_fix', 'closed'].includes(item.status));
+      await route.fulfill(jsonResponse({
+        new: mutableFeedback.filter((item) => item.status === 'new').length,
+        blocking: open.filter((item) => item.urgency === 'blocking').length,
+        planned: mutableFeedback.filter((item) => item.status === 'planned').length,
+      }));
       return;
     }
 
@@ -222,7 +227,17 @@ export async function installApiMocks(page: Page, options: MockOptions = {}) {
     }
 
     if (path === '/organization/locations' && method === 'GET') {
-      await route.fulfill(jsonResponse([{ _id: 'location-1', code: 'PLANT', name: 'Main Plant', type: 'factory', isActive: true }]));
+      await route.fulfill(jsonResponse([{ _id: 'location-1', code: 'PLANT', name: 'Main Plant', branchId: { _id: 'branch-1', code: 'HQ', name: 'Head Office' }, type: 'factory', isActive: true }]));
+      return;
+    }
+
+    if (path === '/organization/directors' && method === 'GET') {
+      await route.fulfill(jsonResponse([]));
+      return;
+    }
+
+    if (path === '/organization/documents' && method === 'GET') {
+      await route.fulfill(jsonResponse([]));
       return;
     }
 

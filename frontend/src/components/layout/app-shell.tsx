@@ -11,6 +11,7 @@ import { DEPLOYMENT_LABEL } from '@/lib/app-meta';
 import { roleColor, roleLabel } from '@/lib/roles';
 import { api } from '@/lib/api';
 import { FeedbackWidget } from '@/components/feedback/feedback-widget';
+import { useFeedbackStream } from '@/hooks/use-feedback-stream';
 
 /* ─────────────── nav config ─────────────── */
 
@@ -217,6 +218,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
         .catch(() => {});
   };
 
+  // Keeps the sidebar badge honest while the admin works elsewhere in the app.
+  useFeedbackStream('admin', refreshFeedbackCount, feedbackEnabled && isAdmin);
+
   useEffect(() => {
     if (!user) return;
     api
@@ -310,7 +314,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
               {adminItems.map((item) => (
                 <NavLink key={item.href} item={item} active={pathname.startsWith(item.href)} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />
               ))}
-              {feedbackEnabled && <NavLink item={{ label: 'Feedback', href: '/admin/feedback', icon: MessageSquare }} active={pathname.startsWith('/admin/feedback')} collapsed={collapsed} badge={feedbackCount} onClick={() => setSidebarOpen(false)} />}
             </div>
           )}
 
@@ -321,7 +324,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             {supportItems.map((item) => (
               <NavLink key={item.href} item={item} active={pathname === item.href} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />
             ))}
-            {feedbackEnabled && <NavLink item={{ label: 'My Feedback', href: '/feedback', icon: MessageSquare }} active={pathname === '/feedback'} collapsed={collapsed} onClick={() => setSidebarOpen(false)} />}
+            {feedbackEnabled && <NavLink item={{ label: 'Feedback Center', href: isAdmin ? '/admin/feedback' : '/feedback', icon: MessageSquare }} active={pathname === '/feedback' || pathname.startsWith('/admin/feedback')} collapsed={collapsed} badge={isAdmin ? feedbackCount : 0} onClick={() => setSidebarOpen(false)} />}
           </div>
         </nav>
 

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, ExternalLink, MessageSquare, Smile } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/providers/auth-provider';
-import { FeedbackRecord, feedbackStatusLabels, feedbackTypeLabels } from '@/lib/feedback';
+import { FeedbackRecord, feedbackStatusLabels, feedbackStatusMeaning, feedbackTypeLabels } from '@/lib/feedback';
 import { ReviewSection, feedbackHref, reviewSections, sectionForPath } from '@/lib/review-sections';
+import { useFeedbackStream } from '@/hooks/use-feedback-stream';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatDate } from '@/lib/utils';
@@ -26,8 +27,8 @@ export default function MyFeedbackPage() {
   const [enabled, setEnabled] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    api.get<{ enabled: boolean }>('/feedback/config')
+  const load = useCallback(() => {
+    return api.get<{ enabled: boolean }>('/feedback/config')
       .then(({ enabled: on }) => {
         setEnabled(on);
         if (!on) return [] as FeedbackRecord[];
@@ -37,6 +38,12 @@ export default function MyFeedbackPage() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Could not load your feedback.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  // A report sent from the widget, or a reply written by an admin, lands here
+  // without the reader having to reload the page.
+  useFeedbackStream('mine', () => { void load(); });
 
   const role = user?.role ?? '';
   const sections = useMemo(() => reviewSections.filter((section) => !role || section.roles.includes(role)), [role]);
@@ -57,7 +64,7 @@ export default function MyFeedbackPage() {
   if (loading) return <LoadingSpinner />;
 
   return <>
-    <PageHeader title="Review & Feedback" description="Work through each section with your own data and tell us what works and what gets in your way." />
+    <PageHeader title="Feedback Center" description="Review each section, report issues or ideas from the affected screen, and track every response here." />
 
     {!enabled && <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">Feedback collection is switched off at the moment, so nothing can be sent yet. You can still open each section to look around — ask your MachineIQ contact to turn feedback on when you are ready to review.</div>}
     {enabled && error && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
@@ -92,7 +99,7 @@ export default function MyFeedbackPage() {
         <div className="rounded-xl border border-dashed border-border bg-surface p-8 text-center">
           <MessageSquare className="mx-auto h-9 w-9 text-fg-muted" />
           <p className="mt-3 text-sm font-semibold text-fg">Nothing sent yet</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-fg-muted">Pick a section above and open it. The Feedback button stays in the bottom-right corner of every screen, so you can report something the moment you hit it.</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-fg-muted">Pick a section above and open it. The Report issue or idea button stays in the bottom-right corner of every screen, so you can capture the exact page and release when something happens.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -149,6 +156,7 @@ function FeedbackCard({ item }: { item: FeedbackRecord }) {
             <span className="text-xs font-semibold text-fg-secondary">{feedbackTypeLabels[item.type]}</span>
             {item.urgency === 'blocking' && <span className="badge-red">Blocking</span>}
           </div>
+          <p className="mt-1.5 text-xs text-fg-muted">{feedbackStatusMeaning[item.status]}</p>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-fg">{item.message}</p>
         </div>
         <span className="shrink-0 text-xs text-fg-muted">{formatDate(item.createdAt)}</span>
