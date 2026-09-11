@@ -1,6 +1,6 @@
 # MachineIQ — OEM Machine Execution Platform
 
-**Release 2 candidate: `2.2.0-rc.1`.** Sales and Machine Project Initiation builds on Release 1, following the aligned customer requirements and revised specification. See [R2 implementation, operating rules and verification](docs/release2-implementation-and-testing.md) for the enquiry-to-project flow, reports, guided feedback and test commands. Customer UAT and production deployment remain separate release gates.
+**Release 2 candidate: `2.2.0-rc.2`.** This candidate adds the remote Feedback Center workflow with live updates and clearer triage rules, fixes feedback inbox and operating-structure API failures, and adds preview-before-apply Excel organization setup. Sales and Machine Project Initiation continues on the aligned Release 1 foundation. See [R2 implementation, operating rules and verification](docs/release2-implementation-and-testing.md). Customer UAT and production deployment remain separate release gates.
 
 A production-grade SaaS platform for OEM machine-building companies. MachineIQ connects sales handover, project kickoff, engineering task execution, procurement readiness, and management visibility in one unified system.
 

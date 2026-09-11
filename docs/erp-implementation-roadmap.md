@@ -27,7 +27,7 @@ The Machine Project is the central record. Follow Enquiry → Quotation → Sale
 - R4 retains availability and shortage planning. Live R5 stock/reservations and R6 on-order inputs integrate progressively; prerequisite data and acceptance staging remain explicit under AL-10.
 - Basic approval, permission, audit, validation, backup/recovery and module integration are continuous requirements. R10 extends them with enterprise workflows and provider-dependent channels.
 - PostgreSQL remains the accepted system of record under [ADR-001](architecture-decisions/ADR-001-postgresql-system-of-record.md). Deployment topology and operational targets follow the source decisions.
-- R1–R10 identify product scope. Current packages are `2.2.0-rc.1`; the proposed R2 version is `2.2.0`. Later package versions and delivery dates require separate scheduling.
+- R1–R10 identify product scope. Current packages are `2.2.0-rc.2`; the proposed R2 version is `2.2.0`. Later package versions and delivery dates require separate scheduling.
 
 ## R1 — Foundation & Master Data
 

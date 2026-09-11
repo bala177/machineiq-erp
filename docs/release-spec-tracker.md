@@ -12,7 +12,7 @@
 | Customer source SHA-256   | `3acddd37fca8a16622147664f8cfe52ee6a5a66c5877bc70c867b196577a8df2`                                                                  |
 | Revised specification     | `docs/specs/MachineIQ_ERP_Product_Specification_v1.0.pdf` — 07 September 2026                                                       |
 | Specification SHA-256     | `2b21f1ce379f43aa234fed79d3556d40e67e5014899692660dd7afec14b40c80`                                                                  |
-| Current packages          | Root/frontend/backend `2.2.0-rc.1`                                                                                                  |
+| Current packages          | Root/frontend/backend `2.2.0-rc.2`                                                                                                  |
 | Current implementation scope | R1 foundation completion and R2 Sales & Machine Project Initiation stabilization                                                    |
 | Release certification     | Technical candidate checks passed 10 September 2026; customer UAT, backup/restore and authorized deployment remain open             |
 | Delivery plan             | [R1–R10 roadmap](erp-implementation-roadmap.md) and [R2 implementation plan](plans/2026-09-07-release2-sales-project-initiation.md) |

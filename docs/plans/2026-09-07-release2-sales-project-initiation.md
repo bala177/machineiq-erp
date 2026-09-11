@@ -15,7 +15,7 @@ This document began as a code-backed gap review and implementation plan on **202
 | Source SHA-256                 | `2b21f1ce379f43aa234fed79d3556d40e67e5014899692660dd7afec14b40c80`                                                                                                                    |
 | Primary requirements           | Section 7 / PDF p.9; sections 2–5 / pp.4–7; sections 16–20 / pp.18–22                                                                                                                 |
 | Reviewed code                  | `fbd3bb51c25a311603bf8e8b2d282efe3516e625`                                                                                                                                            |
-| Current packages               | Root, backend and frontend: `2.2.0-rc.1`                                                                                                                                              |
+| Current packages               | Root, backend and frontend: `2.2.0-rc.2`                                                                                                                                              |
 | Proposed R2 package            | `2.2.0`, beginning with `2.2.0-rc.1`; product release R2 and package version are separate identifiers                                                                                 |
 | Active delivery baseline       | [Current roadmap](../erp-implementation-roadmap.md) and [current tracker](../release-spec-tracker.md), aligned to both sources; superseded versions are in `docs/history/`            |
 | Architecture retained          | [ADR-001](../architecture-decisions/ADR-001-postgresql-system-of-record.md): PostgreSQL, versioned migrations, no production dual-write                                               |
@@ -187,7 +187,7 @@ First implementation slice: establish the conversion cardinality/status contract
 
 Run backend unit tests and builds, frontend production build, PostgreSQL integration tests on an explicitly disposable test database, and the complete required desktop/mobile Playwright matrix. Expand PostgreSQL tests to cover every new migration and runtime conversion transaction; mock-only service tests cannot demonstrate concurrent conversion safety. Record security review, restore timings, fixture reconciliation, manual UAT and known noncritical exceptions with owners.
 
-Use `npm run release:check -- v2.2.0-rc.1` when a candidate exists, and the repository's documented PostgreSQL/E2E environment configuration. Verify that the release script covers new migrations and suites rather than assuming an old gate is sufficient. Align all package versions, update API/help/release notes, attach evidence to the exact source commit, and create a final release tag only after acceptance gates pass.
+Use `npm run release:check -- v2.2.0-rc.2` for the current candidate, and the repository's documented PostgreSQL/E2E environment configuration. Verify that the release script covers new migrations and suites rather than assuming an old gate is sufficient. Align all package versions, update API/help/release notes, attach evidence to the exact source commit, and create a final release tag only after acceptance gates pass.
 
 ### Evidence from this review
 

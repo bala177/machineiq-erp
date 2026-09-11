@@ -22,7 +22,7 @@ If the two sources leave a business rule unresolved, preserve both requirements,
 | [Shared release data](release-baseline.json) | Same release names, scope summaries, reports and acceptance text used by the roadmap and PDF generator; subordinate to the two source documents |
 | [ADR-001](architecture-decisions/ADR-001-postgresql-system-of-record.md) | Accepted PostgreSQL implementation decision; consistent with the customer's database recommendation and the new relational-data requirements |
 
-R1–R10 are product release identifiers. Current packages are `2.2.0-rc.1`; R2 is packaged as `2.2.0-rc.1` for verification. Software version numbers do not determine release scope. Later package versions and calendar dates have not been assigned by this alignment.
+R1–R10 are product release identifiers. Current packages are `2.2.0-rc.2`; R2 is packaged as `2.2.0-rc.2` for verification. Software version numbers do not determine release scope. Later package versions and calendar dates have not been assigned by this alignment.
 
 ## Scope interpretations and open decisions
 
